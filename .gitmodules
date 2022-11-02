@@ -1,3 +1,12 @@
 [submodule "openthread"]
 	path = openthread
 	url = https://github.com/openthread/openthread.git
+[submodule "third_party/freertos/repo"]
+	path = third_party/freertos/repo
+	url = https://github.com/FreeRTOS/FreeRTOS-Kernel.git
+[submodule "third_party/ti_simplelink_sdk/repo_cc13xx_cc26xx"]
+	path = third_party/ti_simplelink_sdk/repo_cc13xx_cc26xx
+	url = https://github.com/TexasInstruments/cc13xx_cc26xx_sdk.git
+[submodule "mbedtls"]
+	path = third_party/mbedtls/repo
+	url = https://github.com/Mbed-TLS/mbedtls.git

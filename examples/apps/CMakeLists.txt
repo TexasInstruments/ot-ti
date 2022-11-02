@@ -1,6 +1,5 @@
-#!/bin/bash
 #
-#  Copyright (c) 2020, The OpenThread Authors.
+#  Copyright (c) 2019, The OpenThread Authors.
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -27,58 +26,8 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 #
 
-set -euxo pipefail
+if(OT_APP_CLI)
+    add_subdirectory(cli)
+endif()
 
-readonly OT_BUILDDIR="$(pwd)/build"
-readonly OT_OUTPUTDIR="$(pwd)/output"
-
-readonly OT_OPTIONS=(
-    "-DOT_COMPILE_WARNING_AS_ERROR=ON"
-    "-DOT_COMMISSIONER=ON"
-    "-DOT_DHCP6_CLIENT=ON"
-    "-DOT_DHCP6_SERVER=ON"
-    "-DOT_DNS_CLIENT=ON"
-    "-DOT_JOINER=ON"
-)
-
-build()
-{
-    local launchpad="$1"
-
-    rm -rf "$OT_BUILDDIR"
-    "$(dirname "$0")"/build "${launchpad}" $@
-
-    mkdir -p $OT_OUTPUTDIR/${launchpad}
-    cp $OT_BUILDDIR/bin/* $OT_OUTPUTDIR/${launchpad}
-}
-
-main()
-{
-    export CPPFLAGS="${CPPFLAGS:-} -DNDEBUG"
-
-    rm $OT_OUTPUTDIR
-
-    build CC1352P1_LAUNCHXL "${OT_OPTIONS[@]}"
-
-    build CC1352P_2_LAUNCHXL "${OT_OPTIONS[@]}"
-
-    build CC1352P_4_LAUNCHXL "${OT_OPTIONS[@]}"
-
-    build CC1352R1_LAUNCHXL "${OT_OPTIONS[@]}"
-
-    build CC26X2R1_LAUNCHXL "${OT_OPTIONS[@]}"
-
-    build LP_CC1352P7_1 "${OT_OPTIONS[@]}"
-
-    build LP_CC1352P7_4 "${OT_OPTIONS[@]}"
-
-    build LP_CC2652PSIP "${OT_OPTIONS[@]}"
-
-    build LP_CC2652R7 "${OT_OPTIONS[@]}"
-
-    build LP_CC2652RB "${OT_OPTIONS[@]}"
-
-    build LP_CC2652RSIP "${OT_OPTIONS[@]}"
-}
-
-main "$@"
+add_subdirectory(ncp)

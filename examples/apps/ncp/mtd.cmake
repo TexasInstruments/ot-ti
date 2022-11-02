@@ -1,4 +1,3 @@
-#!/bin/bash
 #
 #  Copyright (c) 2020, The OpenThread Authors.
 #  All rights reserved.
@@ -27,58 +26,31 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 #
 
-set -euxo pipefail
-
-readonly OT_BUILDDIR="$(pwd)/build"
-readonly OT_OUTPUTDIR="$(pwd)/output"
-
-readonly OT_OPTIONS=(
-    "-DOT_COMPILE_WARNING_AS_ERROR=ON"
-    "-DOT_COMMISSIONER=ON"
-    "-DOT_DHCP6_CLIENT=ON"
-    "-DOT_DHCP6_SERVER=ON"
-    "-DOT_DNS_CLIENT=ON"
-    "-DOT_JOINER=ON"
+add_executable(ot-ncp-mtd
+    ${COMMON_SOURCES}
 )
 
-build()
-{
-    local launchpad="$1"
+target_include_directories(ot-ncp-mtd PRIVATE ${COMMON_INCLUDES})
 
-    rm -rf "$OT_BUILDDIR"
-    "$(dirname "$0")"/build "${launchpad}" $@
+if(NOT DEFINED OT_PLATFORM_LIB_MTD)
+    set(OT_PLATFORM_LIB_MTD ${OT_PLATFORM_LIB})
+endif()
 
-    mkdir -p $OT_OUTPUTDIR/${launchpad}
-    cp $OT_BUILDDIR/bin/* $OT_OUTPUTDIR/${launchpad}
-}
+target_link_libraries(ot-ncp-mtd PRIVATE
+    openthread-ncp-mtd
+    ${OT_PLATFORM_LIB_MTD}
+    openthread-mtd
+    ${OT_PLATFORM_LIB_MTD}
+    openthread-ncp-mtd
+    ${OT_MBEDTLS}
+    ot-config-mtd
+    ot-config
+)
 
-main()
-{
-    export CPPFLAGS="${CPPFLAGS:-} -DNDEBUG"
-
-    rm $OT_OUTPUTDIR
-
-    build CC1352P1_LAUNCHXL "${OT_OPTIONS[@]}"
-
-    build CC1352P_2_LAUNCHXL "${OT_OPTIONS[@]}"
-
-    build CC1352P_4_LAUNCHXL "${OT_OPTIONS[@]}"
-
-    build CC1352R1_LAUNCHXL "${OT_OPTIONS[@]}"
-
-    build CC26X2R1_LAUNCHXL "${OT_OPTIONS[@]}"
-
-    build LP_CC1352P7_1 "${OT_OPTIONS[@]}"
-
-    build LP_CC1352P7_4 "${OT_OPTIONS[@]}"
-
-    build LP_CC2652PSIP "${OT_OPTIONS[@]}"
-
-    build LP_CC2652R7 "${OT_OPTIONS[@]}"
-
-    build LP_CC2652RB "${OT_OPTIONS[@]}"
-
-    build LP_CC2652RSIP "${OT_OPTIONS[@]}"
-}
-
-main "$@"
+install(TARGETS ot-ncp-mtd
+    DESTINATION bin
+)
+set_target_properties(ot-ncp-mtd
+    PROPERTIES
+        SUFFIX .out
+)

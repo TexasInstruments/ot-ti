@@ -31,9 +31,22 @@ set -euxo pipefail
 
 OT_CMAKE_NINJA_TARGET=${OT_CMAKE_NINJA_TARGET:-}
 
+readonly TI_LAUNCHPAD=(
+    CC1352P1_LAUNCHXL
+    CC1352P_2_LAUNCHXL
+    CC1352P_4_LAUNCHXL
+    CC1352R1_LAUNCHXL
+    CC26X2R1_LAUNCHXL
+    LP_CC1352P7_1
+    LP_CC1352P7_4
+    LP_CC2652PSIP
+    LP_CC2652R7
+    LP_CC2652RB
+    LP_CC2652RSIP
+)
+
 readonly OT_SRCDIR="$(pwd)"
 readonly OT_OPTIONS=(
-    "-DCMAKE_TOOLCHAIN_FILE=src/arm-none-eabi.cmake"
     "-DCMAKE_BUILD_TYPE=MinSizeRel"
     "-DOT_PLATFORM=external"
     "-DOT_SLAAC=ON"
@@ -59,11 +72,35 @@ build()
 
 main()
 {
+    if [[ $# == 0 ]]; then
+        echo "Please specify a LaunchPad: ${TI_LAUNCHPAD[*]}"
+        exit 1
+    fi
+
     local options=("${OT_OPTIONS[@]}")
+
+    local launchpad="$1"
+    echo "${TI_LAUNCHPAD[@]}" | grep -wq "${launchpad}" || die "Unsupported launchpad ${launchpad}"
+
+    case "${launchpad}" in
+        CC1352P1_LAUNCHXL | \
+            CC1352P_2_LAUNCHXL | \
+            CC1352P_4_LAUNCHXL | \
+            CC1352R1_LAUNCHXL | \
+            CC26X2R1_LAUNCHXL | \
+            LP_CC1352P7_1 | \
+            LP_CC1352P7_4 | \
+            LP_CC2652PSIP | \
+            LP_CC2652R7 | \
+            LP_CC2652RB | \
+            LP_CC2652RSIP)
+            options+=("-DCMAKE_TOOLCHAIN_FILE=src/arm-none-eabi-m4f.cmake")
+            ;;
+    esac
 
     options+=("$@")
 
-    build "${options[@]}"
+    build -DTI_SIMPLELINK_BOARD=${launchpad} "${options[@]}"
 }
 
 main "$@"

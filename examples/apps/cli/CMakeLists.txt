@@ -1,6 +1,5 @@
-#!/bin/bash
 #
-#  Copyright (c) 2020, The OpenThread Authors.
+#  Copyright (c) 2019, The OpenThread Authors.
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -27,58 +26,36 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 #
 
-set -euxo pipefail
-
-readonly OT_BUILDDIR="$(pwd)/build"
-readonly OT_OUTPUTDIR="$(pwd)/output"
-
-readonly OT_OPTIONS=(
-    "-DOT_COMPILE_WARNING_AS_ERROR=ON"
-    "-DOT_COMMISSIONER=ON"
-    "-DOT_DHCP6_CLIENT=ON"
-    "-DOT_DHCP6_SERVER=ON"
-    "-DOT_DNS_CLIENT=ON"
-    "-DOT_JOINER=ON"
+set(COMMON_INCLUDES
+    ${OT_PUBLIC_INCLUDES}
+    ${TI_PUBLIC_INCLUDES}
+    ${PROJECT_SOURCE_DIR}/openthread/examples/platforms
+    ${PROJECT_SOURCE_DIR}/openthread/src/core
 )
 
-build()
-{
-    local launchpad="$1"
+set(COMMON_SOURCES
+    cli_uart.cpp
+    main.c
+)
 
-    rm -rf "$OT_BUILDDIR"
-    "$(dirname "$0")"/build "${launchpad}" $@
+if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
+    list(APPEND COMMON_SOURCES freertos_main.c)
 
-    mkdir -p $OT_OUTPUTDIR/${launchpad}
-    cp $OT_BUILDDIR/bin/* $OT_OUTPUTDIR/${launchpad}
-}
+elseif(TI_SIMPLELINK_KERNEL STREQUAL "tirtos7")
+    list(APPEND COMMON_SOURCES tirtos_main.c)
 
-main()
-{
-    export CPPFLAGS="${CPPFLAGS:-} -DNDEBUG"
+else()
+    message(FATAL_ERROR "Unsuported TI_SIMPLELINK_KERNEL: ${TI_SIMPLELINK_KERNEL}")
+endif()
 
-    rm $OT_OUTPUTDIR
+if(OT_FTD)
+    include(ftd.cmake)
+endif()
 
-    build CC1352P1_LAUNCHXL "${OT_OPTIONS[@]}"
+if(OT_MTD)
+    include(mtd.cmake)
+endif()
 
-    build CC1352P_2_LAUNCHXL "${OT_OPTIONS[@]}"
-
-    build CC1352P_4_LAUNCHXL "${OT_OPTIONS[@]}"
-
-    build CC1352R1_LAUNCHXL "${OT_OPTIONS[@]}"
-
-    build CC26X2R1_LAUNCHXL "${OT_OPTIONS[@]}"
-
-    build LP_CC1352P7_1 "${OT_OPTIONS[@]}"
-
-    build LP_CC1352P7_4 "${OT_OPTIONS[@]}"
-
-    build LP_CC2652PSIP "${OT_OPTIONS[@]}"
-
-    build LP_CC2652R7 "${OT_OPTIONS[@]}"
-
-    build LP_CC2652RB "${OT_OPTIONS[@]}"
-
-    build LP_CC2652RSIP "${OT_OPTIONS[@]}"
-}
-
-main "$@"
+if(OT_RCP)
+    include(radio.cmake)
+endif()

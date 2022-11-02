@@ -29,34 +29,42 @@
 cmake_minimum_required(VERSION 3.10.2)
 project(ot-cc13x2-cc26x2 VERSION 0.2.0)
 
-set(TI_PLATFORM_VALUES
-    "cc1352"
-    "cc2652"
-)
-set_property(CACHE TI_PLATFORM PROPERTY STRINGS ${TI_PLATFORM_VALUES})
-if(NOT TI_PLATFORM IN_LIST TI_PLATFORM_VALUES)
-    message(FATAL_ERROR "Please select a supported platform: ${TI_PLATFORM_VALUES}")
+if(NOT DEFINED TI_SIMPLELINK_KERNEL)
+    set(TI_SIMPLELINK_KERNEL "freertos" CACHE STRING "")
 endif()
 
-set(OT_PLATFORM_LIB "openthread-${TI_PLATFORM}")
+include(boards.cmake)
+
+set(OT_PLATFORM_LIB "openthread-cc13xx_cc26xx")
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 
+set(FREERTOS_CONFIG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
+set(OT_MBEDTLS_CONFIG_FILE "\"mbedtls-config-cc13x2_cc26x2.h\"")
+set(OT_EXTERNAL_MBEDTLS "ti-mbedtls" CACHE STRING "Use TI hardware accelerated mbedtls" FORCE)
+set(OT_BUILTIN_MBEDTLS_MANAGEMENT ON CACHE BOOL "Have OpenThread manage mbedtls")
+set(OT_BUILD_EXECUTABLES OFF CACHE BOOL "Build OpenThread executables")
+option(TI_BUILD_EXECUTABLES "Build executables" ON)
+
 add_subdirectory(openthread)
 
+if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
+    add_subdirectory(third_party/freertos)
+endif()
+
+add_subdirectory(third_party/ti_simplelink_sdk)
+add_subdirectory(third_party/mbedtls)
+add_subdirectory(src)
+add_subdirectory(examples)
+
 target_compile_definitions(ot-config INTERFACE
-    OPENTHREAD_CONFIG_FILE="openthread-core-${TI_PLATFORM}-config.h"
-    OPENTHREAD_PROJECT_CORE_CONFIG_FILE="openthread-core-${TI_PLATFORM}-config.h"
-    OPENTHREAD_CORE_CONFIG_PLATFORM_CHECK_FILE="openthread-core-${TI_PLATFORM}-config-check.h"
+    OPENTHREAD_CONFIG_FILE="openthread-core-cc13xx_cc26xx-config.h"
+    OPENTHREAD_PROJECT_CORE_CONFIG_FILE="openthread-core-cc13xx_cc26xx-config.h"
+    OPENTHREAD_CORE_CONFIG_PLATFORM_CHECK_FILE="openthread-core-cc13xx_cc26xx-config-check.h"
 )
 
 target_include_directories(ot-config INTERFACE
-    ${PROJECT_SOURCE_DIR}/src/${TI_PLATFORM}
-    ${PROJECT_SOURCE_DIR}/src/${TI_PLATFORM}/crypto
-    ${PROJECT_SOURCE_DIR}/third_party/ti/devices/cc13x2_cc26x2
+    ${PROJECT_SOURCE_DIR}/src
 )
-
-add_subdirectory(src/${TI_PLATFORM})
-add_subdirectory(third_party)

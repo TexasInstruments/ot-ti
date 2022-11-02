@@ -1,4 +1,3 @@
-#!/bin/bash
 #
 #  Copyright (c) 2020, The OpenThread Authors.
 #  All rights reserved.
@@ -27,58 +26,18 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 #
 
-set -euxo pipefail
+set(CMAKE_SYSTEM_NAME              Generic)
+set(CMAKE_SYSTEM_PROCESSOR         ARM)
 
-readonly OT_BUILDDIR="$(pwd)/build"
-readonly OT_OUTPUTDIR="$(pwd)/output"
+set(CMAKE_C_COMPILER               arm-none-eabi-gcc)
+set(CMAKE_CXX_COMPILER             arm-none-eabi-g++)
+set(CMAKE_ASM_COMPILER             arm-none-eabi-as)
+set(CMAKE_RANLIB                   arm-none-eabi-ranlib)
 
-readonly OT_OPTIONS=(
-    "-DOT_COMPILE_WARNING_AS_ERROR=ON"
-    "-DOT_COMMISSIONER=ON"
-    "-DOT_DHCP6_CLIENT=ON"
-    "-DOT_DHCP6_SERVER=ON"
-    "-DOT_DNS_CLIENT=ON"
-    "-DOT_JOINER=ON"
-)
+set(COMMON_C_FLAGS                 "-mcpu=cortex-m4 -march=armv7e-m -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mthumb -fdata-sections -ffunction-sections -g -gdwarf-3 -gstrict-dwarf")
 
-build()
-{
-    local launchpad="$1"
-
-    rm -rf "$OT_BUILDDIR"
-    "$(dirname "$0")"/build "${launchpad}" $@
-
-    mkdir -p $OT_OUTPUTDIR/${launchpad}
-    cp $OT_BUILDDIR/bin/* $OT_OUTPUTDIR/${launchpad}
-}
-
-main()
-{
-    export CPPFLAGS="${CPPFLAGS:-} -DNDEBUG"
-
-    rm $OT_OUTPUTDIR
-
-    build CC1352P1_LAUNCHXL "${OT_OPTIONS[@]}"
-
-    build CC1352P_2_LAUNCHXL "${OT_OPTIONS[@]}"
-
-    build CC1352P_4_LAUNCHXL "${OT_OPTIONS[@]}"
-
-    build CC1352R1_LAUNCHXL "${OT_OPTIONS[@]}"
-
-    build CC26X2R1_LAUNCHXL "${OT_OPTIONS[@]}"
-
-    build LP_CC1352P7_1 "${OT_OPTIONS[@]}"
-
-    build LP_CC1352P7_4 "${OT_OPTIONS[@]}"
-
-    build LP_CC2652PSIP "${OT_OPTIONS[@]}"
-
-    build LP_CC2652R7 "${OT_OPTIONS[@]}"
-
-    build LP_CC2652RB "${OT_OPTIONS[@]}"
-
-    build LP_CC2652RSIP "${OT_OPTIONS[@]}"
-}
-
-main "$@"
+#set(CMAKE_C_FLAGS_INIT             "${COMMON_C_FLAGS} -std=gnu99")
+set(CMAKE_C_FLAGS_INIT             "${COMMON_C_FLAGS} -std=c99")
+set(CMAKE_CXX_FLAGS_INIT           "${COMMON_C_FLAGS} -std=c++11 -fno-exceptions -fno-rtti")
+set(CMAKE_ASM_FLAGS_INIT           "${COMMON_C_FLAGS}")
+set(CMAKE_EXE_LINKER_FLAGS_INIT    "${COMMON_C_FLAGS} -nostartfiles -specs=nano.specs")

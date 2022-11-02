@@ -1,6 +1,5 @@
-#!/bin/bash
 #
-#  Copyright (c) 2020, The OpenThread Authors.
+#  Copyright (c) 2019, The OpenThread Authors.
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -27,58 +26,55 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 #
 
-set -euxo pipefail
-
-readonly OT_BUILDDIR="$(pwd)/build"
-readonly OT_OUTPUTDIR="$(pwd)/output"
-
-readonly OT_OPTIONS=(
-    "-DOT_COMPILE_WARNING_AS_ERROR=ON"
-    "-DOT_COMMISSIONER=ON"
-    "-DOT_DHCP6_CLIENT=ON"
-    "-DOT_DHCP6_SERVER=ON"
-    "-DOT_DNS_CLIENT=ON"
-    "-DOT_JOINER=ON"
+set(FREERTOS_SRCS
+    ${CMAKE_CURRENT_SOURCE_DIR}/repo/croutine.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/repo/event_groups.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/repo/list.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/repo/queue.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/repo/stream_buffer.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/repo/tasks.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/repo/timers.c
 )
 
-build()
-{
-    local launchpad="$1"
+if(TI_SIMPLELINK_ISA STREQUAL "m4f")
+    set(FREERTOS_PORT_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/repo/portable/MemMang/heap_4.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/repo/portable/GCC/ARM_CM4F/port.c
+    )
 
-    rm -rf "$OT_BUILDDIR"
-    "$(dirname "$0")"/build "${launchpad}" $@
+    set(FREERTOS_PORT_INC
+        ${CMAKE_CURRENT_SOURCE_DIR}/repo/portable/GCC/ARM_CM4F
+    )
+else()
+    message(WARNING "TI_SIMPLELINK_ISA not recognized, FreeRTOS port not included")
+endif()
 
-    mkdir -p $OT_OUTPUTDIR/${launchpad}
-    cp $OT_BUILDDIR/bin/* $OT_OUTPUTDIR/${launchpad}
-}
+add_library(freertos ${FREERTOS_SRCS})
 
-main()
-{
-    export CPPFLAGS="${CPPFLAGS:-} -DNDEBUG"
+target_sources(freertos
+    PRIVATE
+        ${FREERTOS_SRCS}
+        ${FREERTOS_PORT_SRCS}
+)
 
-    rm $OT_OUTPUTDIR
+target_include_directories(freertos
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/repo/include
+        ${FREERTOS_PORT_INC}
+        ${FREERTOS_CONFIG_DIR}
+)
 
-    build CC1352P1_LAUNCHXL "${OT_OPTIONS[@]}"
+target_compile_options(freertos
+    PRIVATE
+       -Wall
+       -Wextra
+       -Wshadow
+       -Wno-type-limits
+       -Werror
+)
 
-    build CC1352P_2_LAUNCHXL "${OT_OPTIONS[@]}"
+target_link_libraries(freertos
+    PUBLIC
+        cc13xx-cc26xx-sdk
+)
 
-    build CC1352P_4_LAUNCHXL "${OT_OPTIONS[@]}"
-
-    build CC1352R1_LAUNCHXL "${OT_OPTIONS[@]}"
-
-    build CC26X2R1_LAUNCHXL "${OT_OPTIONS[@]}"
-
-    build LP_CC1352P7_1 "${OT_OPTIONS[@]}"
-
-    build LP_CC1352P7_4 "${OT_OPTIONS[@]}"
-
-    build LP_CC2652PSIP "${OT_OPTIONS[@]}"
-
-    build LP_CC2652R7 "${OT_OPTIONS[@]}"
-
-    build LP_CC2652RB "${OT_OPTIONS[@]}"
-
-    build LP_CC2652RSIP "${OT_OPTIONS[@]}"
-}
-
-main "$@"
