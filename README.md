@@ -17,6 +17,7 @@ In a Bash terminal, follow these instructions to install the GNU toolchain and o
 
 ```bash
 $ cd <path-to-ot-cc13x2-cc26x2>
+$ git submodule update --init
 $ ./script/bootstrap
 ```
 

@@ -30,6 +30,18 @@
 set -euxo pipefail
 
 OT_CMAKE_NINJA_TARGET=${OT_CMAKE_NINJA_TARGET:-}
+TI_SYSCONFIG_ROOT=${TI_SYSCONFIG_ROOT:-}
+
+SYSCONFIG_USER=~/ti/sysconfig_1.14.0/
+SYSCONFIG_SYSTEM=/opt/ti/sysconfig_1.14.0/
+
+if [ -z "$TI_SYSCONFIG_ROOT" ]; then
+    if [ -d "$SYSCONFIG_USER" ]; then
+        TI_SYSCONFIG_ROOT="$SYSCONFIG_USER"
+    elif [ -d "$SYSCONFIG_SYSTEM" ]; then
+        TI_SYSCONFIG_ROOT="$SYSCONFIG_SYSTEM"
+    fi
+fi
 
 readonly TI_LAUNCHPAD=(
     CC1352P1_LAUNCHXL
