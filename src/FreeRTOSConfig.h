@@ -64,15 +64,15 @@
 #define configEXPECTED_IDLE_TIME_BEFORE_SLEEP 2
 
 /* Stack sizes, all in words */
-#define configMINIMAL_STACK_SIZE ((unsigned short)(128))
-#define configIDLE_TASK_STACK_DEPTH ((unsigned short)(128))
-#define configPOSIX_STACK_SIZE ((unsigned short)(256))
+#define configMINIMAL_STACK_SIZE ((unsigned short)(512))
+#define configIDLE_TASK_STACK_DEPTH ((unsigned short)(512))
+#define configPOSIX_STACK_SIZE ((unsigned short)(configMINIMAL_STACK_SIZE * 2))
 
 /* Software timer definitions. */
 #define configUSE_TIMERS 1
-#define configTIMER_TASK_PRIORITY (5)
+#define configTIMER_TASK_PRIORITY (6)
 #define configTIMER_QUEUE_LENGTH (20)
-#define configTIMER_TASK_STACK_DEPTH ((unsigned short)(128))
+#define configTIMER_TASK_STACK_DEPTH ((unsigned short)(configMINIMAL_STACK_SIZE * 2))
 /*
  * The ISR stack will be initialized in the startup_<device>_<compiler>.c file
  * to 0xa5a5a5a5. The stack peak can then be displayed in Runtime Object View.
@@ -91,6 +91,20 @@
 
 /* Modifying the options below is not permitted or currently unsupported */
 
+#if defined(DeviceFamily_CC13X4)
+
+/* TrustZone/PSA settings */
+/* We do not set ENABLE_TRUSTZONE, as this is only for Secure Side function call support */
+#define configENABLE_TRUSTZONE 0
+#define configRUN_FREERTOS_SECURE_ONLY 1
+
+/* ARM-v8m specific settings: floating point unit is enabled, memory protection unit is disabled */
+#define configENABLE_FPU 1
+#define configENABLE_MPU 0
+
+/* The CM33 port requires an additional stack size definition */
+#define configMINIMAL_SECURE_STACK_SIZE configMINIMAL_STACK_SIZE
+#endif
 /* Constants related to the behaviour or the scheduler. */
 #define configTICK_RATE_HZ ((TickType_t)1000)
 #define configUSE_PREEMPTION 1
@@ -176,7 +190,11 @@
 #define INCLUDE_vTaskSuspend 1
 #define INCLUDE_vTaskDelayUntil 1
 #define INCLUDE_vTaskDelay 1
+#if !defined(DeviceFamily_CC13X2_CC26X2)
+#define INCLUDE_uxTaskGetStackHighWaterMark 1
+#else
 #define INCLUDE_uxTaskGetStackHighWaterMark 0
+#endif
 #define INCLUDE_xTaskGetIdleTaskHandle 0
 #define INCLUDE_eTaskGetState 1
 #define INCLUDE_xTaskResumeFromISR 0
@@ -230,4 +248,11 @@
  */
 #define configUSE_TRACE_FACILITY 1
 
+/*
+ * Runtime Object View is a Texas Instrument host tool that helps visualize
+ * the application. When enabled, the ISR stack will be initialized in the
+ * startup_<device>_<compiler>.c file to 0xa5a5a5a5. The stack peak can then
+ * be displayed in Runtime Object View.
+ */
+#define configENABLE_ISR_STACK_INIT 1
 #endif /* FREERTOS_CONFIG_H */
