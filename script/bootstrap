@@ -29,14 +29,14 @@
 
 set -euxo pipefail
 
-SYSCONFIG_USER=~/ti/sysconfig_1.14.0/
-SYSCONFIG_SYSTEM=/opt/ti/sysconfig_1.14.0/
-SYSCONFIG_DL=https://dr-download.ti.com/software-development/ide-configuration-compiler-or-debugger/MD-nsUM6f7Vvb/1.14.0.2667/sysconfig-1.14.0_2667-setup.run
+SYSCONFIG_USER=~/ti/sysconfig_1.15.0/
+SYSCONFIG_SYSTEM=/opt/ti/sysconfig_1.15.0/
+SYSCONFIG_DL=https://dr-download.ti.com/software-development/ide-configuration-compiler-or-debugger/MD-nsUM6f7Vvb/1.15.0.2826/sysconfig-1.15.0_2826-setup.run
 
 if [ ! -d "$SYSCONFIG_USER" ] && [ ! -d "$SYSCONFIG_SYSTEM"]; then
-    wget "$SYSCONFIG_DL" -O /tmp/sysconfig-1.14.0_2667-setup.run
-    chmod +x /tmp/sysconfig-1.14.0_2667-setup.run
-    /tmp/sysconfig-1.14.0_2667-setup.run --mode unattended
+    wget "$SYSCONFIG_DL" -O /tmp/sysconfig-1.15.0_2826-setup.run
+    chmod +x /tmp/sysconfig-1.15.0_2826-setup.run
+    /tmp/sysconfig-1.15.0_2826-setup.run --mode unattended
 fi
 
 "$(dirname "$0")"/../openthread/script/bootstrap

@@ -74,9 +74,14 @@ var Watchdog1  = Watchdog.addInstance();
 const deviceId = system.deviceData.deviceId;
 
 
-/* TIRTOS7 */
+/* TI SimpleLink FreeRTOS configuration and build is not possible until
+ * configTICK_RATE_HZ is configurable and source directory set correctly.
+ *
+ * Only generate the kernel configuration for tirtos7 for now.
+ */
+/* Kernel Configuration */
 if (system.getRTOS() === "tirtos7") {
-    const tirtos7_release_syscfg_js = system.getScript("tirtos7_release.syscfg.js");
+    system.getScript("kernel_config_release.syscfg.js");
 }
 
 
@@ -112,22 +117,10 @@ GPIO4.$name                       = "CONFIG_GPIO_RLED";
 /* SPI for NCP */
 SPI2.$name                   = "CONFIG_SPI_1";
 SPI2.mode                    = "Four Pin SS Active Low";
-SPI2.spi.misoPin.$assign     = "DIO24"
-SPI2.spi.mosiPin.$assign     = "DIO25"
+SPI2.spi.pociPin.$assign     = "DIO24"
+SPI2.spi.picoPin.$assign     = "DIO25"
 SPI2.spi.sclkPin.$assign     = "DIO26"
-SPI2.spi.ssPin.$assign       = "DIO27"
-SPI2.sclkPinInstance.$name   = "CONFIG_PIN_SPI1_SCLK";
-SPI2.sclkPinInstance.mode    = "Input";
-SPI2.sclkPinInstance.pull    = "Pull Down";
-SPI2.misoPinInstance.$name   = "CONFIG_PIN_SPI1_MISO";
-SPI2.misoPinInstance.mode    = "Input";
-SPI2.misoPinInstance.pull    = "Pull Down";
-SPI2.mosiPinInstance.$name   = "CONFIG_PIN_SPI1_MOSI";
-SPI2.mosiPinInstance.mode    = "Input";
-SPI2.mosiPinInstance.pull    = "Pull Down";
-SPI2.ssPinInstance.$name     = "CONFIG_PIN_SPI1_CSN";
-SPI2.ssPinInstance.mode      = "Input";
-SPI2.ssPinInstance.pull      = "Pull Down";
+SPI2.spi.csnPin.$assign      = "DIO27"
 
 GPIO5.$name                  = "CONFIG_SPINEL_INT";
 GPIO5.mode                   = "Output";

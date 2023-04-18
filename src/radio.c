@@ -50,6 +50,7 @@
 #include <openthread/platform/diag.h>
 #include <openthread/platform/entropy.h>
 #include <openthread/platform/radio.h>
+#include <openthread/platform/time.h>
 
 // clang-format off
 #include <ti/devices/DeviceFamily.h>
@@ -69,6 +70,11 @@
 #include "system.h"
 #include "ti_drivers_config.h"
 #include "ti_radio_config.h"
+
+#define PLAT_RADIO_SOFTWARE_IMM_ACK 1
+#ifndef PLAT_RADIO_SOFTWARE_IMM_ACK
+#define PLAT_RADIO_SOFTWARE_IMM_ACK 0
+#endif
 
 /* The sync word used by the radio TX test command */
 #define PLATFORM_RADIO_TX_TEST_SYNC_WORD 0x71764129
@@ -140,9 +146,11 @@ static __attribute__((aligned(4))) uint8_t sRxBuf3[RX_BUF_SIZE];
 static __attribute__((aligned(4))) dataQueue_t sRxDataQueue = {0};
 
 /* openthread data primitives */
-static otRadioFrame sTransmitFrame;
-static otError      sTransmitError;
-static otRadioFrame sAckFrame;
+static otError       sTransmitError;
+static otRadioFrame  sTransmitFrame;
+static otRadioIeInfo sTransmitFrameIeInfo;
+static otRadioFrame  sAckFrame;
+static otRadioIeInfo sAckFrameIeInfo;
 
 static __attribute__((aligned(4))) uint8_t sTransmitPsdu[OT_RADIO_FRAME_MAX_SIZE];
 static __attribute__((aligned(4))) uint8_t sAckPsdu[OT_RADIO_FRAME_MAX_SIZE];
@@ -209,24 +217,33 @@ static uint32_t         sMacFrameCounter;
 static uint32_t         sAckFrameCounter;
 
 // PPM of the 32KHz clock source, will vary based on the design's LF source
-#define XTAL_UNCERTAINTY 60U
+#define XTAL_UNCERTAINTY 10U
 // Uncertainty of scheduling a CSL transmission, in ±10 us units. This will
 // vary based on the LF clock source used for the system's alarm module. The RF
 // driver will use a combination of RAT/HF/LF clock to schedule commands.
-//#define CSL_TX_UNCERTAINTY 5U
-#define CSL_TX_UNCERTAINTY 20U
+#define CSL_TX_UNCERTAINTY 5U
 
 static uint32_t sCslPeriod;
 static uint32_t sCslSampleTime;
 
 #if OPENTHREAD_CONFIG_MAC_CSL_RECEIVER_ENABLE
-static uint16_t getCslPhase(otInstance *aInstance)
+static uint16_t getCslPhase(otRadioFrame *aFrame)
 {
-    uint64_t curTime       = otPlatRadioGetNow(aInstance);
-    uint32_t cslPeriodInUs = sCslPeriod * OT_US_PER_TEN_SYMBOLS;
-    uint32_t diff = ((sCslSampleTime % cslPeriodInUs) - (curTime % cslPeriodInUs) + cslPeriodInUs) % cslPeriodInUs;
+    uint32_t frameTime, cslPeriodInUs, delta;
 
-    return (uint16_t)(diff / OT_US_PER_TEN_SYMBOLS);
+    if (aFrame->mInfo.mTxInfo.mTxDelayBaseTime == 0U && aFrame->mInfo.mTxInfo.mTxDelay == 0U)
+    {
+        // best guess
+        frameTime = otPlatRadioGetNow(NULL);
+    }
+    else
+    {
+        frameTime = aFrame->mInfo.mTxInfo.mTxDelayBaseTime + aFrame->mInfo.mTxInfo.mTxDelay;
+    }
+    cslPeriodInUs = sCslPeriod * OT_US_PER_TEN_SYMBOLS;
+    delta = ((sCslSampleTime % cslPeriodInUs) - (frameTime % cslPeriodInUs) + cslPeriodInUs) % cslPeriodInUs;
+
+    return (uint16_t)(delta / OT_US_PER_TEN_SYMBOLS);
 }
 #endif /* OPENTHREAD_CONFIG_MAC_CSL_RECEIVER_ENABLE */
 
@@ -284,9 +301,11 @@ static void rfCoreInitBufs(void)
 
     sTransmitFrame.mPsdu   = sTransmitPsdu;
     sTransmitFrame.mLength = 0;
+    sTransmitFrame.mInfo.mTxInfo.mIeInfo = &sTransmitFrameIeInfo;
 
     sAckFrame.mPsdu   = sAckPsdu;
     sAckFrame.mLength = 0;
+    sAckFrame.mInfo.mTxInfo.mIeInfo = &sAckFrameIeInfo;
 }
 /**
  * @brief initializes the setup command structure
@@ -299,30 +318,6 @@ void rfCoreInitSetupCmd(void)
     sRadioSetupCmd = RF_cmdIeeeRadioSetup;
 
     sRadioSetupCmd.startTrigger.pastTrig = 1; // XXX: workaround for RF scheduler
-
-#define TI_PLAT_RADIO_TRACE 0
-#if TI_PLAT_RADIO_TRACE
-    // clang-format off
-    /* enable debug immediate command */
-    static volatile __attribute__((aligned(4))) uint16_t sEnableDbg[2] = {0x0602, 0x1DC0};
-    /* schedule command for the immediate command */
-    static volatile __attribute__((aligned(4))) rfc_CMD_SCH_IMM_t sRunEnableDbg = {
-        .commandNo = CMD_SCH_IMM,
-        .startTrigger = {
-            .triggerType = TRIG_NOW,
-        },
-        .condition = {
-            .rule = COND_NEVER,
-        },
-        .cmdrVal = (uint32_t) &sEnableDbg,
-    };
-// clang-format off
-    /* chain with the setup command */
-    sRadioSetupCmd.condition.rule = COND_ALWAYS;
-    sRadioSetupCmd.pNextOp        = (rfc_radioOp_t *)&sRunEnableDbg;
-    /* route the output */
-    IOCPortConfigureSet(IOID_1, IOC_PORT_RFC_TRC, IOC_STD_OUTPUT);
-#endif /* TI_PLAT_RADIO_TRACE */
 }
 
 /**
@@ -359,7 +354,10 @@ static void rfCoreInitReceiveParams(void)
     sReceiveCmd.frameFiltOpt.frameFiltStop    = 1;
     sReceiveCmd.frameFiltOpt.autoAckEn        = 0;
     sReceiveCmd.frameFiltOpt.bStrictLenFilter = 0;
-
+#if defined(TIOP_RADIO_USE_CSF)
+    sReceiveCmd.dualPanFiltOpt.frameFilterDoneEn0 = 1;
+    sReceiveCmd.dualPanFiltOpt.bAllowEnhAck0 = 1;
+#endif
     sReceiveCmd.ccaOpt.ccaEnEnergy = 1;
     sReceiveCmd.ccaOpt.ccaEnCorr   = 1;
     sReceiveCmd.ccaOpt.ccaEnSync   = 1;
@@ -685,7 +683,7 @@ static RF_CmdHandle rfCoreSendTransmitCmd(otInstance *aInstance, RF_Handle aRfHa
     if (0U != aFrame->mInfo.mTxInfo.mTxDelay)
     {
 // Number of RAT ticks from the command beginning to symbols being sent over the air
-#define RF_CORE_TX_CMD_LATENCY (448)
+#define RF_CORE_TX_CMD_LATENCY (320) // 80 uS: TX synth lock guard time
         sTransmitCmd.startTime =
             RF_convertUsToRatTicks(aFrame->mInfo.mTxInfo.mTxDelayBaseTime + aFrame->mInfo.mTxInfo.mTxDelay) -
             RF_CORE_TX_CMD_LATENCY;
@@ -1270,8 +1268,8 @@ OT_TOOL_WEAK otError otPlatRadioReceiveAt(otInstance *aInstance, uint8_t aChanne
             {
                 sReceiveCmd.startTrigger.triggerType = TRIG_ABSTIME;
                 sReceiveCmd.endTrigger.triggerType   = TRIG_REL_START;
-                sReceiveCmd.startTime                = RF_convertRatTicksToUs(aStart);
-                sReceiveCmd.endTime                  = RF_convertRatTicksToUs(aDuration);
+                sReceiveCmd.startTime                = RF_convertUsToRatTicks(aStart);
+                sReceiveCmd.endTime                  = RF_convertUsToRatTicks(aDuration);
             }
             /* allow the transmit power helper function to manage the characterized
              * max power.
@@ -1323,10 +1321,100 @@ otRadioFrame *otPlatRadioGetTransmitBuffer(otInstance *aInstance)
     return &sTransmitFrame;
 }
 
+/**
+ * This function is designed to generate an empty Enh-Ack frame to enable
+ * scheduling the necessary TX command. This is highly specific to Thread and
+ * should not be used as a general solution.
+ */
+static otError rfCoreGenerateEmptyEnhAck(otRadioFrame *aRxFrame, otRadioFrame *aAckFrame)
+{
+    uint16_t     fcf     = *((uint16_t *)(&aRxFrame->mPsdu[0]));
+    uint8_t      ieLen   = 0;
+    otError      ret     = OT_ERROR_NONE;
+    otMacAddress srcAddr = {0};
+    uint8_t      len     = 0;
+
+    // FCF length
+    len += sizeof(uint16_t);
+    // sequence Number
+    len += sizeof(uint8_t);
+
+    // PAN id compression
+    if (0U == (fcf & (1 << 6)))
+    {
+        // PAN id
+        len += sizeof(otPanId);
+    }
+
+    // dst Addr
+    otEXPECT_ACTION(OT_ERROR_NONE == otMacFrameGetSrcAddr(aRxFrame, &srcAddr), ret = OT_ERROR_PARSE);
+    switch (srcAddr.mType)
+    {
+    case OT_MAC_ADDRESS_TYPE_NONE:
+        break;
+
+    case OT_MAC_ADDRESS_TYPE_SHORT:
+        len += sizeof(otShortAddress);
+        break;
+
+    case OT_MAC_ADDRESS_TYPE_EXTENDED:
+        len += sizeof(otExtAddress);
+        break;
+
+    default:
+        otEXPECT_ACTION(false, ret = OT_ERROR_PARSE);
+    }
+
+    // security
+    if (otMacFrameIsSecurityEnabled(aRxFrame))
+    {
+        // do not look at the aux-sec header, has not been received
+        //otEXPECT_ACTION(otMacFrameIsKeyIdMode1(aRxFrame), ret = OT_ERROR_PARSE);
+
+        // Thread only uses Security level 5
+        len += sizeof(uint8_t);  // Sec control field
+        len += sizeof(uint32_t); // Frame Counter
+        len += sizeof(uint8_t);  // key index
+        len += sizeof(uint32_t); // MAC MIC
+    }
+
+#if OPENTHREAD_CONFIG_MAC_CSL_RECEIVER_ENABLE
+    if (sCslPeriod > 0)
+    {
+        ieLen += sizeof(uint16_t); // IE Header
+        ieLen += sizeof(uint16_t); // Phase
+        ieLen += sizeof(uint16_t); // Period
+    }
+#endif
+
+#if OPENTHREAD_CONFIG_MLE_LINK_METRICS_SUBJECT_ENABLE
+    {
+        ieLen += otLinkMetricsEnhAckGetDataLen(&srcAddr);
+    }
+#endif
+
+    if (ieLen > 0)
+    {
+        len += ieLen;
+        // not used in Thread Acks, no body
+        //len += sizeof(uint16_t) // Header termination IE
+    }
+
+    len += sizeof(uint16_t); // FCS
+
+    aAckFrame->mChannel = aRxFrame->mChannel;
+    aAckFrame->mLength = len;
+    memset(aAckFrame->mPsdu, 0, len);
+
+exit:
+    return ret;
+}
+
 static otError rfCoreGenerateEnhAck(otRadioFrame *aRxFrame, otRadioFrame *aAckFrame)
 {
     uint8_t ackIeData[OT_ACK_IE_MAX_SIZE];
     uint8_t ackIeDataLength = 0;
+    otError ret = OT_ERROR_NONE;
 
     // handle TX ACK on our own
     sReceiveCmd.frameFiltOpt.autoAckEn = 0;
@@ -1344,7 +1432,7 @@ static otError rfCoreGenerateEnhAck(otRadioFrame *aRxFrame, otRadioFrame *aAckFr
         uint8_t      linkMetricsIeDataLen = 0;
         otMacAddress srcAddr              = {0};
 
-        otMacFrameGetSrcAddr(aRxFrame, &srcAddr);
+        otEXPECT_ACTION(OT_ERROR_NONE == otMacFrameGetSrcAddr(aRxFrame, &srcAddr), ret = OT_ERROR_PARSE);
         linkMetricsIeDataLen = otLinkMetricsEnhAckGenData(&srcAddr, aRxFrame->mInfo.mRxInfo.mLqi,
                                                           aRxFrame->mInfo.mRxInfo.mRssi, linkMetricsData);
         if (linkMetricsIeDataLen > 0)
@@ -1353,10 +1441,11 @@ static otError rfCoreGenerateEnhAck(otRadioFrame *aRxFrame, otRadioFrame *aAckFr
         }
     }
 #endif
-    otMacFrameGenerateEnhAck(aRxFrame, aRxFrame->mInfo.mRxInfo.mAckedWithFramePending, ackIeData, ackIeDataLength,
-                             aAckFrame);
+    otEXPECT_ACTION(OT_ERROR_NONE == otMacFrameGenerateEnhAck(aRxFrame, aRxFrame->mInfo.mRxInfo.mAckedWithFramePending, ackIeData, ackIeDataLength,
+                             aAckFrame), ret = OT_ERROR_PARSE);
 
-    return OT_ERROR_NONE;
+exit:
+    return ret;
 }
 
 static otError rfCoreProcessTransmitSecurity(otRadioFrame *aFrame)
@@ -1418,6 +1507,7 @@ static otError rfCoreProcessTransmitSecurity(otRadioFrame *aFrame)
     }
 
     otMacFrameProcessTransmitAesCcm(aFrame, &extAddr);
+    aFrame->mInfo.mTxInfo.mIsSecurityProcessed = true;
 
 exit:
     return error;
@@ -1445,9 +1535,10 @@ void updateIeInfoTxFrame(otInstance *aInstance, otRadioFrame *aFrame)
 
 #if OPENTHREAD_CONFIG_MAC_CSL_RECEIVER_ENABLE
     // Update IE data in the 802.15.4 header with the newest CSL period / phase
-    if (sCslPeriod > 0 && !aFrame->mInfo.mTxInfo.mIsHeaderUpdated)
+    if (sCslPeriod > 0)
     {
-        otMacFrameSetCslIe(aFrame, (uint16_t)sCslPeriod, getCslPhase(aInstance));
+        otMacFrameSetCslIe(aFrame, (uint16_t)sCslPeriod, getCslPhase(aFrame));
+        aFrame->mInfo.mTxInfo.mCslPresent = true;
     }
 #endif // OPENTHREAD_CONFIG_MAC_CSL_RECEIVER_ENABLE
 }
@@ -1467,8 +1558,18 @@ otError otPlatRadioTransmit(otInstance *aInstance, otRadioFrame *aFrame)
     {
         sState = platformRadio_phyState_Transmit;
 
-        updateIeInfoTxFrame(aInstance, aFrame);
-        rfCoreProcessTransmitSecurity(aFrame);
+        if (!aFrame->mInfo.mTxInfo.mIsHeaderUpdated)
+        {
+            updateIeInfoTxFrame(aInstance, aFrame);
+            otEXPECT_ACTION(OT_ERROR_NONE == rfCoreProcessTransmitSecurity(aFrame), error = OT_ERROR_FAILED);
+            aFrame->mInfo.mTxInfo.mIsHeaderUpdated = true;
+        }
+
+        // if the header was updated but security was not processed, for some reason
+        if (!aFrame->mInfo.mTxInfo.mIsSecurityProcessed)
+        {
+            otEXPECT_ACTION(OT_ERROR_NONE == rfCoreProcessTransmitSecurity(aFrame), error = OT_ERROR_FAILED);
+        }
 
         sTransmitCmdHandle = rfCoreSendTransmitCmd(aInstance, sRfHandle, aFrame);
         otEXPECT_ACTION(sTransmitCmdHandle >= 0, error = OT_ERROR_FAILED);
@@ -1500,8 +1601,31 @@ int8_t otPlatRadioGetRssi(otInstance *aInstance)
 otRadioCaps otPlatRadioGetCaps(otInstance *aInstance)
 {
     (void)aInstance;
-    return OT_RADIO_CAPS_NONE | OT_RADIO_CAPS_ENERGY_SCAN | OT_RADIO_CAPS_TRANSMIT_SEC | OT_RADIO_CAPS_TRANSMIT_TIMING |
-           OT_RADIO_CAPS_RECEIVE_TIMING;
+    return
+        /* DISABLED: Enhanced Protocol Features
+         * Changes to enable IEEE 802.15.4-2015 Enh-Ack make using the built in
+         * protocol features of the RF Core difficult. This may be enabled in a
+         * future release.
+         *  OT_RADIO_CAPS_ACK_TIMEOUT      |
+         *  OT_RADIO_CAPS_TRANSMIT_RETRIES |
+         *  OT_RADIO_CAPS_CSMA_BACKOFF     |
+         */
+        /* DISABLED: Hardware Limitation
+         * The RF Core must have a running backgrounded RX command to TX. Let
+         * the sub_mac handle this instead of the radio.c.
+         *  OT_RADIO_CAPS_SLEEP_TO_TX      |
+         */
+        /* DISABLED: RF State Machine
+         * The radio.c state machine cannot currently handle returning to sleep
+         * state after a completed RX operation. Additional logic may be added
+         * to handle this in future releases.
+         *  OT_RADIO_CAPS_RECEIVE_TIMING   |
+         */
+        /* ENABLED */
+            OT_RADIO_CAPS_ENERGY_SCAN      |
+            OT_RADIO_CAPS_TRANSMIT_SEC     |
+            OT_RADIO_CAPS_TRANSMIT_TIMING  |
+            OT_RADIO_CAPS_NONE;
 }
 #ifdef __TI_ARM__
 #pragma diag_pop
@@ -1738,29 +1862,13 @@ uint64_t otPlatRadioGetNow(otInstance *aInstance)
 {
     OT_UNUSED_VARIABLE(aInstance);
     /*
-     * A note on the time and timestamps.
+     * It may be more accurate to use the RAT, but these values are used to
+     * schedule with the uS alarm
      *
-     * Most of the radio timestamping values are returned in UINT64 values.
-     * This is then usually truncated to UINT32, which allows the calling code
-     * to ignore word rollovers. The calling code can calculate the absolute
-     * time in the future and truncate the value by 32 bits assuming the value
-     * is correct when scheduled in the RF core.
-     *
-     * To avoid extra math to produce bits that are unused we will use the RF
-     * drivers' get current time API. This returns either the current RAT value
-     * or a conservative estimate based on the AON RTC. This value is actually
-     * 64 bits, but is truncated to 32 bits by the API. It is also in RAT
-     * ticks (4MHz clock) so converting the value into uS will guarantee the 2
-     * MSB are 0. Then when the value is converted back into a relative
-     * timestamp for radio operations the 2 MSB will be lost. This allows
-     * OpenThread to schedule a radio event up to 0xC0000000 uS (~53 minutes)
-     * in the future without worrying about a rollover.
-     *
-     * This is not necessarily the same time as the system AON RTC. The RAT
-     * will have some delta to the main system. Scheduling farther out in the
-     * future should be done with the alarm.
-     */
     return RF_convertRatTicksToUs(RF_getCurrentTime());
+     */
+
+    return otPlatTimeGet();
 }
 
 void otPlatRadioGetIeeeEui64(otInstance *aInstance, uint8_t *aIeeeEui64)
@@ -1957,6 +2065,82 @@ exit:
     return retval;
 }
 
+#if OPENTHREAD_CONFIG_RADIO_NO_WEAK_DEFINITIONS
+/* These functions are defined here to avoid undefined symbol errors in the
+ * linker. OpenThread usually defines these as "weak" symbols, but we are
+ * unable to use that when the functions are compiled into libraries. The
+ * compiler strips off those hints when the code is put into an archive.
+ */
+
+uint32_t otPlatRadioGetSupportedChannelMask(otInstance *aInstance)
+{
+    OT_UNUSED_VARIABLE(aInstance);
+
+    return OT_RADIO_2P4GHZ_OQPSK_CHANNEL_MASK;
+}
+
+uint32_t otPlatRadioGetPreferredChannelMask(otInstance *aInstance)
+{
+    return otPlatRadioGetSupportedChannelMask(aInstance);
+}
+
+const char *otPlatRadioGetVersionString(otInstance *aInstance)
+{
+    OT_UNUSED_VARIABLE(aInstance);
+    return otGetVersionString();
+}
+
+uint32_t otPlatRadioGetBusSpeed(otInstance *aInstance)
+{
+    OT_UNUSED_VARIABLE(aInstance);
+
+    return 0;
+}
+
+otError otPlatRadioGetFemLnaGain(otInstance *aInstance, int8_t *aGain)
+{
+    OT_UNUSED_VARIABLE(aInstance);
+    OT_UNUSED_VARIABLE(aGain);
+
+    return OT_ERROR_NOT_IMPLEMENTED;
+}
+
+otError otPlatRadioSetFemLnaGain(otInstance *aInstance, int8_t aGain)
+{
+    OT_UNUSED_VARIABLE(aInstance);
+    OT_UNUSED_VARIABLE(aGain);
+
+    return OT_ERROR_NOT_IMPLEMENTED;
+}
+
+otError otPlatRadioSetChannelMaxTransmitPower(otInstance *aInstance, uint8_t aChannel, int8_t aMaxPower)
+{
+    OT_UNUSED_VARIABLE(aInstance);
+    OT_UNUSED_VARIABLE(aChannel);
+    OT_UNUSED_VARIABLE(aMaxPower);
+
+    return OT_ERROR_NOT_IMPLEMENTED;
+}
+
+otError otPlatRadioSetRegion(otInstance *aInstance, uint16_t aRegionCode)
+{
+    OT_UNUSED_VARIABLE(aInstance);
+    OT_UNUSED_VARIABLE(aRegionCode);
+
+    return OT_ERROR_NOT_IMPLEMENTED;
+}
+
+otError otPlatRadioGetRegion(otInstance *aInstance, uint16_t *aRegionCode)
+{
+    OT_UNUSED_VARIABLE(aInstance);
+    OT_UNUSED_VARIABLE(aRegionCode);
+
+    return OT_ERROR_NOT_IMPLEMENTED;
+}
+
+#endif /* OPENTHREAD_CONFIG_RADIO_NO_WEAK_DEFINITIONS */
+
+
 static void platformRadioProcessTransmitDone(otInstance *  aInstance,
                                              otRadioFrame *aTransmitFrame,
                                              otRadioFrame *aAckFrame,
@@ -1991,6 +2175,28 @@ static void platformRadioProcessReceiveDone(otInstance *aInstance, otRadioFrame 
     }
 }
 
+static uint64_t convertRatTimestamp(uint32_t timestamp)
+{
+    /* The RAT runs at 4MHz and only returns 32 bits. This is not the format
+     * that the calling sub_mac expects the timestamps. We construct the full
+     * uint64_t based on the system timer even though most of this information
+     * is lost. To get a full uint64_t timestamp we; get the current time from
+     * both sources, calculate the delta between the RAT values, translate that
+     * to uS, and subtract it from the current uS counter.
+     *
+     * The RAT and RTC are synchronized when the RF core is powered on. This
+     * should result in the same 0 across the system timer and the RAT
+     * timestamps. It would be possible to use the RAT directly, however the
+     * resolution is only 30-bits once converted to uS and may cause errors
+     * with the other 32-bit values used elsewhere.
+     */
+    uint64_t currentSysTime = otPlatRadioGetNow(NULL); // uS
+    uint32_t currentRatTime = RF_getCurrentTime();     // RAT Ticks
+    uint32_t delta = currentRatTime - timestamp;       // RAT Ticks (modulus uint32_t)
+
+    return currentSysTime - RF_convertRatTicksToUs(delta);
+}
+
 static otError populateReceiveFrame(otRadioFrame *aFrame, uint8_t *aData)
 {
     int                  infoIdx;
@@ -2012,8 +2218,8 @@ static otError populateReceiveFrame(otRadioFrame *aFrame, uint8_t *aData)
 
     crcCorr = (rfc_ieeeRxCorrCrc_t *)&aInfo->crcCorr;
 
-    /*get SFD ts from the packet */
-    aFrame->mInfo.mRxInfo.mTimestamp = RF_convertRatTicksToUs(aInfo->timestamp);
+    /* get SFD ts from the packet */
+    aFrame->mInfo.mRxInfo.mTimestamp = convertRatTimestamp(aInfo->timestamp);
 
     // length of rx element ===== aData[0]
     aFrame->mLength             = aData[1] & 0x7F; // length of rx frame (phy hdr)
@@ -2061,7 +2267,7 @@ static otError populateReceiveFrame(otRadioFrame *aFrame, uint8_t *aData)
 static void handleRxDataFinish(otInstance *aInstance, unsigned int aEvents, rfc_dataEntryGeneral_t *curEntry)
 {
     otError      error;
-    otRadioFrame receiveFrame;
+    otRadioFrame receiveFrame = {0};
 
     error = populateReceiveFrame(&receiveFrame, &(curEntry->data));
     if (OT_ERROR_NONE != error)
@@ -2114,15 +2320,33 @@ static void handleRxDataFinish(otInstance *aInstance, unsigned int aEvents, rfc_
             // ack has not been sent
             if (otMacFrameIsVersion2015(&receiveFrame))
             {
-                rfCoreGenerateEnhAck(&receiveFrame, &sAckFrame);
-                rfCoreProcessTransmitSecurity(&sAckFrame);
+                if (sState == platformRadio_phyState_RxTxAck)
+                {
+                    // We have queued up an ack transmission, update the frame with LQI
+                    rfCoreGenerateEnhAck(&receiveFrame, &sAckFrame);
+#if OPENTHREAD_CONFIG_MAC_CSL_RECEIVER_ENABLE
+                    // Update IE data in the 802.15.4 header with the newest CSL period / phase
+                    if (sCslPeriod > 0)
+                    {
+                        otMacFrameSetCslIe(&sAckFrame, (uint16_t)sCslPeriod, getCslPhase(&sAckFrame));
+                    }
+#endif
+                    rfCoreProcessTransmitSecurity(&sAckFrame);
+                }
+                else
+                {
+                    // something failed in the setup of the TX command, drop the frame
+                    curEntry->status = DATA_ENTRY_PENDING;
+                }
             }
             else
             {
-                /* The RX frame requested an ACK and we have not sent it yet.
-                 * Leave the frame in the queue until we have indication that
-                 * we transmitted the ACK.
+#if PLAT_RADIO_SOFTWARE_IMM_ACK
+                /* software is handling the imm-ack, update with the pend-bit
+                 * set correctly. We use the RF Core's source match idx.
                  */
+                otMacFrameGenerateImmAck(&receiveFrame, receiveFrame.mInfo.mRxInfo.mAckedWithFramePending, &sAckFrame);
+#endif
             }
         }
     }
@@ -2177,25 +2401,28 @@ void processAckCreation(otInstance *aInstance)
 
             if (otMacFrameIsVersion2015(&rxFrame))
             {
-                /* LQI is not valid until the packet is received, wait until
-                 * the CRC passes to generate the actual frame and process sec
+                /* Aux-Security header and LQI are not valid here, generate an
+                 * empty frame to queue up the TX command. Contents will be
+                 * filled in the RX_ENTRY_DONE handler.
                  */
-                rxFrame.mInfo.mRxInfo.mRssi                  = INT8_MAX;
-                rxFrame.mInfo.mRxInfo.mLqi                   = UINT8_MAX;
-                rxFrame.mInfo.mRxInfo.mAckedWithFramePending = false;
-                rfCoreGenerateEnhAck(&rxFrame, &sAckFrame);
+                if (OT_ERROR_NONE != rfCoreGenerateEmptyEnhAck(&rxFrame, &sAckFrame))
+                {
+                    // fail handling the RX frame
+                    break;
+                }
             }
             else
             {
-#define PLAT_RADIO_CPE_IMM_ACK 1
-#if PLAT_RADIO_CPE_IMM_ACK
+#if PLAT_RADIO_SOFTWARE_IMM_ACK
+                sReceiveCmd.frameFiltOpt.autoAckEn = 0;
+                // place empty imm-ack in TX command
+                sAckFrame.mChannel = rxFrame.mChannel;
+                sAckFrame.mLength = 5;
+                memset(sAckFrame.mPsdu, 0U, 5);
+#else
                 // allow the CPE handle the ACK transmission
                 sReceiveCmd.frameFiltOpt.autoAckEn = 1;
                 break;
-#else
-                // handle TX ACK on our own
-                sReceiveCmd.frameFiltOpt.autoAckEn = 0;
-                otMacFrameGenerateImmAck(&rxFrame, pend, &sAckFrame);
 #endif
             }
 
@@ -2212,7 +2439,7 @@ void processAckCreation(otInstance *aInstance)
             }
             else
             {
-                // could not ack, how to propagate the error?
+                // main loop will see we are still in receive, error case
             }
             break;
         }
@@ -2347,8 +2574,16 @@ void platformRadioProcess(otInstance *aInstance, uintptr_t arg)
         /* The TX command string has finished */
         if (arg & RF_EVENT_TX_DONE)
         {
+            if (OT_ERROR_NONE == sTransmitError)
+            {
+                arg |= RF_EVENT_RX_ACK_DONE;
+            }
+            else
+            {
+                // failed to transmit, let the RX process queue handle failure
+            }
             sState = platformRadio_phyState_Receive;
-            processRxQueue(aInstance, arg | RF_EVENT_RX_ACK_DONE);
+            processRxQueue(aInstance, arg);
         }
         else if (arg & RF_EVENT_RX_DONE)
         {
@@ -2418,3 +2653,4 @@ void platformRadioProcess(otInstance *aInstance, uintptr_t arg)
         break;
     }
 }
+

@@ -59,9 +59,7 @@ readonly TI_LAUNCHPAD=(
 
 readonly OT_SRCDIR="$(pwd)"
 readonly OT_OPTIONS=(
-    "-DCMAKE_BUILD_TYPE=MinSizeRel"
     "-DOT_PLATFORM=external"
-    "-DOT_SLAAC=ON"
 )
 
 build()
@@ -79,11 +77,48 @@ build()
         ninja
     fi
 
+    if [[ ${ot_reference_release} == true ]]; then
+        cd bin
+        for exe in *.out; do
+            cp -- "${exe}" "${exe%.out}"
+        done
+    fi
+
     cd "${OT_SRCDIR}"
 }
 
 main()
 {
+    local usage="usage: $0 [-h] [--skip-silabs-apps] <TI LaunchPad> [-D<OT_XXXX=ON> -D<OT_YYYY=OFF>]"
+
+    local ot_reference_release=false
+    # Parse flags
+    optspec=":h-:"
+    while getopts "$optspec" optchar; do
+        case "${optchar}" in
+            -)
+                case "${OPTARG}" in
+                    ot-reference-release)
+                        # The ot-reference-release repository expects the executables produced by this build to have
+                        # no file endings. We do not make this the default behavior because file extensions make using
+                        # UniFlash easier.
+                        printf '\n\nProducing executables for ot-reference-release...\n\n' >&2
+                        ot_reference_release=true
+                        shift 1
+                        ;;
+                    *)
+                        echo "Unknown option --${OPTARG}" >&2
+                        exit 2
+                        ;;
+                esac
+                ;;
+            h)
+                echo "${usage}" >&2
+                exit 2
+                ;;
+        esac
+    done
+
     if [[ $# == 0 ]]; then
         echo "Please specify a LaunchPad: ${TI_LAUNCHPAD[*]}"
         exit 1

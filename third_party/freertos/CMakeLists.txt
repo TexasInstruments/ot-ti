@@ -26,7 +26,12 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 #
 
+# shim.c is included because the current Sysconfig build of FreeRTOS from the
+# TI SimpleLink SDK is incompatible with where FreeRTOS is saved in this
+# repository. In future releases this may be aligned.
+
 set(FREERTOS_SRCS
+    shim.c
     ${CMAKE_CURRENT_SOURCE_DIR}/repo/croutine.c
     ${CMAKE_CURRENT_SOURCE_DIR}/repo/event_groups.c
     ${CMAKE_CURRENT_SOURCE_DIR}/repo/list.c

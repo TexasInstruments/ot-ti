@@ -3,10 +3,11 @@
 ## URL
 
 https://www.ti.com/tool/SIMPLELINK-CC13XX-CC26XX-SDK
+https://github.com/TexasInstruments/cc13xx_cc26xx_sdk
 
 ## Version
 
-6.30.00.84
+7.10.00.35 Github Release
 
 
 ## License

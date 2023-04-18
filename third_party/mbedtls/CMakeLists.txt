@@ -72,7 +72,6 @@ target_include_directories(ti-mbedtls-hardware-alt
 )
 
 set(thirdparty_lib ti-mbedtls-hardware-alt)
-
 add_subdirectory(repo)
 
 if(UNIFDEFALL_EXE AND SED_EXE AND UNIFDEF_VERSION VERSION_GREATER_EQUAL 2.10)

@@ -52,7 +52,7 @@
 #define configTOTAL_HEAP_SIZE ((size_t)(0x4000))
 
 #elif defined(DeviceFamily_CC13X2X7_CC26X2X7)
-#define configTOTAL_HEAP_SIZE ((size_t)(0x15000))
+#define configTOTAL_HEAP_SIZE ((size_t)(0x14000))
 
 #else
 #define configTOTAL_HEAP_SIZE ((size_t)(0x8000))

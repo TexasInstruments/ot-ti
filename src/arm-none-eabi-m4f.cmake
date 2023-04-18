@@ -34,10 +34,10 @@ set(CMAKE_CXX_COMPILER             arm-none-eabi-g++)
 set(CMAKE_ASM_COMPILER             arm-none-eabi-as)
 set(CMAKE_RANLIB                   arm-none-eabi-ranlib)
 
-set(COMMON_C_FLAGS                 "-mcpu=cortex-m4 -march=armv7e-m -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mthumb -fdata-sections -ffunction-sections -g -gdwarf-3 -gstrict-dwarf")
+set(COMMON_C_FLAGS                 "-mcpu=cortex-m4 -march=armv7e-m -mfloat-abi=hard -mfpu=fpv4-sp-d16 -mabi=aapcs -mthumb -Os -fdata-sections -ffunction-sections -g -gdwarf-3 -gstrict-dwarf")
 
 #set(CMAKE_C_FLAGS_INIT             "${COMMON_C_FLAGS} -std=gnu99")
 set(CMAKE_C_FLAGS_INIT             "${COMMON_C_FLAGS} -std=c99")
 set(CMAKE_CXX_FLAGS_INIT           "${COMMON_C_FLAGS} -std=c++11 -fno-exceptions -fno-rtti")
 set(CMAKE_ASM_FLAGS_INIT           "${COMMON_C_FLAGS}")
-set(CMAKE_EXE_LINKER_FLAGS_INIT    "${COMMON_C_FLAGS} -nostartfiles -specs=nano.specs")
+set(CMAKE_EXE_LINKER_FLAGS_INIT    "${COMMON_C_FLAGS} -nostartfiles -specs=nano.specs -specs=nosys.specs")

@@ -29,7 +29,7 @@
 if(NOT $ENV{TI_SYSCONFIG_ROOT} STREQUAL "")
     set(TI_SYSCONFIG_INSTALL_DIR $ENV{TI_SYSCONFIG_ROOT} CACHE PATH "")
 else()
-    set(TI_SYSCONFIG_INSTALL_DIR $ENV{HOME}/ti/sysconfig_1.14.0 CACHE PATH "")
+    set(TI_SYSCONFIG_INSTALL_DIR $ENV{HOME}/ti/sysconfig_1.15.0 CACHE PATH "")
 endif()
 
 if(WIN32)
@@ -47,6 +47,12 @@ if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
         ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_drivers_config.h
         ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_radio_config.c
         ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_radio_config.h
+
+        # TI SimpleLink FreeRTOS configuration and build is not possible until
+        # configTICK_RATE_HZ is configurable and source directory set correctly.
+        #${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_freertos_config.c
+        #${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_freertos_portable_config.c
+        #${CMAKE_CURRENT_BINARY_DIR}/syscfg/FreeRTOSConfig.h
     )
     set(SYSCONFIG_OUTPUT_OTHER
         ${CMAKE_CURRENT_BINARY_DIR}/syscfg/syscfg_c.rov.xs
@@ -128,7 +134,6 @@ list(APPEND TI_PLATFORM_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(openthread-cc13xx_cc26xx
     PUBLIC
         cc13xx-cc26xx-sdk
-        -Wl,--undefined=__ccfg
         -Wl,--gc-sections
         -Wl,-Map=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<TARGET_PROPERTY:NAME>.map
         ${GENLIBS_INCLUDES}
