@@ -59,11 +59,16 @@ add_subdirectory(third_party/mbedtls)
 add_subdirectory(src)
 add_subdirectory(examples)
 
+set(OPENTHREAD_CONFIG_FILE "openthread-core-cc13xx_cc26xx-config.h")
+set(OPENTHREAD_PROJECT_CORE_CONFIG_FILE "openthread-core-cc13xx_cc26xx-config.h")
+set(OPENTHREAD_CORE_CONFIG_PLATFORM_CHECK_FILE "openthread-core-cc13xx_cc26xx-config-check.h")
+
 target_compile_definitions(ot-config INTERFACE
-    OPENTHREAD_CONFIG_FILE="openthread-core-cc13xx_cc26xx-config.h"
-    OPENTHREAD_PROJECT_CORE_CONFIG_FILE="openthread-core-cc13xx_cc26xx-config.h"
-    OPENTHREAD_CORE_CONFIG_PLATFORM_CHECK_FILE="openthread-core-cc13xx_cc26xx-config-check.h"
+    "OPENTHREAD_CONFIG_FILE=\"${OPENTHREAD_CONFIG_FILE}\""
+    "OPENTHREAD_PROJECT_CORE_CONFIG_FILE=\"${OPENTHREAD_PROJECT_CORE_CONFIG_FILE}\""
+    "OPENTHREAD_CORE_CONFIG_PLATFORM_CHECK_FILE=\"${OPENTHREAD_CORE_CONFIG_PLATFORM_CHECK_FILE}\""
 )
+
 
 target_include_directories(ot-config INTERFACE
     ${PROJECT_SOURCE_DIR}/src
