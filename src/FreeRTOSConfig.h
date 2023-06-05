@@ -48,25 +48,40 @@
 /* General options */
 #define configCPU_CLOCK_HZ ((unsigned long)(48000000))
 
-#if defined(DeviceFamily_CC13X2_CC26X2)
-#define configTOTAL_HEAP_SIZE ((size_t)(0x4000))
-
-#elif defined(DeviceFamily_CC13X2X7_CC26X2X7)
-#define configTOTAL_HEAP_SIZE ((size_t)(0x14000))
-
-#else
-#define configTOTAL_HEAP_SIZE ((size_t)(0x8000))
-
-#endif
-
-#define configCHECK_FOR_STACK_OVERFLOW 2
-#define configUSE_PORT_OPTIMISED_TASK_SELECTION 1
-#define configEXPECTED_IDLE_TIME_BEFORE_SLEEP 2
-
 /* Stack sizes, all in words */
 #define configMINIMAL_STACK_SIZE ((unsigned short)(512))
 #define configIDLE_TASK_STACK_DEPTH ((unsigned short)(512))
 #define configPOSIX_STACK_SIZE ((unsigned short)(configMINIMAL_STACK_SIZE * 2))
+
+/* Device specific options options */
+#if defined(DeviceFamily_CC13X2_CC26X2)
+#define configTOTAL_HEAP_SIZE ((size_t)(0x4000))
+#define configUSE_PORT_OPTIMISED_TASK_SELECTION 1
+
+#elif defined(DeviceFamily_CC13X2X7_CC26X2X7)
+#define configTOTAL_HEAP_SIZE ((size_t)(0x14000))
+#define configUSE_PORT_OPTIMISED_TASK_SELECTION 1
+
+#elif defined(DeviceFamily_CC13X4_CC26X4)
+#define configTOTAL_HEAP_SIZE ((size_t)(0x14000))
+#define configUSE_PORT_OPTIMISED_TASK_SELECTION 0
+/* TrustZone/PSA settings */
+/* We do not set ENABLE_TRUSTZONE, as this is only for Secure Side function call support */
+#define configENABLE_TRUSTZONE 0
+#define configRUN_FREERTOS_SECURE_ONLY 1
+/* ARM-v8m specific settings: floating point unit is enabled, memory protection unit is disabled */
+#define configENABLE_FPU 1
+#define configENABLE_MPU 0
+/* The CM33 port requires an additional stack size definition */
+#define configMINIMAL_SECURE_STACK_SIZE configMINIMAL_STACK_SIZE
+
+#else
+#error "unknown SimpleLink DeviceFamily, consult SDK configuration"
+
+#endif
+
+#define configCHECK_FOR_STACK_OVERFLOW 2
+#define configEXPECTED_IDLE_TIME_BEFORE_SLEEP 2
 
 /* Software timer definitions. */
 #define configUSE_TIMERS 1
@@ -89,22 +104,6 @@
             ;                     \
     }
 
-/* Modifying the options below is not permitted or currently unsupported */
-
-#if defined(DeviceFamily_CC13X4)
-
-/* TrustZone/PSA settings */
-/* We do not set ENABLE_TRUSTZONE, as this is only for Secure Side function call support */
-#define configENABLE_TRUSTZONE 0
-#define configRUN_FREERTOS_SECURE_ONLY 1
-
-/* ARM-v8m specific settings: floating point unit is enabled, memory protection unit is disabled */
-#define configENABLE_FPU 1
-#define configENABLE_MPU 0
-
-/* The CM33 port requires an additional stack size definition */
-#define configMINIMAL_SECURE_STACK_SIZE configMINIMAL_STACK_SIZE
-#endif
 /* Constants related to the behaviour or the scheduler. */
 #define configTICK_RATE_HZ ((TickType_t)100000)
 #define configUSE_PREEMPTION 1

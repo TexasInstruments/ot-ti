@@ -97,6 +97,16 @@ elseif(TI_SIMPLELINK_BOARD STREQUAL "LP_CC2652RSIP")
     set(TI_SIMPLELINK_STARTUP   "cc13x2_cc26x2"    )
     set(TI_SIMPLELINK_ISA       "m4f"              )
 
+elseif(TI_SIMPLELINK_BOARD STREQUAL "LP_EM_CC1354P10_1")
+    set(TI_SIMPLELINK_FAMILY    "cc13x4_cc26x4"    )
+    set(TI_SIMPLELINK_STARTUP   "cc13x4_cc26x4"    )
+    set(TI_SIMPLELINK_ISA       "m33f"             )
+
+elseif(TI_SIMPLELINK_BOARD STREQUAL "LP_EM_CC1354P10_6")
+    set(TI_SIMPLELINK_FAMILY    "cc13x4_cc26x4"    )
+    set(TI_SIMPLELINK_STARTUP   "cc13x4_cc26x4"    )
+    set(TI_SIMPLELINK_ISA       "m33f"             )
+
 else()
     if(TI_PLATFORM STREQUAL "cc13xx_cc26xx"
             AND NOT TI_SIMPLELINK_BOARD IN_LIST TI_BOARD_VALUES)

@@ -35,7 +35,7 @@ endif()
 # NOTE: posix source only needed for NVOCMP middleware
 if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
     set(CC13XX_CC26XX_DPL_SRCS
-        ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/startup/startup_cc13x2_cc26x2_gcc.c
+        ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/startup/startup_${TI_SIMPLELINK_STARTUP}_gcc.c
         ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/AppHooks_freertos.c
         ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/ClockPCC26X2_freertos.c
         ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/ClockP_freertos.c
@@ -145,6 +145,10 @@ if(TI_SIMPLELINK_FAMILY STREQUAL "cc13x2_cc26x2")
 elseif(TI_SIMPLELINK_FAMILY STREQUAL "cc13x2x7_cc26x2x7")
     target_compile_definitions(cc13xx-cc26xx-sdk PUBLIC DeviceFamily_CC13X2X7_CC26X2X7)
     target_compile_definitions(ot-config INTERFACE DeviceFamily_CC13X2X7_CC26X2X7)
+
+elseif(TI_SIMPLELINK_FAMILY STREQUAL "cc13x4_cc26x4")
+    target_compile_definitions(cc13xx-cc26xx-sdk PUBLIC DeviceFamily_CC13X4_CC26X4)
+    target_compile_definitions(ot-config INTERFACE DeviceFamily_CC13X4_CC26X4)
 
 else()
     message(FATAL_ERROR "Unsuported TI_SIMPLELINK_FAMILY: ${TI_SIMPLELINK_FAMILY}")

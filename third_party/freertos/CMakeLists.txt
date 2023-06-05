@@ -50,8 +50,21 @@ if(TI_SIMPLELINK_ISA STREQUAL "m4f")
     set(FREERTOS_PORT_INC
         ${CMAKE_CURRENT_SOURCE_DIR}/repo/portable/GCC/ARM_CM4F
     )
+
+elseif(TI_SIMPLELINK_ISA STREQUAL "m33f")
+    set(FREERTOS_PORT_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/repo/portable/MemMang/heap_4.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/repo/portable/GCC/ARM_CM33_NTZ/non_secure/port.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/repo/portable/GCC/ARM_CM33_NTZ/non_secure/portasm.c
+    )
+
+    set(FREERTOS_PORT_INC
+        ${CMAKE_CURRENT_SOURCE_DIR}/repo/portable/GCC/ARM_CM33_NTZ/non_secure
+    )
+
 else()
     message(WARNING "TI_SIMPLELINK_ISA not recognized, FreeRTOS port not included")
+
 endif()
 
 add_library(freertos ${FREERTOS_SRCS})

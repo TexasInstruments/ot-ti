@@ -32,8 +32,9 @@ set -euxo pipefail
 OT_CMAKE_NINJA_TARGET=${OT_CMAKE_NINJA_TARGET:-}
 TI_SYSCONFIG_ROOT=${TI_SYSCONFIG_ROOT:-}
 
-SYSCONFIG_USER=~/ti/sysconfig_1.14.0/
-SYSCONFIG_SYSTEM=/opt/ti/sysconfig_1.14.0/
+SYSCONFIG_VERSION=sysconfig_1.15.0
+SYSCONFIG_USER=~/ti/${SYSCONFIG_VERSION}/
+SYSCONFIG_SYSTEM=/opt/ti/${SYSCONFIG_VERSION}/
 
 if [ -z "$TI_SYSCONFIG_ROOT" ]; then
     if [ -d "$SYSCONFIG_USER" ]; then
@@ -55,6 +56,8 @@ readonly TI_LAUNCHPAD=(
     LP_CC2652R7
     LP_CC2652RB
     LP_CC2652RSIP
+    LP_EM_CC1354P10_1
+    LP_EM_CC1354P10_6
 )
 
 readonly OT_SRCDIR="$(pwd)"
@@ -66,19 +69,25 @@ build()
 {
     local builddir="${OT_CMAKE_BUILD_DIR:-build}"
 
-    mkdir -p "${builddir}"
-    cd "${builddir}"
+    # the SimpleLink SDK uses normal 'make' to re-build it's libraries
+    make \
+        -C third_party/ti_simplelink_sdk/repo_cc13xx_cc26xx \
+        GCC_ARMCOMPILER=/opt/gcc-arm-none-eabi-9-2020-q2-update \
+        TICLANG_ARMCOMPILER= \
+        IAR_ARMCOMPILER= \
+        CMAKE=cmake \
+        GENERATOR=Ninja
 
-    cmake -GNinja -DOT_COMPILE_WARNING_AS_ERROR=ON "$@" "${OT_SRCDIR}"
+    cmake -GNinja -DOT_COMPILE_WARNING_AS_ERROR=ON "$@" "${OT_SRCDIR}" -B ${builddir}
 
     if [[ -n ${OT_CMAKE_NINJA_TARGET[*]} ]]; then
-        ninja "${OT_CMAKE_NINJA_TARGET[@]}"
+	    cmake --build ${builddir} "${OT_CMAKE_NINJA_TARGET[@]}"
     else
-        ninja
+	    cmake --build ${builddir}
     fi
 
     if [[ ${ot_reference_release} == true ]]; then
-        cd bin
+        cd ${builddir}/bin
         for exe in *.out; do
             cp -- "${exe}" "${exe%.out}"
         done
@@ -131,17 +140,21 @@ main()
 
     case "${launchpad}" in
         CC1352P1_LAUNCHXL | \
-            CC1352P_2_LAUNCHXL | \
-            CC1352P_4_LAUNCHXL | \
-            CC1352R1_LAUNCHXL | \
-            CC26X2R1_LAUNCHXL | \
-            LP_CC1352P7_1 | \
-            LP_CC1352P7_4 | \
-            LP_CC2652PSIP | \
-            LP_CC2652R7 | \
-            LP_CC2652RB | \
-            LP_CC2652RSIP)
+                CC1352P_2_LAUNCHXL | \
+                CC1352P_4_LAUNCHXL | \
+                CC1352R1_LAUNCHXL | \
+                CC26X2R1_LAUNCHXL | \
+                LP_CC1352P7_1 | \
+                LP_CC1352P7_4 | \
+                LP_CC2652PSIP | \
+                LP_CC2652R7 | \
+                LP_CC2652RB | \
+                LP_CC2652RSIP)
             options+=("-DCMAKE_TOOLCHAIN_FILE=src/arm-none-eabi-m4f.cmake")
+            ;;
+        LP_EM_CC1354P10_1 | \
+                LP_EM_CC1354P10_6)
+            options+=("-DCMAKE_TOOLCHAIN_FILE=src/arm-none-eabi-m33.cmake")
             ;;
     esac
 

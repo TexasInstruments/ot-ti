@@ -143,9 +143,14 @@ else if(deviceId.match(/CC((13|26).2(R|RB|P)1)/))
     NVS1.internalFlash.regionBase = 0x52000;
     NVS1.internalFlash.regionSize = 0x4000;
 }
+else if(deviceId.match(/CC((13|26).4P10)/))
+{
+    NVS1.internalFlash.regionBase = 0x52000;
+    NVS1.internalFlash.regionSize = 0x4000;
+}
 else
 {
-    throw new Error("Could not match platform to any known platform types");
+    throw new Error("Could not set NVS location for deviceId: " + deviceId);
 }
 
 
@@ -218,7 +223,7 @@ else if(deviceId.match(/CC(265[34]|1354)P/))
 }
 else
 {
-    throw new Error("Could not match platform to any known platform types");
+    throw new Error("Could not set RF settings for deviceId: " + deviceId);
 }
 
 rfCodeExportConfig.cmdList_ieee_15_4 = cmdList;

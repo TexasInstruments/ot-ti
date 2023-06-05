@@ -16,7 +16,7 @@ build with FreeRTOS to enable an environment for the standard device drivers to 
 In a Bash terminal, follow these instructions to install the GNU toolchain and other dependencies.
 
 ```bash
-$ cd <path-to-ot-cc13x2-cc26x2>
+$ cd <path-to-ot-ti>
 $ git submodule update --init
 $ ./script/bootstrap
 ```
@@ -27,14 +27,14 @@ In a Bash terminal, follow these instructions to build the cc13xx_cc26xx example
 reference development kit available on ti.com.
 
 ```bash
-$ cd <path-to-ot-cc13x2-cc26x2>
+$ cd <path-to-ot-ti>
 $ ./script/build LP_CC2652R7
 ```
 
 ## Flash Binaries
 
-If the build completed successfully, the `elf` files may be found in `<path-to-ot-cc13x2-cc26x2>/build/bin/`. These
-files do not have any file extension.
+If the build completed successfully, the `elf` files may be found in `<path-to-ot-ti>/build/bin/`. These files do not
+have any file extension.
 
 Loading the built image onto a LaunchPad is supported through two methods; Uniflash and Code Composer Studio (CCS).
 UniFlash can be used to load the image. Code Composer Studio can be used to load the image and debug the source code.

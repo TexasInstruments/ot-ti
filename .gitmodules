@@ -7,6 +7,7 @@
 [submodule "third_party/ti_simplelink_sdk/repo_cc13xx_cc26xx"]
 	path = third_party/ti_simplelink_sdk/repo_cc13xx_cc26xx
 	url = https://github.com/TexasInstruments/cc13xx_cc26xx_sdk.git
+	ignore = dirty
 [submodule "mbedtls"]
 	path = third_party/mbedtls/repo
 	url = https://github.com/Mbed-TLS/mbedtls.git

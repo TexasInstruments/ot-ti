@@ -36,20 +36,24 @@ readonly OT_OPTIONS=(
 
 main()
 {
+    # the SimpleLink SDK uses normal 'make' to re-build it's libraries
+    make \
+        -C third_party/ti_simplelink_sdk/repo_cc13xx_cc26xx \
+        GCC_ARMCOMPILER=/opt/gcc-arm-none-eabi-9-2020-q2-update \
+        TICLANG_ARMCOMPILER= \
+        IAR_ARMCOMPILER= \
+        CMAKE=cmake \
+        GENERATOR=Ninja
+
     mkdir "build"
 
-    for launchpad in LP_CC2652R7; do
+    for launchpad in LP_CC2652R7 LP_EM_CC1354P10_1; do
         local builddir=$(realpath -m "build/${launchpad}")
         local outdir=$(realpath -m "output/${launchpad}")
         local ot_dir=$(realpath -m "openthread")
         local src_dir=$(realpath -m "src")
 
-        mkdir -p "${outdir}"
-        mkdir -p "${outdir}/bin"
-        mkdir -p "${outdir}/lib"
-
-        mkdir -p "${builddir}"
-        cd "${builddir}"
+        mkdir -p "${outdir}/bin" "${outdir}/lib"
 
         # create Thread Test Harness reference version
         cmake -GNinja -DOT_COMPILE_WARNING_AS_ERROR=ON \
@@ -58,11 +62,12 @@ main()
             -DOT_PLATFORM=external \
             -DOPENTHREAD_CONFIG_FILE=openthread-core-cc13xx_cc26xx-config-thci.h \
             -DOPENTHREAD_PROJECT_CORE_CONFIG_FILE=openthread-core-cc13xx_cc26xx-config-thci.h \
-            "${OT_SRCDIR}"
-        ninja
+            "${OT_SRCDIR}" \
+            -B ${builddir}
+        cmake --build ${builddir}
 
-        cp bin/ot-cli-ftd.out "${outdir}/bin/ot-cli-thci.out"
-        cp bin/ot-rcp.out "${outdir}/bin/ot-rcp-thci.out"
+        cp ${builddir}/bin/ot-cli-ftd.out "${outdir}/bin/ot-cli-thci.out"
+        cp ${builddir}/bin/ot-rcp.out "${outdir}/bin/ot-rcp-thci.out"
 
         # create Matter libraries
         cmake -GNinja -DOT_COMPILE_WARNING_AS_ERROR=ON \
@@ -71,8 +76,9 @@ main()
             -DOT_PLATFORM=external \
             -DOPENTHREAD_CONFIG_FILE=openthread-core-cc13xx_cc26xx-config-matter.h \
             -DOPENTHREAD_PROJECT_CORE_CONFIG_FILE=openthread-core-cc13xx_cc26xx-config-matter.h \
-            "${OT_SRCDIR}"
-        ninja
+            "${OT_SRCDIR}" \
+            -B ${builddir}
+        cmake --build ${builddir}
 
         rsync -avm --include '*/' --include '*.h' --exclude '*' "${ot_dir}/include" "${outdir}"
         rsync -avm --include '*' "${builddir}/bin" "${outdir}"
@@ -80,8 +86,6 @@ main()
 
         cp "${src_dir}/openthread-core-cc13xx_cc26xx-config-thci.h" "${outdir}/include/openthread-core-cc13xx_cc26xx-config-thci.h"
         cp "${src_dir}/openthread-core-cc13xx_cc26xx-config-matter.h" "${outdir}/include/openthread-core-cc13xx_cc26xx-config-matter.h"
-
-        cd "${OT_SRCDIR}"
 
     done
 }
