@@ -27,7 +27,9 @@
 #
 
 cmake_minimum_required(VERSION 3.10.2)
-project(ot-cc13x2-cc26x2 VERSION 0.2.0)
+
+project(ot-cc13x2-cc26x2 VERSION 1.3.0.0)
+set(OT_PACKAGE_VERSION "1.3.0.1" CACHE STRING "ot-ti version" FORCE)
 
 if(NOT DEFINED TI_SIMPLELINK_KERNEL)
     set(TI_SIMPLELINK_KERNEL "freertos" CACHE STRING "")
@@ -42,10 +44,10 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 
 set(FREERTOS_CONFIG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
-set(OT_MBEDTLS_CONFIG_FILE "\"mbedtls-config-cc13x2_cc26x2.h\"")
 set(OT_EXTERNAL_MBEDTLS "ti-mbedtls" CACHE STRING "Use TI hardware accelerated mbedtls" FORCE)
 set(OT_BUILTIN_MBEDTLS_MANAGEMENT ON CACHE BOOL "Have OpenThread manage mbedtls")
 set(OT_BUILD_EXECUTABLES OFF CACHE BOOL "Build OpenThread executables")
+set(BUILD_TESTING OFF CACHE BOOL "Build test executables")
 option(TI_BUILD_EXECUTABLES "Build executables" ON)
 
 add_subdirectory(openthread)
@@ -68,7 +70,6 @@ target_compile_definitions(ot-config INTERFACE
     "OPENTHREAD_PROJECT_CORE_CONFIG_FILE=\"${OPENTHREAD_PROJECT_CORE_CONFIG_FILE}\""
     "OPENTHREAD_CORE_CONFIG_PLATFORM_CHECK_FILE=\"${OPENTHREAD_CORE_CONFIG_PLATFORM_CHECK_FILE}\""
 )
-
 
 target_include_directories(ot-config INTERFACE
     ${PROJECT_SOURCE_DIR}/src

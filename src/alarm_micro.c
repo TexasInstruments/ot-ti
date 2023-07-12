@@ -114,7 +114,7 @@ void otPlatAlarmMicroStartAt(otInstance *aInstance, uint32_t aT0, uint32_t aDt)
     AlarmMicro_time    = aDt;
     AlarmMicro_running = true;
 
-    if (delta >= aDt)
+    if ((delta) >= aDt)
     {
         // alarm is in the past
         platformAlarmMicroSignal();

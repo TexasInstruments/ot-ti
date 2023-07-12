@@ -35,7 +35,7 @@ endif()
 # NOTE: posix source only needed for NVOCMP middleware
 if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
     set(CC13XX_CC26XX_DPL_SRCS
-        ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/startup/startup_${TI_SIMPLELINK_STARTUP}_gcc.c
+        ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/startup/startup_${TI_SIMPLELINK_FAMILY}_gcc.c
         ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/AppHooks_freertos.c
         ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/ClockPCC26X2_freertos.c
         ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/ClockP_freertos.c
@@ -66,7 +66,7 @@ if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/posix/freertos/timer.c
     )
     set(CC13XX_CC26XX_LDS
-        ${TI_SIMPLELINK_SDK_DIR}/source/ti/boards/${TI_SIMPLELINK_FAMILY}/${TI_SIMPLELINK_FAMILY}_freertos.lds
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/boards/${TI_SIMPLELINK_DEVICE}/${TI_SIMPLELINK_DEVICE}_freertos.lds
     )
 
 elseif(TI_SIMPLELINK_KERNEL STREQUAL "tirtos7")
@@ -99,7 +99,7 @@ elseif(TI_SIMPLELINK_KERNEL STREQUAL "tirtos7")
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/posix/tirtos/timer.c
     )
     set(CC13XX_CC26XX_LDS
-        ${TI_SIMPLELINK_SDK_DIR}/source/ti/boards/${TI_SIMPLELINK_FAMILY}/${TI_SIMPLELINK_FAMILY}_tirtos7.lds
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/boards/${TI_SIMPLELINK_DEVICE}/${TI_SIMPLELINK_DEVICE}_tirtos7.lds
     )
 
 
@@ -124,7 +124,7 @@ set(CC13XX_CC26XX_NVOCMP_DEFS
 )
 
 set(CC13XX_CC26XX_NVOCMP_INCLUDES
-    ${TI_SIMPLELINK_SDK_DIR}/source/ti/devices/${TI_SIMPLELINK_FAMILY}
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/devices/${TI_SIMPLELINK_DEVICE}
 )
 
 add_library(cc13xx-cc26xx-sdk)
@@ -138,20 +138,20 @@ target_sources(cc13xx-cc26xx-sdk
 
 target_compile_definitions(cc13xx-cc26xx-sdk PUBLIC ${CC13XX_CC26XX_NVOCMP_DEFS})
 
-if(TI_SIMPLELINK_FAMILY STREQUAL "cc13x2_cc26x2")
+if(TI_SIMPLELINK_DEVICE STREQUAL "cc13x2_cc26x2")
     target_compile_definitions(cc13xx-cc26xx-sdk PUBLIC DeviceFamily_CC13X2_CC26X2)
     target_compile_definitions(ot-config INTERFACE DeviceFamily_CC13X2_CC26X2)
 
-elseif(TI_SIMPLELINK_FAMILY STREQUAL "cc13x2x7_cc26x2x7")
+elseif(TI_SIMPLELINK_DEVICE STREQUAL "cc13x2x7_cc26x2x7")
     target_compile_definitions(cc13xx-cc26xx-sdk PUBLIC DeviceFamily_CC13X2X7_CC26X2X7)
     target_compile_definitions(ot-config INTERFACE DeviceFamily_CC13X2X7_CC26X2X7)
 
-elseif(TI_SIMPLELINK_FAMILY STREQUAL "cc13x4_cc26x4")
+elseif(TI_SIMPLELINK_DEVICE STREQUAL "cc13x4_cc26x4")
     target_compile_definitions(cc13xx-cc26xx-sdk PUBLIC DeviceFamily_CC13X4_CC26X4)
     target_compile_definitions(ot-config INTERFACE DeviceFamily_CC13X4_CC26X4)
 
 else()
-    message(FATAL_ERROR "Unsuported TI_SIMPLELINK_FAMILY: ${TI_SIMPLELINK_FAMILY}")
+    message(FATAL_ERROR "Unsuported TI_SIMPLELINK_DEVICE: ${TI_SIMPLELINK_DEVICE}")
 endif()
 
 target_include_directories(cc13xx-cc26xx-sdk
@@ -172,7 +172,7 @@ add_library(cc13xx-cc26xx-driverlib INTERFACE)
 
 target_link_libraries(cc13xx-cc26xx-driverlib
     INTERFACE
-        ${TI_SIMPLELINK_SDK_DIR}/source/ti/devices/${TI_SIMPLELINK_FAMILY}/driverlib/bin/gcc/driverlib.lib
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/devices/${TI_SIMPLELINK_DEVICE}/driverlib/bin/gcc/driverlib.lib
 )
 
 if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
@@ -182,6 +182,7 @@ endif()
 target_link_libraries(cc13xx-cc26xx-sdk
     PUBLIC
         cc13xx-cc26xx-driverlib
+        -Wl,--undefined=__ccfg
         -T${CC13XX_CC26XX_LDS}
 )
 

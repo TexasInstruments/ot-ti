@@ -146,6 +146,7 @@ target_link_libraries(openthread-cc13xx_cc26xx
 target_compile_definitions(openthread-cc13xx_cc26xx
     PUBLIC
         ${OT_PLATFORM_DEFINES}
+        OT_TI_KERNEL_${TI_SIMPLELINK_KERNEL}
 )
 
 target_compile_options(openthread-cc13xx_cc26xx

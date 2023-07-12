@@ -26,10 +26,6 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 #
 
-set(OT_MBEDTLS_DEFAULT_CONFIG_FILE \"openthread-mbedtls-config.h\")
-
-set(OT_MBEDTLS_CONFIG_FILE "" CACHE STRING "The mbedTLS config file")
-
 set(ENABLE_TESTING OFF CACHE BOOL "Disable mbedtls test" FORCE)
 set(ENABLE_PROGRAMS OFF CACHE BOOL "Disable mbedtls program" FORCE)
 
@@ -74,47 +70,19 @@ target_include_directories(ti-mbedtls-hardware-alt
 set(thirdparty_lib ti-mbedtls-hardware-alt)
 add_subdirectory(repo)
 
-if(UNIFDEFALL_EXE AND SED_EXE AND UNIFDEF_VERSION VERSION_GREATER_EQUAL 2.10)
-    add_custom_command(OUTPUT openthread-mbedtls-config.h
-        COMMAND ${UNIFDEFALL_EXE}
-            "'-D$<JOIN:$<TARGET_PROPERTY:ot-config,INTERFACE_COMPILE_DEFINITIONS>,';'-D>'"
-            "-I$<JOIN:$<TARGET_PROPERTY:ot-config,INTERFACE_INCLUDE_DIRECTORIES>,;-I>"
-            "-I$<JOIN:${OT_PUBLIC_INCLUDES},;-I>"
-            "-I${CMAKE_CURRENT_SOURCE_DIR}/repo/include"
-            "${CMAKE_CURRENT_SOURCE_DIR}/mbedtls-config.h" |
-            ${SED_EXE} '/openthread-core-config\.h/d' >
-            openthread-mbedtls-config.h
-        MAIN_DEPENDENCY mbedtls-config.h
-        COMMAND_EXPAND_LISTS
-    )
-
-    add_custom_target(openthread-mbedtls-config
-        DEPENDS openthread-mbedtls-config.h)
-
-    add_dependencies(ot-config openthread-mbedtls-config)
-    add_dependencies(ti-mbedtls openthread-mbedtls-config)
-    add_dependencies(ti-mbedx509 openthread-mbedtls-config)
-    add_dependencies(ti-mbedcrypto openthread-mbedtls-config)
-else()
-    configure_file(mbedtls-config.h openthread-mbedtls-config.h COPYONLY)
-endif()
-
-target_include_directories(ot-config
-    INTERFACE
-        ${CMAKE_CURRENT_BINARY_DIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}/alt
-        ${CMAKE_CURRENT_SOURCE_DIR}/repo/include)
 
 target_compile_definitions(ti-mbedtls-hardware-alt
     PUBLIC
-        "MBEDTLS_CONFIG_FILE=$<IF:$<BOOL:${OT_MBEDTLS_CONFIG_FILE}>,${OT_MBEDTLS_CONFIG_FILE},${OT_MBEDTLS_DEFAULT_CONFIG_FILE}>"
+        "MBEDTLS_CONFIG_FILE=\"mbedtls-config-${TI_SIMPLELINK_FAMILY}.h\""
     PRIVATE
         $<TARGET_PROPERTY:ot-config,INTERFACE_COMPILE_DEFINITIONS>
 )
 target_include_directories(ti-mbedtls-hardware-alt
     PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/repo/include>
+        ${CMAKE_CURRENT_BINARY_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/alt
+        ${CMAKE_CURRENT_SOURCE_DIR}/repo/include
     PRIVATE
         ${OT_PUBLIC_INCLUDES}
         $<TARGET_PROPERTY:ot-config,INTERFACE_INCLUDE_DIRECTORIES>
@@ -122,13 +90,16 @@ target_include_directories(ti-mbedtls-hardware-alt
 
 target_compile_definitions(ti-mbedtls
     PUBLIC
-        "MBEDTLS_CONFIG_FILE=$<IF:$<BOOL:${OT_MBEDTLS_CONFIG_FILE}>,${OT_MBEDTLS_CONFIG_FILE},${OT_MBEDTLS_DEFAULT_CONFIG_FILE}>"
+        "MBEDTLS_CONFIG_FILE=\"mbedtls-config-${TI_SIMPLELINK_FAMILY}.h\""
     PRIVATE
         $<TARGET_PROPERTY:ot-config,INTERFACE_COMPILE_DEFINITIONS>
 )
 target_include_directories(ti-mbedtls
     PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/repo/include>
+        ${CMAKE_CURRENT_BINARY_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/alt
+        ${CMAKE_CURRENT_SOURCE_DIR}/repo/include
     PRIVATE
         ${OT_PUBLIC_INCLUDES}
         $<TARGET_PROPERTY:ot-config,INTERFACE_INCLUDE_DIRECTORIES>
@@ -136,13 +107,16 @@ target_include_directories(ti-mbedtls
 
 target_compile_definitions(ti-mbedx509
     PUBLIC
-        "MBEDTLS_CONFIG_FILE=$<IF:$<BOOL:${OT_MBEDTLS_CONFIG_FILE}>,${OT_MBEDTLS_CONFIG_FILE},${OT_MBEDTLS_DEFAULT_CONFIG_FILE}>"
+        "MBEDTLS_CONFIG_FILE=\"mbedtls-config-${TI_SIMPLELINK_FAMILY}.h\""
     PRIVATE
         $<TARGET_PROPERTY:ot-config,INTERFACE_COMPILE_DEFINITIONS>
 )
 target_include_directories(ti-mbedx509
     PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/repo/include>
+        ${CMAKE_CURRENT_BINARY_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/alt
+        ${CMAKE_CURRENT_SOURCE_DIR}/repo/include
     PRIVATE
         ${OT_PUBLIC_INCLUDES}
         $<TARGET_PROPERTY:ot-config,INTERFACE_INCLUDE_DIRECTORIES>
@@ -150,13 +124,16 @@ target_include_directories(ti-mbedx509
 
 target_compile_definitions(ti-mbedcrypto
     PUBLIC
-        "MBEDTLS_CONFIG_FILE=$<IF:$<BOOL:${OT_MBEDTLS_CONFIG_FILE}>,${OT_MBEDTLS_CONFIG_FILE},${OT_MBEDTLS_DEFAULT_CONFIG_FILE}>"
+        "MBEDTLS_CONFIG_FILE=\"mbedtls-config-${TI_SIMPLELINK_FAMILY}.h\""
     PRIVATE
         $<TARGET_PROPERTY:ot-config,INTERFACE_COMPILE_DEFINITIONS>
 )
 target_include_directories(ti-mbedcrypto
     PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/repo/include>
+        ${CMAKE_CURRENT_BINARY_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/alt
+        ${CMAKE_CURRENT_SOURCE_DIR}/repo/include
     PRIVATE
         ${OT_PUBLIC_INCLUDES}
         $<TARGET_PROPERTY:ot-config,INTERFACE_INCLUDE_DIRECTORIES>

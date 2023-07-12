@@ -36,6 +36,11 @@ SYSCONFIG_VERSION=sysconfig_1.15.0
 SYSCONFIG_USER=~/ti/${SYSCONFIG_VERSION}/
 SYSCONFIG_SYSTEM=/opt/ti/${SYSCONFIG_VERSION}/
 
+CMAKE=${CMAKE:-cmake}
+GCC_ARMCOMPILER=${GCC_ARMCOMPILER:-/opt/gcc-arm-none-eabi-9-2020-q2-update}
+TICLANG_ARMCOMPILER=${TICLANG_ARMCOMPILER:-""}
+IAR_ARMCOMPILER=${IAR_ARMCOMPILER:-""}
+
 if [ -z "$TI_SYSCONFIG_ROOT" ]; then
     if [ -d "$SYSCONFIG_USER" ]; then
         TI_SYSCONFIG_ROOT="$SYSCONFIG_USER"
@@ -72,18 +77,18 @@ build()
     # the SimpleLink SDK uses normal 'make' to re-build it's libraries
     make \
         -C third_party/ti_simplelink_sdk/repo_cc13xx_cc26xx \
-        GCC_ARMCOMPILER=/opt/gcc-arm-none-eabi-9-2020-q2-update \
-        TICLANG_ARMCOMPILER= \
-        IAR_ARMCOMPILER= \
-        CMAKE=cmake \
+        CMAKE=${CMAKE} \
+        GCC_ARMCOMPILER=${GCC_ARMCOMPILER} \
+        IAR_ARMCOMPILER=${IAR_ARMCOMPILER} \
+        TICLANG_ARMCOMPILER=${TICLANG_ARMCOMPILER} \
         GENERATOR=Ninja
 
-    cmake -GNinja -DOT_COMPILE_WARNING_AS_ERROR=ON "$@" "${OT_SRCDIR}" -B ${builddir}
+    ${CMAKE} -GNinja -DOT_COMPILE_WARNING_AS_ERROR=ON "$@" "${OT_SRCDIR}" -B ${builddir}
 
     if [[ -n ${OT_CMAKE_NINJA_TARGET[*]} ]]; then
-	    cmake --build ${builddir} "${OT_CMAKE_NINJA_TARGET[@]}"
+	    ${CMAKE} --build ${builddir} "${OT_CMAKE_NINJA_TARGET[@]}"
     else
-	    cmake --build ${builddir}
+	    ${CMAKE} --build ${builddir}
     fi
 
     if [[ ${ot_reference_release} == true ]]; then
@@ -98,7 +103,7 @@ build()
 
 main()
 {
-    local usage="usage: $0 [-h] [--skip-silabs-apps] <TI LaunchPad> [-D<OT_XXXX=ON> -D<OT_YYYY=OFF>]"
+    local usage="usage: $0 [-h] <TI LaunchPad> [-D<OT_XXXX=ON> -D<OT_YYYY=OFF>]"
 
     local ot_reference_release=false
     # Parse flags

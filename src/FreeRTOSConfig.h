@@ -54,15 +54,21 @@
 #define configPOSIX_STACK_SIZE ((unsigned short)(configMINIMAL_STACK_SIZE * 2))
 
 /* Device specific options options */
-#if defined(DeviceFamily_CC13X2_CC26X2)
+#if defined(DeviceFamily_CC13X2_CC26X2) \
+    || defined(DeviceFamily_CC13X2) \
+    || defined(DeviceFamily_CC26X2)
 #define configTOTAL_HEAP_SIZE ((size_t)(0x4000))
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION 1
 
-#elif defined(DeviceFamily_CC13X2X7_CC26X2X7)
+#elif defined(DeviceFamily_CC13X2X7_CC26X2X7) \
+    || defined(DeviceFamily_CC13X2X7) \
+    || defined(DeviceFamily_CC26X2X7)
 #define configTOTAL_HEAP_SIZE ((size_t)(0x14000))
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION 1
 
-#elif defined(DeviceFamily_CC13X4_CC26X4)
+#elif defined(DeviceFamily_CC13X4_CC26X4) \
+    || defined(DeviceFamily_CC13X4) \
+    || defined(DeviceFamily_CC26X4)
 #define configTOTAL_HEAP_SIZE ((size_t)(0x14000))
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION 0
 /* TrustZone/PSA settings */

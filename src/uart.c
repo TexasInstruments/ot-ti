@@ -44,7 +44,7 @@
  * can send more data. Less efficient than callback mode. Necessary for certain
  * versions of the UART2 driver.
  */
-#define TI_PLAT_UART_BLOCKING 1
+#define TI_PLAT_UART_BLOCKING 0
 
 #define PLATFORM_UART_EVENT_TX_DONE (1U << 0)
 #define PLATFORM_UART_EVENT_RX_DONE (1U << 1)
