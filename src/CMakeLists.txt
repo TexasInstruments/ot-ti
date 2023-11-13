@@ -71,6 +71,11 @@ if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/apps/common/thread/source/activity
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/common/nv
 
+        #
+        # JJM - Note: the include paths below are a mirror (or an attempt to mirror)
+        # the /Includes folder from the CCS simple-peripheral project
+        # 
+
         # BLE
         # JJM - including /src here to avoid duplicates of FreeRTOSConfig.h. I think this is ok? 
         ${PROJECT_SOURCE_DIR}/src
@@ -102,7 +107,6 @@ if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/common/cc26xx
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/common/nv
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/devices/cc13x4_cc26x4
-        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/common/cc26xx
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack/common/cc26xx/freertos
     )
 
@@ -111,6 +115,24 @@ if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/apps/common/thread/source/activity/dmm_thread_activity.c
         ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_dmm_application_policy.c
         ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_dmm_application_policy.h
+    )
+
+    # JJM - setup the source files for BLE
+    set(BLE_OUTPUT_C
+        # JJM - mirror simple peripheral iCall folder
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/icall/src/icall_cc2650.c
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/icall/src/icall_user_config.c
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/apps/common/freertos/icall_FreeRTOS.c
+        
+        # JJM - mirror simple peripheral iCallBLE folder 
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/icall/stack/ble_user_config_stack.c
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/icall/app/ble_user_config.c
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/icall/app/icall_api_lite.c
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/icall/app/icall_hci_tl.c 
+
+        # JJM - mirror the simple peripheral Profiles folder
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/profiles/dev_info/cc26xx/devinfoservice.c
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/profiles/simple_profile/cc26xx/simple_gatt_profile.c
     )
 
     set(SYSCONFIG_OUTPUT_OTHER
@@ -184,6 +206,8 @@ add_custom_command(
 
 add_library(openthread-cc13xx_cc26xx
     ${SYSCONFIG_OUTPUT_C}
+    ${DMM_OUTPUT_C}
+    ${BLE_OUTPUT_C}
     alarm.c
     alarm_micro.c
     diag.c
@@ -213,6 +237,8 @@ target_link_libraries(openthread-cc13xx_cc26xx
         ot-config
 )
 
+# JJM - setting the user compile definitions here as there seems to be 
+# an issue with the .opt files 
 set(USR_COMPILE_DEFINITIONS
     "SYSCFG"
     "CC13X4"
