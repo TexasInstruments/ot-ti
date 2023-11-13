@@ -31,11 +31,28 @@ set(COMMON_INCLUDES
     ${TI_PUBLIC_INCLUDES}
     ${PROJECT_SOURCE_DIR}/openthread/examples/platforms
     ${PROJECT_SOURCE_DIR}/openthread/src/core
+
+    # JJM include paths for ICall module
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/inc/
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/icall/inc
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/icall/src/inc
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/hal/src/inc
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/hal/src/target/_common
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/common/cc26xx/
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/common/nv
+
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/rom
+
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/osal/src/inc
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/controller/cc26xx/inc
+    
 )
 
 set(COMMON_SOURCES
     cli_uart.cpp
     main.c
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/apps/common/ble_remote_display/stack/osal_icall_ble.c
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/rom/agama_r1/rom_init.c
 )
 
 if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")

@@ -43,6 +43,14 @@
 #include <ti/drivers/ECDSA.h>
 #include <ti/drivers/SHA2.h>
 
+#include <icall.h>
+
+#ifndef USE_DEFAULT_USER_CFG
+#include "ble_user_config.h"
+// BLE user defined configuration
+icall_userCfg_t user0Cfg = BLE_USER_CFG;
+#endif // USE_DEFAULT_USER_CFG
+
 // The entry point for the application
 extern int app_main(int argc, char *argv[]);
 #define APP_STACK_SIZE (2048)
@@ -79,6 +87,12 @@ int main(void)
     AESECB_init();
 
     SHA2_init();
+
+    // initialize the ICall module
+    ICall_init();
+
+    // Start tasks of external images - Priority 5 
+    ICall_createRemoteTasks();
 
     if (NULL ==
         xTaskCreateStatic(vTaskCode, "APP", APP_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, appStack, &appTaskBuffer))

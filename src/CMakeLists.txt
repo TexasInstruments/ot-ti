@@ -123,7 +123,7 @@ if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/icall/src/icall_cc2650.c
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/icall/src/icall_user_config.c
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/apps/common/freertos/icall_FreeRTOS.c
-        
+
         # JJM - mirror simple peripheral iCallBLE folder 
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/icall/stack/ble_user_config_stack.c
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/icall/app/ble_user_config.c
@@ -145,8 +145,8 @@ if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
         ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_utils_runtime_model.gv
 
         # mirrors the simple-peripheral Startup folder
-        # JJM - cannot get this to link 
-        #${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/apps/common/ble_remote_display/stack/osal_icall_ble.c
+        # JJM - cannot get this to link for stack_main() 
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/apps/common/ble_remote_display/stack/osal_icall_ble.c
     )
     set(GENLIBS_INCLUDES
         -L${TI_SIMPLELINK_SDK_DIR}/source
