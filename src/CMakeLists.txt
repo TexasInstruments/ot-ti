@@ -48,24 +48,92 @@ if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
         ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_radio_config.c
         ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_radio_config.h
 
+        # JJM - adding the BLE configuration source 
+        ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_ble_config.c
+        ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_ble_config.h
+
+
         # TI SimpleLink FreeRTOS configuration and build is not possible until
         # configTICK_RATE_HZ is configurable and source directory set correctly.
         #${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_freertos_config.c
         #${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_freertos_portable_config.c
         #${CMAKE_CURRENT_BINARY_DIR}/syscfg/FreeRTOSConfig.h
     )
+
+    # JJM - System Cofiguration Include Paths 
+    set(SYSCONFIG_INCLUDES
+        #DMM
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/thread/platform
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/apps
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/apps/common/thread
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/apps/common/thread/source/activity
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/common/nv
+
+        # BLE
+        # JJM - including /src here to avoid duplicates of FreeRTOSConfig.h. I think this is ok? 
+        ${PROJECT_SOURCE_DIR}/src
+
+        # BLE (cont)
+        ${TI_SIMPLELINK_SDK_DIR}/kernel/tirtos7/packages
+        ${TI_SIMPLELINK_SDK_DIR}/source
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/common/cc26xx
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/common/cc26xx/npi/stack/
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/common/cc26xx/rcosc
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/controller/cc26xx/inc
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/hal/src/inc
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/hal/src/target/_common
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/heapmgr
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/icall/inc
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/icall/src
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/icall/src/inc
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/inc
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/npi/src/
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/npi/src/inc
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/osal/src/inc
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/profiles/dev_info
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/profiles/simple_profile
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/rom
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/services/src/saddr
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/services/src/sdata
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/common/cc26xx
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/common/nv
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/devices/cc13x4_cc26x4
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/common/cc26xx
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack/common/cc26xx/freertos
+    )
+
+    # JJM - setup the source files required for DMM builds 
+    set(DMM_OUTPUT_C
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/apps/common/thread/source/activity/dmm_thread_activity.c
+        ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_dmm_application_policy.c
+        ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_dmm_application_policy.h
+    )
+
     set(SYSCONFIG_OUTPUT_OTHER
         ${CMAKE_CURRENT_BINARY_DIR}/syscfg/syscfg_c.rov.xs
         ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_build_config.opt
+        # JJM - this doesn't seem to work for some reason, had to add to User Defs
+        ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_ble_app_config.opt
         ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_utils_build_linker.cmd.genlibs
         ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_utils_runtime_Makefile
         ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_utils_runtime_model.gv
+
+        # mirrors the simple-peripheral Startup folder
+        # JJM - cannot get this to link 
+        #${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/apps/common/ble_remote_display/stack/osal_icall_ble.c
     )
     set(GENLIBS_INCLUDES
         -L${TI_SIMPLELINK_SDK_DIR}/source
     )
 
 elseif(TI_SIMPLELINK_KERNEL STREQUAL "tirtos7")
+
+    # JJM - not used, using FreeRTOS 
+
     set(SYSCONFIG_OUTPUT_C
         ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_drivers_config.h
         ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_radio_config.h
@@ -99,6 +167,8 @@ add_custom_command(
     OUTPUT
         ${SYSCONFIG_OUTPUT_C}
         ${SYSCONFIG_OUTPUT_OTHER}
+        ${DMM_OUTPUT_C}
+        ${BLE_OUTPUT_C}
     COMMAND
         ${TI_SYSCONFIG_CMD}
             -s ${TI_SIMPLELINK_SDK_DIR}/.metadata/product.json
@@ -143,15 +213,42 @@ target_link_libraries(openthread-cc13xx_cc26xx
         ot-config
 )
 
+set(USR_COMPILE_DEFINITIONS
+    "SYSCFG"
+    "CC13X4"
+    "CC13XX"
+    "POWER_SAVING"
+    "TBM_ACTIVE_ITEMS_ONLY"
+    "STACK_LIBRARY"
+    "EXTENDED_STACK_SETTINGS=EXTENDED_STACK_SETTINGS_DEFAULT"
+    "NPI_USE_UART"
+    "ICALL_EVENTS"
+    "ICALL_JT"
+    "ICALL_LITE"
+    "ICALL_STACK0_ADDR"
+    "USE_ICALL"
+    "ICALL_MAX_NUM_ENTITIES=6"
+    "ICALL_MAX_NUM_TASKS=3"
+    "OSAL_CBTIMER_NUM_TASKS=1"
+    "ONE_BLE_LIB_SIZE_OPTIMIZATION"
+    "HOST_CONFIG=PERIPHERAL_CFG"
+    "USE_AE"
+    "GAP_BOND_MGR"
+    "HCI_TL_NONE"
+    "FREERTOS"
+)
+
 target_compile_definitions(openthread-cc13xx_cc26xx
     PUBLIC
         ${OT_PLATFORM_DEFINES}
         OT_TI_KERNEL_${TI_SIMPLELINK_KERNEL}
+        # JJM - add in the user compile definitions 
+        ${USR_COMPILE_DEFINITIONS}
 )
 
 target_compile_options(openthread-cc13xx_cc26xx
     PRIVATE
-        ${OT_CFLAGS}
+        ${OT_CFLAGS}       
 )
 
 target_include_directories(openthread-cc13xx_cc26xx

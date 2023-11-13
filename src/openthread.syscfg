@@ -1,229 +1,160 @@
-/*
- * Copyright (c) 2018, Texas Instruments Incorporated
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * *  Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * *  Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * *  Neither the name of Texas Instruments Incorporated nor the names of
- *    its contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
- * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+/**
+ * These arguments were used when this file was generated. They will be automatically applied on subsequent loads
+ * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
+ * @cliArgs --board "/ti/boards/LP_EM_CC1354P10_1" --product "simplelink_cc13xx_cc26xx_sdk@7.10.00.98"
+ * @versions {"tool":"1.15.0+2826"}
  */
 
-/*
- *  cli_ftd.syscfg
+/**
+ * Import the modules used in this configuration.
  */
+const ble         = scripting.addModule("/ti/ble5stack/ble");
+const CCFG        = scripting.addModule("/ti/devices/CCFG");
+const custom      = scripting.addModule("/ti/devices/radioconfig/custom");
+const rfdesign    = scripting.addModule("/ti/devices/radioconfig/rfdesign");
+const dmm         = scripting.addModule("/ti/dmm/dmm");
+const AESCCM      = scripting.addModule("/ti/drivers/AESCCM", {}, false);
+const AESCCM1     = AESCCM.addInstance();
+const AESCTRDRBG  = scripting.addModule("/ti/drivers/AESCTRDRBG", {}, false);
+const AESCTRDRBG1 = AESCTRDRBG.addInstance();
+const AESECB      = scripting.addModule("/ti/drivers/AESECB");
+const AESECB1     = AESECB.addInstance();
+const DMA         = scripting.addModule("/ti/drivers/DMA");
+const ECDH        = scripting.addModule("/ti/drivers/ECDH");
+const ECDH1       = ECDH.addInstance();
+const ECDSA       = scripting.addModule("/ti/drivers/ECDSA");
+const ECDSA1      = ECDSA.addInstance();
+const ECJPAKE     = scripting.addModule("/ti/drivers/ECJPAKE");
+const ECJPAKE1    = ECJPAKE.addInstance();
+const GPIO        = scripting.addModule("/ti/drivers/GPIO");
+const GPIO1       = GPIO.addInstance();
+const GPIO2       = GPIO.addInstance();
+const GPIO3       = GPIO.addInstance();
+const GPIO4       = GPIO.addInstance();
+const GPIO5       = GPIO.addInstance();
+const NVS         = scripting.addModule("/ti/drivers/NVS");
+const NVS1        = NVS.addInstance();
+const Power       = scripting.addModule("/ti/drivers/Power");
+const RF          = scripting.addModule("/ti/drivers/RF");
+const SHA2        = scripting.addModule("/ti/drivers/SHA2");
+const SHA21       = SHA2.addInstance();
+const SPI         = scripting.addModule("/ti/drivers/SPI");
+const SPI1        = SPI.addInstance();
+const TRNG        = scripting.addModule("/ti/drivers/TRNG");
+const TRNG1       = TRNG.addInstance();
+const UART2       = scripting.addModule("/ti/drivers/UART2");
+const UART21      = UART2.addInstance();
+const Watchdog    = scripting.addModule("/ti/drivers/Watchdog");
+const Watchdog1   = Watchdog.addInstance();
 
-/* Modules */
-var AESECB    = scripting.addModule("/ti/drivers/AESECB");
-var DMA       = scripting.addModule("/ti/drivers/DMA");
-var Device    = scripting.addModule("/ti/devices/CCFG");
-var ECDH      = scripting.addModule("/ti/drivers/ECDH");
-var ECDSA     = scripting.addModule("/ti/drivers/ECDSA");
-var ECJPAKE   = scripting.addModule("/ti/drivers/ECJPAKE");
-var GPIO      = scripting.addModule("/ti/drivers/GPIO");
-var NVS       = scripting.addModule("/ti/drivers/NVS");
-var Power     = scripting.addModule("/ti/drivers/Power");
-var RF        = scripting.addModule("/ti/drivers/RF");
-var RFCustom  = scripting.addModule("/ti/devices/radioconfig/custom");
-var RFDesign  = scripting.addModule("ti/devices/radioconfig/rfdesign");
-var SHA2      = scripting.addModule("/ti/drivers/SHA2");
-var SPI       = scripting.addModule("/ti/drivers/SPI");
-var TRNG      = scripting.addModule("/ti/drivers/TRNG");
-var UART2     = scripting.addModule("/ti/drivers/UART2");
-var Watchdog  = scripting.addModule("/ti/drivers/Watchdog");
-
-
-/* Instances */
-var AESECB     = AESECB.addInstance();
-var ECDH       = ECDH.addInstance();
-var ECDSA      = ECDSA.addInstance();
-var ECJPAKE    = ECJPAKE.addInstance();
-var GPIO1      = GPIO.addInstance();
-var GPIO2      = GPIO.addInstance();
-var GPIO3      = GPIO.addInstance();
-var GPIO4      = GPIO.addInstance();
-var GPIO5      = GPIO.addInstance();
-var NVS1       = NVS.addInstance();
-var SHA21      = SHA2.addInstance();
-var SPI2       = SPI.addInstance();
-var TRNG1      = TRNG.addInstance();
-var UART2      = UART2.addInstance();
-var Watchdog1  = Watchdog.addInstance();
-
-const deviceId = system.deviceData.deviceId;
-
-
-/* TI SimpleLink FreeRTOS configuration and build is not possible until
- * configTICK_RATE_HZ is configurable and source directory set correctly.
- *
- * Only generate the kernel configuration for tirtos7 for now.
+/**
+ * Write custom configuration values to the imported modules.
  */
-/* Kernel Configuration */
-if (system.getRTOS() === "tirtos7") {
-    system.getScript("kernel_config_release.syscfg.js");
-}
+ble.radioConfig.codeExportConfig.$name = "ti_devices_radioconfig_code_export_param1";
+ble.connUpdateParamsPeripheral.$name   = "ti_ble5stack_general_ble_conn_update_params0";
+ble.advSet1.$name                      = "ti_ble5stack_broadcaster_advertisement_set0";
+ble.advSet1.advParam1.$name            = "ti_ble5stack_broadcaster_advertisement_params0";
+ble.advSet1.advData1.$name             = "ti_ble5stack_broadcaster_advertisement_data0";
+ble.advSet1.scanRes1.$name             = "ti_ble5stack_broadcaster_advertisement_data1";
+ble.advSet2.$name                      = "ti_ble5stack_broadcaster_advertisement_set1";
+ble.advSet2.advParam2.$name            = "ti_ble5stack_broadcaster_advertisement_params1";
+ble.advSet2.advData2.$name             = "ti_ble5stack_broadcaster_advertisement_data2";
+ble.advSet2.scanRes2.$name             = "ti_ble5stack_broadcaster_advertisement_data3";
 
+CCFG.xoscCapArray            = true;
+CCFG.xoscCapArrayDelta       = 0xD5;
+CCFG.enableBootloader        = true;
+CCFG.dioBootloaderBackdoor   = 15;
+CCFG.levelBootloaderBackdoor = "Active low";
+CCFG.srcClkLF                = "Derived from HF XOSC";
+CCFG.ccfgTemplate.$name      = "ti_devices_CCFG_CCFGCC26XXTemplate0";
 
-/* CCFG */
-const ccfgSettings = system.getScript("/ti/common/lprf_ccfg_settings.js").ccfgSettings;
-for(var setting in ccfgSettings)
-{
-    Device[setting] = ccfgSettings[setting];
-}
+custom.ieee                                                  = ["ieee154"];
+custom.radioConfigieee154.$name                              = "ti_devices_radioconfig_settings_ieee_15_40";
+custom.radioConfigieee154.codeExportConfig.$name             = "ti_devices_radioconfig_code_export_param0";
+custom.radioConfigieee154.codeExportConfig.useConst          = true;
+custom.radioConfigieee154.codeExportConfig.useMulti          = true;
+custom.radioConfigieee154.codeExportConfig.symGenMethod      = "Custom";
+custom.radioConfigieee154.codeExportConfig.cmdRadioSetupPa   = "RF_cmdIeeeRadioSetup";
+custom.radioConfigieee154.codeExportConfig.cmdList_ieee_15_4 = ["cmdIeeeCsma","cmdIeeeEdScan","cmdIeeeRx","cmdIeeeRxAck","cmdIeeeTx","cmdRadioSetupPa","cmdTxTest"];
 
-Device.srcClkLF = "Derived from HF XOSC";
+rfdesign.rfDesign = "LP_EM_CC1354P10_1";
 
+dmm.stackRoles                          = ["blePeripheral","custom1"];
+dmm.policyArray[0].$name                = "ti_dmm_policy_dmm_policy0";
+dmm.policyArray[0].custom1.$name        = "ti_dmm_policy_stack_dmm_stack_custom0";
+dmm.policyArray[0].blePeripheral.$name  = "ti_dmm_policy_stack_dmm_stack_ble0";
+dmm.policyArray[0].blePeripheral.weight = 1;
 
-/* UART */
-UART2.$hardware                   = system.deviceData.board.components.XDS110UART;
-UART2.$name                       = "CONFIG_UART2_0";
+AESCCM1.$name = "CONFIG_AESCCM_0";
 
+AESCTRDRBG1.$name = "CONFIG_AESCTRDRBG_0";
 
-/* GPIO */
-GPIO1.$hardware                   = system.deviceData.board.components["BTN-1"];
-GPIO1.$name                       = "CONFIG_GPIO_BTN1";
+AESECB1.$name = "CONFIG_AESECB_MBEDTLS";
 
-GPIO2.$hardware                   = system.deviceData.board.components["BTN-2"];
-GPIO2.$name                       = "CONFIG_GPIO_BTN2";
+ECDH1.$name = "CONFIG_ECDH_0";
 
-GPIO3.$hardware                   = system.deviceData.board.components.LED_GREEN;
-GPIO3.$name                       = "CONFIG_GPIO_GLED";
+ECDSA1.$name = "CONFIG_ECDSA_0";
 
-GPIO4.$hardware                   = system.deviceData.board.components.LED_RED;
-GPIO4.$name                       = "CONFIG_GPIO_RLED";
+ECJPAKE1.$name = "CONFIG_ECJPAKE_0";
 
+GPIO1.$hardware = system.deviceData.board.components["BTN-1"];
+GPIO1.$name     = "CONFIG_GPIO_BTN1";
 
-/* SPI for NCP */
-SPI2.$name                   = "CONFIG_SPI_1";
-SPI2.mode                    = "Four Pin SS Active Low";
-SPI2.spi.pociPin.$assign     = "DIO24"
-SPI2.spi.picoPin.$assign     = "DIO25"
-SPI2.spi.sclkPin.$assign     = "DIO26"
-SPI2.spi.csnPin.$assign      = "DIO27"
+GPIO2.$hardware = system.deviceData.board.components["BTN-2"];
+GPIO2.$name     = "CONFIG_GPIO_BTN2";
 
-GPIO5.$name                  = "CONFIG_SPINEL_INT";
-GPIO5.mode                   = "Output";
-GPIO5.outputStrength         = "High";
-GPIO5.initialOutputState     = "High";
-GPIO5.gpioPin.$assign        = "DIO16";
+GPIO3.$hardware = system.deviceData.board.components.LED_GREEN;
+GPIO3.$name     = "CONFIG_GPIO_GLED";
 
+GPIO4.$hardware = system.deviceData.board.components.LED_RED;
+GPIO4.$name     = "CONFIG_GPIO_RLED";
 
-/* NVS */
-NVS1.$name = "CONFIG_NVSINTERNAL";
+GPIO5.$name              = "CONFIG_SPINEL_INT";
+GPIO5.mode               = "Output";
+GPIO5.outputStrength     = "High";
+GPIO5.initialOutputState = "High";
+GPIO5.gpioPin.$assign    = "boosterpack.32";
 
-/* place at the end of Flash */
-if(deviceId.match(/CC((13|26).2(R|RB|P)7)/))
-{
-    NVS1.internalFlash.regionBase = 0xAA000;
-    NVS1.internalFlash.regionSize = 0x4000;
-}
-else if(deviceId.match(/CC((13|26).2(R|RB|P)1)/))
-{
-    NVS1.internalFlash.regionBase = 0x52000;
-    NVS1.internalFlash.regionSize = 0x4000;
-}
-else if(deviceId.match(/CC((13|26).4P10)/))
-{
-    NVS1.internalFlash.regionBase = 0x52000;
-    NVS1.internalFlash.regionSize = 0x4000;
-}
-else
-{
-    throw new Error("Could not set NVS location for deviceId: " + deviceId);
-}
+NVS1.$name                    = "CONFIG_NVSINTERNAL";
+NVS1.internalFlash.$name      = "ti_drivers_nvs_NVSCC26XX0";
+NVS1.internalFlash.regionBase = 0x52000;
+NVS1.internalFlash.regionSize = 0x4000;
 
+RF.$hardware = system.deviceData.board.components["SKY13317-373LF"];
 
-/* Watchdog */
-Watchdog1.$name             = "CONFIG_WATCHDOG0";
-Watchdog1.period            = 1000;
-Watchdog1.watchdog.$assign  = "WDT0";
+SHA21.$name = "CONFIG_SHA2_0";
 
-/* TRNG */
-TRNG1.$name  = "CONFIG_TRNG_THREAD";
+SPI1.$name               = "CONFIG_SPI_1";
+SPI1.mode                = "Four Pin CS Active Low";
+SPI1.spi.sclkPin.$assign = "boosterpack.24";
+SPI1.spi.pociPin.$assign = "boosterpack.6";
+SPI1.spi.picoPin.$assign = "boosterpack.23";
+SPI1.spi.csnPin.$assign  = "boosterpack.25";
 
-/* AES */
-AESECB.$name = "CONFIG_AESECB_MBEDTLS";
+TRNG1.$name = "CONFIG_TRNG_THREAD";
 
-/* RF */
+UART21.$name     = "CONFIG_UART2_0";
+UART21.$hardware = system.deviceData.board.components.XDS110UART;
 
-/* if an antenna component exists, assign it to the rf instance */
-if (system.deviceData.board && system.deviceData.board.components.RF) {
-    RF.$hardware = system.deviceData.board.components.RF;
-}
+Watchdog1.$name            = "CONFIG_WATCHDOG0";
+Watchdog1.watchdog.$assign = "WDT0";
 
-const rfDesignSettings = system.getScript("/ti/common/lprf_rf_design_settings.js").rfDesignSettings;
-for(var setting in rfDesignSettings)
-{
-    RFDesign[setting] = rfDesignSettings[setting];
-}
-
-/* Handling for RF frontend characterization */
-if(RFDesign.rfDesign.match(/LP_CC2652PSIP/))
-{
-    RFCustom.ieee = ["ieee154p10"];
-    var rfCodeExportConfig = RFCustom.radioConfigieee154p10.codeExportConfig
-}
-else
-{
-    RFCustom.ieee = ["ieee154"];
-    var rfCodeExportConfig = RFCustom.radioConfigieee154.codeExportConfig
-}
-
-var cmdList = [
-    "cmdIeeeTx",
-    "cmdIeeeRx",
-    "cmdIeeeCsma",
-    "cmdIeeeEdScan",
-    "cmdIeeeRxAck",
-    "cmdTxTest"
-];
-
-rfCodeExportConfig.useConst     = true;
-rfCodeExportConfig.useMulti     = true;
-rfCodeExportConfig.symGenMethod = "Custom";
-
-// Add high PA options if present
-if(deviceId.match(/CC(265[12]R|2674R|1352R1|1354R)/))
-{
-    cmdList.push("cmdRadioSetup");
-    rfCodeExportConfig.cmdRadioSetup = "RF_cmdIeeeRadioSetup";
-}
-else if(deviceId.match(/CC(265[12]P|2674P|1352P)/))
-{
-    cmdList.push("cmdRadioSetupPa");
-    rfCodeExportConfig.cmdRadioSetupPa = "RF_cmdIeeeRadioSetup";
-    rfCodeExportConfig.paExport = "combined";
-}
-else if(deviceId.match(/CC(265[34]|1354)P/))
-{
-    cmdList.push("cmdRadioSetupPa");
-    rfCodeExportConfig.cmdRadioSetupPa = "RF_cmdIeeeRadioSetup";
-    // currently not characterized for high PA
-}
-else
-{
-    throw new Error("Could not set RF settings for deviceId: " + deviceId);
-}
-
-rfCodeExportConfig.cmdList_ieee_15_4 = cmdList;
+/**
+ * Pinmux solution for unlocked pins/peripherals. This ensures that minor changes to the automatic solver in a future
+ * version of the tool will not impact the pinmux you originally saw.  These lines can be completely deleted in order to
+ * re-solve from scratch.
+ */
+GPIO1.gpioPin.$suggestSolution         = "boosterpack.11";
+GPIO2.gpioPin.$suggestSolution         = "boosterpack.17";
+GPIO3.gpioPin.$suggestSolution         = "ball.16";
+GPIO4.gpioPin.$suggestSolution         = "ball.15";
+RF.rfAntennaPin0.$suggestSolution      = "ball.10";
+RF.rfAntennaPin1.$suggestSolution      = "ball.12";
+RF.rfAntennaPin2.$suggestSolution      = "ball.11";
+SPI1.spi.$suggestSolution              = "SPI0";
+SPI1.spi.dmaRxChannel.$suggestSolution = "DMA_CH3";
+SPI1.spi.dmaTxChannel.$suggestSolution = "DMA_CH4";
+UART21.uart.$suggestSolution           = "UART0";
+UART21.uart.txPin.$suggestSolution     = "boosterpack.4";
+UART21.uart.rxPin.$suggestSolution     = "boosterpack.3";
