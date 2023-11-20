@@ -29,7 +29,7 @@
 if(NOT $ENV{TI_SYSCONFIG_ROOT} STREQUAL "")
     set(TI_SYSCONFIG_INSTALL_DIR $ENV{TI_SYSCONFIG_ROOT} CACHE PATH "")
 else()
-    set(TI_SYSCONFIG_INSTALL_DIR $ENV{HOME}/ti/sysconfig_1.15.0 CACHE PATH "")
+    set(TI_SYSCONFIG_INSTALL_DIR $ENV{HOME}/ti/sysconfig_1_16_2 CACHE PATH "")
 endif()
 
 if(WIN32)
@@ -126,6 +126,8 @@ add_library(openthread-cc13xx_cc26xx
     system.c
     system.h
     uart.c
+    #cfs.c
+    #cfs.h
     $<TARGET_OBJECTS:openthread-platform-utils>
 )
 
@@ -146,6 +148,8 @@ target_link_libraries(openthread-cc13xx_cc26xx
 target_compile_definitions(openthread-cc13xx_cc26xx
     PUBLIC
         ${OT_PLATFORM_DEFINES}
+	#TIOP_RADIO_USE_CFS
+	#PLAT_RADIO_SOFTWARE_IMM_ACK=1
         OT_TI_KERNEL_${TI_SIMPLELINK_KERNEL}
 )
 

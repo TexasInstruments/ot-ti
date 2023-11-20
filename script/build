@@ -63,6 +63,7 @@ readonly TI_LAUNCHPAD=(
     LP_CC2652RSIP
     LP_EM_CC1354P10_1
     LP_EM_CC1354P10_6
+    LP_CC2653P10
 )
 
 readonly OT_SRCDIR="$(pwd)"

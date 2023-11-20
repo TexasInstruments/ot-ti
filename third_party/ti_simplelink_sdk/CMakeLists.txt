@@ -65,9 +65,17 @@ if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/posix/freertos/sleep.c
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/posix/freertos/timer.c
     )
+
+if(TI_SIMPLELINK_BOARD STREQUAL "LP_CC2653P10")
+    set(CC13XX_CC26XX_LDS
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/boards/cc26x3/cc26x3_freertos.lds
+    )
+else()
     set(CC13XX_CC26XX_LDS
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/boards/${TI_SIMPLELINK_DEVICE}/${TI_SIMPLELINK_DEVICE}_freertos.lds
     )
+endif()
+
 
 elseif(TI_SIMPLELINK_KERNEL STREQUAL "tirtos7")
     set(CC13XX_CC26XX_DPL_SRCS
@@ -98,9 +106,17 @@ elseif(TI_SIMPLELINK_KERNEL STREQUAL "tirtos7")
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/posix/tirtos/sleep.c
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/posix/tirtos/timer.c
     )
+if(TI_SIMPLELINK_BOARD STREQUAL "LP_CC2653P10")
+    set(CC13XX_CC26XX_LDS
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/boards/cc26x3/cc26x3_tirtos7.lds
+    )
+else()
     set(CC13XX_CC26XX_LDS
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/boards/${TI_SIMPLELINK_DEVICE}/${TI_SIMPLELINK_DEVICE}_tirtos7.lds
     )
+
+endif()
+
 
 
 else()
@@ -121,6 +137,7 @@ set(CC13XX_CC26XX_NVOCMP_SRCS
 
 set(CC13XX_CC26XX_NVOCMP_DEFS
     NVOCMP_POSIX_MUTEX
+    NVOCMP_NVPAGES=3
 )
 
 set(CC13XX_CC26XX_NVOCMP_INCLUDES
@@ -145,6 +162,10 @@ if(TI_SIMPLELINK_DEVICE STREQUAL "cc13x2_cc26x2")
 elseif(TI_SIMPLELINK_DEVICE STREQUAL "cc13x2x7_cc26x2x7")
     target_compile_definitions(cc13xx-cc26xx-sdk PUBLIC DeviceFamily_CC13X2X7_CC26X2X7)
     target_compile_definitions(ot-config INTERFACE DeviceFamily_CC13X2X7_CC26X2X7)
+
+elseif(TI_SIMPLELINK_BOARD STREQUAL "LP_CC2653P10")
+    target_compile_definitions(cc13xx-cc26xx-sdk PUBLIC DeviceFamily_CC26X3)
+    target_compile_definitions(ot-config INTERFACE DeviceFamily_CC26X3)
 
 elseif(TI_SIMPLELINK_DEVICE STREQUAL "cc13x4_cc26x4")
     target_compile_definitions(cc13xx-cc26xx-sdk PUBLIC DeviceFamily_CC13X4_CC26X4)
