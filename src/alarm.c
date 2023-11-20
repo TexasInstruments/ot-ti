@@ -32,8 +32,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-/* POSIX Header files */
-#include <time.h>
+/* ClockP Header files */
+#include <ti/drivers/dpl/ClockP.h>
 
 /* OpenThread public API Header files */
 #include <openthread/platform/alarm-milli.h>
@@ -45,15 +45,57 @@
 #include <FreeRTOS.h>
 #endif
 
-static uint32_t Alarm_time0   = 0;
-static uint32_t Alarm_time    = 0;
-static timer_t  Alarm_timerid = 0;
-static bool     Alarm_running = false;
+static uint32_t         Alarm_time0   = 0;
+static uint32_t         Alarm_time    = 0;
+static ClockP_Handle    Alarm_handle  = 0;
+static ClockP_Struct    Alarm_Struct;
+static ClockP_Params    Alarm_Params;
+static bool             Alarm_running = false;
 
 /**
- * Handler for the POSIX clock callback.
+ * Milliseconds converted to system clock ticks. Minimum value of 1.
  */
-void Alarm_handler(union sigval val)
+uint32_t milliToTicks(uint32_t milli)
+{
+    uint32_t ticks = milli;
+    uint32_t tickPeriodUs = ClockP_getSystemTickPeriod();
+
+    if(milli != 0U)
+    {
+        ticks = (milli * 1000)/tickPeriodUs;
+        if(ticks == 0U)
+        {
+            ticks = 1U;
+        }
+    }
+
+    return(ticks);
+}
+
+/**
+ * System clock ticks converted to milliseconds. Minumum value of 1.
+ */
+uint32_t ticksToMilli(uint32_t ticks)
+{
+    uint32_t milli = ticks;
+    uint32_t tickPeriodUs = ClockP_getSystemTickPeriod();
+
+    if(ticks != 0U)
+    {
+        milli = (ticks * tickPeriodUs) / 1000;
+        if(milli == 0U)
+        {
+            milli = 1U;
+        }
+    }
+
+    return(milli);
+}
+
+/**
+ * Handler for the ClockP clock callback.
+ */
+void Alarm_handler(uintptr_t val)
 {
     (void)val;
     platformAlarmSignal();
@@ -64,16 +106,13 @@ void Alarm_handler(union sigval val)
  */
 void platformAlarmInit(void)
 {
-    struct timespec zeroTime = {0};
-    struct sigevent event =
-    {
-        .sigev_notify_function = Alarm_handler,
-        .sigev_notify = SIGEV_SIGNAL,
-    };
+    ClockP_Params_init(&Alarm_Params);
+    Alarm_Params.startFlag = 0;
 
-    clock_settime(CLOCK_MONOTONIC, &zeroTime);
-
-    timer_create(CLOCK_MONOTONIC, &event, &Alarm_timerid);
+    Alarm_handle = ClockP_construct(&Alarm_Struct,
+                                    Alarm_handler,
+                                    0,
+                                    &Alarm_Params);
 
     Alarm_running = false;
 }
@@ -83,11 +122,9 @@ void platformAlarmInit(void)
  */
 uint32_t otPlatAlarmMilliGetNow(void)
 {
-    struct timespec now;
+    uint32_t ticks = ClockP_getSystemTicks();
 
-    clock_gettime(CLOCK_MONOTONIC, &now);
-
-    return (now.tv_sec * 1000U) + ((now.tv_nsec / 1000000U) % 1000);
+    return (ticksToMilli(ticks));
 }
 
 /**
@@ -96,8 +133,7 @@ uint32_t otPlatAlarmMilliGetNow(void)
 void otPlatAlarmMilliStartAt(otInstance *aInstance, uint32_t aT0, uint32_t aDt)
 {
     (void)aInstance;
-    struct itimerspec timerspec = {0};
-    uint32_t          delta     = (otPlatAlarmMilliGetNow() - aT0);
+    uint32_t delta = (otPlatAlarmMilliGetNow() - aT0);
 
     Alarm_time0   = aT0;
     Alarm_time    = aDt;
@@ -112,26 +148,19 @@ void otPlatAlarmMilliStartAt(otInstance *aInstance, uint32_t aT0, uint32_t aDt)
     {
         uint64_t timeout = aDt - delta;
 #ifdef OT_TI_KERNEL_freertos
-        /* The timer is based on the FreeRTOS Kernel tick. If the RTOS is
-         * ticking faster than 1ms a sufficiently large number will overflow the
-         * tick count for the timer's timeout. This happens when the uptime.cpp
-         * counter is registered. We'll let the processing function re-register
-         * the timer with the remaining time.
-         */
         if (configTICK_RATE_HZ > 1000U)
         {
-            // FreeRTOS is ticking faster than 1ms and may overflow the timer
             if (timeout > UINT32_MAX / (configTICK_RATE_HZ / 1000U))
             {
                 timeout = UINT32_MAX / (configTICK_RATE_HZ / 1000U);
             }
         }
 #endif
+        //use ClockP_setTimeout to set timeout later
+        uint32_t ticksTimeout = milliToTicks(timeout);
 
-        timerspec.it_value.tv_sec  = (timeout / 1000U);
-        timerspec.it_value.tv_nsec = ((timeout % 1000U) * 1000000U);
-
-        timer_settime(Alarm_timerid, 0, &timerspec, NULL);
+        ClockP_setTimeout(Alarm_handle, ticksTimeout);
+        ClockP_start(Alarm_handle);
     }
 }
 
@@ -141,9 +170,8 @@ void otPlatAlarmMilliStartAt(otInstance *aInstance, uint32_t aT0, uint32_t aDt)
 void otPlatAlarmMilliStop(otInstance *aInstance)
 {
     (void)aInstance;
-    struct itimerspec zeroTime = {0};
 
-    timer_settime(Alarm_timerid, TIMER_ABSTIME, &zeroTime, NULL);
+    ClockP_stop(Alarm_handle);
     Alarm_running = false;
 }
 
@@ -174,6 +202,7 @@ void platformAlarmProcess(otInstance *aInstance)
         }
         else
         {
+
             // restart the timer, might have overflowed or fired early for some reason
             otPlatAlarmMilliStartAt(aInstance, nowTime, Alarm_time - offsetTime);
         }

@@ -35,8 +35,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-/* POSIX Header files */
-#include <time.h>
+/* ClockP Header files */
+#include <ti/drivers/dpl/ClockP.h>
 
 /* OpenThread public API Header files */
 #include <openthread/platform/alarm-micro.h>
@@ -47,15 +47,57 @@
  Local variables
  *****************************************************************************/
 
-static uint32_t AlarmMicro_time0   = 0;
-static uint32_t AlarmMicro_time    = 0;
-static timer_t  AlarmMicro_timerid = 0;
-static bool     AlarmMicro_running = false;
+static uint32_t         AlarmMicro_time0   = 0;
+static uint32_t         AlarmMicro_time    = 0;
+static ClockP_Handle    AlarmMicro_handle  = 0;
+static ClockP_Struct    AlarmMicro_Struct;
+static ClockP_Params    AlarmMicro_Params;
+static bool             AlarmMicro_running = false;
 
 /**
- * Handler for the POSIX clock callback.
+ * Microoseconds converted to system clock ticks. Minumum value of 1.
  */
-void AlarmMicro_handler(union sigval val)
+uint32_t microToTicks(uint32_t micro)
+{
+    uint32_t ticks = micro;
+    uint32_t tickPeriodUs = ClockP_getSystemTickPeriod();
+
+    if(micro != 0U)
+    {
+        ticks = micro/tickPeriodUs;
+        if(ticks == 0U)
+        {
+            ticks = 1U;
+        }
+    }
+
+    return(ticks);
+}
+
+/**
+ * System clock ticks converted to microseconds. Minumum value of 1.
+ */
+uint32_t ticksToMicro(uint32_t ticks)
+{
+    uint32_t micro = ticks;
+    uint32_t tickPeriodUs = ClockP_getSystemTickPeriod();
+
+    if(ticks != 0U)
+    {
+        micro = (ticks * tickPeriodUs);
+        if(micro == 0U)
+        {
+            micro = 1U;
+        }
+    }
+
+    return(micro);
+}
+
+/**
+ * Handler for the ClockP clock callback.
+ */
+void AlarmMicro_handler(uintptr_t val)
 {
     (void)val;
     platformAlarmMicroSignal();
@@ -66,27 +108,22 @@ void AlarmMicro_handler(union sigval val)
  */
 void platformAlarmMicroInit(void)
 {
-    struct timespec zeroTime = {0};
-    struct sigevent event =
-    {
-        .sigev_notify_function = AlarmMicro_handler,
-        .sigev_notify = SIGEV_SIGNAL,
-    };
+    ClockP_Params_init(&AlarmMicro_Params);
+    AlarmMicro_Params.startFlag = 0;
 
-    clock_settime(CLOCK_MONOTONIC, &zeroTime);
-
-    timer_create(CLOCK_MONOTONIC, &event, &AlarmMicro_timerid);
+    AlarmMicro_handle = ClockP_construct(&AlarmMicro_Struct,
+                                        AlarmMicro_handler,
+                                        0,
+                                        &AlarmMicro_Params);   
 
     AlarmMicro_running = false;
 }
 
 uint64_t otPlatTimeGet(void)
 {
-    struct timespec now;
+    uint32_t ticks = ClockP_getSystemTicks();
 
-    clock_gettime(CLOCK_MONOTONIC, &now);
-
-    return (now.tv_sec * 1000000U) + ((now.tv_nsec / 1000U) % 1000000);
+    return (ticksToMicro(ticks));
 }
 
 /**
@@ -94,11 +131,9 @@ uint64_t otPlatTimeGet(void)
  */
 uint32_t otPlatAlarmMicroGetNow(void)
 {
-    struct timespec now;
+    uint32_t ticks = ClockP_getSystemTicks();
 
-    clock_gettime(CLOCK_MONOTONIC, &now);
-
-    return (now.tv_sec * 1000000U) + ((now.tv_nsec / 1000U) % 1000000);
+    return (ticksToMicro(ticks));
 }
 
 /**
@@ -107,8 +142,7 @@ uint32_t otPlatAlarmMicroGetNow(void)
 void otPlatAlarmMicroStartAt(otInstance *aInstance, uint32_t aT0, uint32_t aDt)
 {
     (void)aInstance;
-    struct itimerspec timerspec = {0};
-    uint32_t          delta     = (otPlatAlarmMicroGetNow() - aT0);
+    uint32_t delta = (otPlatAlarmMicroGetNow() - aT0);
 
     AlarmMicro_time0   = aT0;
     AlarmMicro_time    = aDt;
@@ -121,10 +155,13 @@ void otPlatAlarmMicroStartAt(otInstance *aInstance, uint32_t aT0, uint32_t aDt)
     }
     else
     {
-        timerspec.it_value.tv_sec  = ((aDt - delta) / 1000000U);
-        timerspec.it_value.tv_nsec = (((aDt - delta) % 1000000U) * 1000U);
+        uint64_t timeout = aDt - delta;
 
-        timer_settime(AlarmMicro_timerid, 0, &timerspec, NULL);
+        //use ClockP_setTimeout to set timeout later
+        uint32_t ticksTimeout = microToTicks(timeout);
+
+        ClockP_setTimeout(AlarmMicro_handle, ticksTimeout);
+        ClockP_start(AlarmMicro_handle);
     }
 }
 
@@ -134,9 +171,8 @@ void otPlatAlarmMicroStartAt(otInstance *aInstance, uint32_t aT0, uint32_t aDt)
 void otPlatAlarmMicroStop(otInstance *aInstance)
 {
     (void)aInstance;
-    struct itimerspec zeroTime = {0};
 
-    timer_settime(AlarmMicro_timerid, TIMER_ABSTIME, &zeroTime, NULL);
+    ClockP_stop(AlarmMicro_handle);
     AlarmMicro_running = false;
 }
 
@@ -148,7 +184,8 @@ void platformAlarmMicroProcess(otInstance *aInstance)
 #if OPENTHREAD_CONFIG_PLATFORM_USEC_TIMER_ENABLE
     if (AlarmMicro_running)
     {
-        uint32_t offsetTime = otPlatAlarmMicroGetNow() - AlarmMicro_time0;
+        uint32_t nowTime    = otPlatAlarmMicroGetNow();
+        uint32_t offsetTime = nowTime - AlarmMicro_time0;
 
         if (AlarmMicro_time <= offsetTime)
         {
@@ -158,14 +195,8 @@ void platformAlarmMicroProcess(otInstance *aInstance)
         }
         else
         {
-            struct itimerspec timerspec = {0};
-
-            timer_gettime(AlarmMicro_timerid, &timerspec);
-            if (0U == timerspec.it_value.tv_sec && 0U == timerspec.it_value.tv_nsec)
-            {
-                /* Timer fired a bit early, notify we still need processing. */
-                platformAlarmMicroSignal();
-            }
+            // restart the timer, might have overflowed or fired early for some reason
+            otPlatAlarmMicroStartAt(aInstance, nowTime, AlarmMicro_time - offsetTime);
         }
     }
 #endif /* OPENTHREAD_CONFIG_PLATFORM_USEC_TIMER_ENABLE */
