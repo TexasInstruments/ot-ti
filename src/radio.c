@@ -85,6 +85,13 @@
 #define PLATFORM_RADIO_TX_TEST_MODULATED_WORD 0xAAAA
 #define PLATFORM_RADIO_TX_TEST_UNMODULATED_WORD 0xFFFF
 
+/* Threshold above receiver sensitivity for minimum energy detect in dBm (see 6.9.7) */
+#define PLATFORM_MAC_SPEC_ED_MIN_DBM_ABOVE_RECEIVER_SENSITIVITY    10
+#define PLATFORM_RADIO_RECEIVER_SENSITIVITY_DBM -90 /* dBm */
+#define PLATFORM_RADIO_RECEIVER_SATURATION_DBM -20  /* dBm */
+#define PLATFORM_MAC_SPEC_ED_MAX  0xFF
+#define PLATFORM_RF_POWER_MIN_DBM   (PLATFORM_RADIO_RECEIVER_SENSITIVITY_DBM + PLATFORM_MAC_SPEC_ED_MIN_DBM_ABOVE_RECEIVER_SENSITIVITY)
+#define PLATFORM_RF_POWER_MAX_DBM   PLATFORM_RADIO_RECEIVER_SATURATION_DBM
 /* state of the RF interface */
 static volatile platformRadio_phyState sState;
 
@@ -209,6 +216,7 @@ static RF_PriorityCoex sPriorityCoex = RF_PriorityCoexDefault;
  */
 static RF_RequestCoex sRequestCoex = RF_RequestCoexDefault;
 
+void finalizeAckCreation(void);
 /* Transmit security keying material */
 static uint8_t          sKeyId;
 static uint8_t          sAckKeyId;
@@ -223,7 +231,7 @@ static uint32_t         sAckFrameCounter;
 // Uncertainty of scheduling a CSL transmission, in ±10 us units. This will
 // vary based on the LF clock source used for the system's alarm module. The RF
 // driver will use a combination of RAT/HF/LF clock to schedule commands.
-#define CSL_TX_UNCERTAINTY 5U
+#define CSL_TX_UNCERTAINTY 50U
 
 static uint32_t sCslPeriod;
 static uint32_t sCslSampleTime;
@@ -816,6 +824,7 @@ static void rfCoreRxCallback(RF_Handle aRfHandle, RF_CmdHandle aRfCmdHandle, RF_
         /* A packet was received the packet MAY require an ACK Or the
          * packet might not (ie: a broadcast)
          */
+        finalizeAckCreation();
         evts |= RF_EVENT_RX_DONE;
     }
 
@@ -1446,7 +1455,21 @@ static otError rfCoreGenerateEmptyEnhAck(otRadioFrame *aRxFrame, otRadioFrame *a
 
 #if OPENTHREAD_CONFIG_MLE_LINK_METRICS_SUBJECT_ENABLE
     {
-        ieLen += otLinkMetricsEnhAckGetDataLen(&srcAddr);
+        uint8_t      linkMetricsIeDataLen = 0;
+        uint8_t      linkMetricsData[OT_ENH_PROBING_IE_DATA_MAX_SIZE] = {0};
+        uint8_t ackIeData[OT_ACK_IE_MAX_SIZE] = {0};
+
+
+        // Length of LQI/RSSI/Link Margin if available for device
+        linkMetricsIeDataLen = otLinkMetricsEnhAckGetDataLen(&srcAddr);
+
+        // Length of Vendor specific data
+        if (linkMetricsIeDataLen > 0)
+        {
+            // API returns total length, Vendor IE + linkMetrics data
+            linkMetricsIeDataLen = otMacFrameGenerateEnhAckProbingIe(ackIeData, linkMetricsData, linkMetricsIeDataLen);
+        }
+        ieLen += linkMetricsIeDataLen;
     }
 #endif
 
@@ -2245,6 +2268,44 @@ static uint64_t convertRatTimestamp(uint32_t timestamp)
     return currentSysTime - RF_convertRatTicksToUs(delta);
 }
 
+/*=================================================================================================
+ * @fn          radioComputeED
+ *
+ * @brief       Compute energy detect measurement.
+ *
+ * @param       rssi - raw RSSI value from radio hardware
+ *
+ * @return      energy detect measurement in the range of 0x00-0xFF
+ *=================================================================================================
+ */
+static uint8_t radioComputeED(int8_t rssiDbm)
+{
+    uint8_t ed;
+    int8_t min, max;
+    /*
+    *  Keep RF power between minimum and maximum values.
+    *  This min/max range is derived from datasheet and specification.
+    */
+    min = PLATFORM_RF_POWER_MIN_DBM;
+    max = PLATFORM_RF_POWER_MAX_DBM;
+    if (rssiDbm < min)
+    {
+        rssiDbm = min;
+    }
+    else if (rssiDbm > max)
+    {
+        rssiDbm = max;
+    }
+    /*
+    *  Create energy detect measurement by normalizing and scaling RF power level.
+    *
+    *  Note : The division operation below is designed for maximum accuracy and
+    *         best granularity.  This is done by grouping the math operations to
+    *         compute the entire numerator before doing any division.
+    */
+    ed = (PLATFORM_MAC_SPEC_ED_MAX * (rssiDbm - PLATFORM_RF_POWER_MIN_DBM)) / (PLATFORM_RF_POWER_MAX_DBM - PLATFORM_RF_POWER_MIN_DBM);
+    return(ed);
+}
 static otError populateReceiveFrame(otRadioFrame *aFrame, uint8_t *aData)
 {
     int                  infoIdx;
@@ -2274,7 +2335,7 @@ static otError populateReceiveFrame(otRadioFrame *aFrame, uint8_t *aData)
     aFrame->mPsdu               = &(aData[2]);     // start of psdu
     aFrame->mChannel            = sReceiveCmd.channel;
     aFrame->mInfo.mRxInfo.mRssi = aInfo->rssi;
-    aFrame->mInfo.mRxInfo.mLqi  = crcCorr->status.corr;
+    aFrame->mInfo.mRxInfo.mLqi  = (radioComputeED((int8_t)aInfo->rssi));
 
     bool pend = false;
 
@@ -2373,51 +2434,10 @@ static void handleRxDataFinish(otInstance *aInstance, unsigned int aEvents, rfc_
 
             curEntry->status = DATA_ENTRY_PENDING;
         }
-        else
-        {
-            // ack has not been sent
-            if (otMacFrameIsVersion2015(&receiveFrame))
-            {
-                if (sState == platformRadio_phyState_RxTxAck)
-                {
-                    // We have queued up an ack transmission, update the frame with LQI
-                    rfCoreGenerateEnhAck(&receiveFrame, &sAckFrame);
-#if OPENTHREAD_CONFIG_MAC_CSL_RECEIVER_ENABLE
-                    // Update IE data in the 802.15.4 header with the newest CSL period / phase
-                    if (sCslPeriod > 0)
-                    {
-                        otMacFrameSetCslIe(&sAckFrame, (uint16_t)sCslPeriod, getCslPhase(&sAckFrame));
-                    }
-#endif
-                    rfCoreProcessTransmitSecurity(&sAckFrame);
-                }
-                else
-                {
-                    // something failed in the setup of the TX command, drop the frame
-                    curEntry->status = DATA_ENTRY_PENDING;
-                }
-            }
-            else
-            {
-#if PLAT_RADIO_SOFTWARE_IMM_ACK
-                if (sState == platformRadio_phyState_RxTxAck)
-                {
-                    /* software is handling the imm-ack, update with the pend-bit
-                     * set correctly. We use the RF Core's source match idx.
-                     */
-                    otMacFrameGenerateImmAck(&receiveFrame, receiveFrame.mInfo.mRxInfo.mAckedWithFramePending, &sAckFrame);
-                }
-                else
-                {
-                    // something failed in the setup of the TX command, drop the frame
-                    curEntry->status = DATA_ENTRY_PENDING;
-                }
-#endif
-            }
-        }
+
     }
-    else
-    {
+    else {
+
         platformRadioProcessReceiveDone(aInstance, &receiveFrame, OT_ERROR_NONE);
 
         curEntry->status = DATA_ENTRY_PENDING;
@@ -2513,6 +2533,81 @@ void processAckCreation(otInstance *aInstance)
     } while (curEntry != startEntry);
 }
 
+void finalizeAckCreation(void)
+{
+    otError      error;
+    otRadioFrame receiveFrame = {0};
+    rfc_dataEntryGeneral_t *curEntry, *startEntry;
+    startEntry = curEntry = (rfc_dataEntryGeneral_t *)sRxDataQueue.pCurrEntry;
+    /* loop through receive queue */
+    do
+    {
+        if (DATA_ENTRY_FINISHED == curEntry->status)
+        {
+            // entry is being used by the CM0, this is the current frame
+            otRadioFrame rxFrame = {0};
+            uint8_t *    data    = &(curEntry->data);
+            // data[0]          // rx element length
+            rxFrame.mLength  = data[1] & 0x7F; // rx frame length (phy hdr)
+            rxFrame.mPsdu    = &(data[2]);     // beginning of PSDU
+            rxFrame.mChannel = sReceiveCmd.channel;
+            if (!otMacFrameIsAckRequested(&rxFrame))
+            {
+                curEntry = (rfc_dataEntryGeneral_t *)curEntry->pNextEntry;
+                // we are not requesting an acknowledgment
+                continue;
+            }
+            error = populateReceiveFrame(&receiveFrame, &(curEntry->data));
+            if (OT_ERROR_NONE != error)
+            {
+                // Process error at task level
+                break;
+            }
+            /* Handle ACK Generation Completion */
+            // ack has not been sent
+            if (otMacFrameIsVersion2015(&receiveFrame))
+            {
+                if (sState == platformRadio_phyState_RxTxAck)
+                {
+                    // We have queued up an ack transmission, update the frame with LQI
+                    rfCoreGenerateEnhAck(&receiveFrame, &sAckFrame);
+#if OPENTHREAD_CONFIG_MAC_CSL_RECEIVER_ENABLE
+                    // Update IE data in the 802.15.4 header with the newest CSL period / phase
+                    if (sCslPeriod > 0)
+                    {
+                        otMacFrameSetCslIe(&sAckFrame, (uint16_t)sCslPeriod, getCslPhase(&sAckFrame));
+                    }
+#endif
+                    rfCoreProcessTransmitSecurity(&sAckFrame);
+                }
+                else
+                {
+                    // something failed in the setup of the TX command, drop the frame
+                    curEntry->status = DATA_ENTRY_PENDING;
+                }
+            }
+            else
+            {
+#if PLAT_RADIO_SOFTWARE_IMM_ACK
+                if (sState == platformRadio_phyState_RxTxAck)
+                {
+                    /* software is handling the imm-ack, update with the pend-bit
+                     * set correctly. We use the RF Core's source match idx.
+                     */
+                    otMacFrameGenerateImmAck(&receiveFrame, receiveFrame.mInfo.mRxInfo.mAckedWithFramePending, &sAckFrame);
+                }
+                else
+                {
+                    // something failed in the setup of the TX command, drop the frame
+                    curEntry->status = DATA_ENTRY_PENDING;
+                }
+#endif
+            }
+            break;
+        }
+        curEntry = (rfc_dataEntryGeneral_t *)curEntry->pNextEntry;
+    } while (curEntry != startEntry);
+}
 /**
  * Scan through the RX queue, looking for completed entries.
  */
@@ -2732,3 +2827,4 @@ void platformRadioProcess(otInstance *aInstance, uintptr_t arg)
         break;
     }
 }
+
