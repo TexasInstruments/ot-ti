@@ -63,7 +63,7 @@
 #elif defined(DeviceFamily_CC13X2X7_CC26X2X7) \
     || defined(DeviceFamily_CC13X2X7) \
     || defined(DeviceFamily_CC26X2X7)
-#define configTOTAL_HEAP_SIZE ((size_t)(0x14000))
+#define configTOTAL_HEAP_SIZE ((size_t)(0x12000))
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION 1
 
 #elif defined(DeviceFamily_CC13X4_CC26X4) \
