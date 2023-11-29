@@ -74,6 +74,9 @@ main()
         cp ${builddir}/bin/ot-cli-ftd.out "${outdir}/bin/ot-cli-thci.out"
         cp ${builddir}/bin/ot-rcp.out "${outdir}/bin/ot-rcp-thci.out"
 
+        cp ${builddir}/lib/libopenthread-cli-ftd.a "${outdir}/lib/libopenthread-cli-main.a"
+        cp ${builddir}/lib/libtcplp-ftd.a "${outdir}/lib/libtcplp-main.a"
+ 
         # create Matter libraries
         ${CMAKE} -GNinja -DOT_COMPILE_WARNING_AS_ERROR=ON \
             -DTI_SIMPLELINK_BOARD=${launchpad} \
