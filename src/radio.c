@@ -920,7 +920,6 @@ static void rfCoreSendReceiveCmd(RF_Handle aRfHandle)
 static otError rfCoreSetTransmitPower(int8_t aPower)
 {
     otError               retval = OT_ERROR_NONE;
-    RF_TxPowerTable_Value oldValue;
     RF_TxPowerTable_Value newValue;
     unsigned int          i;
 
@@ -936,24 +935,9 @@ static otError rfCoreSetTransmitPower(int8_t aPower)
 
     /* find the tx power configuration */
     newValue = RF_TxPowerTable_findValue(txPowerTable, aPower);
-    oldValue = RF_getTxPower(sRfHandle);
+
     otEXPECT_ACTION(RF_TxPowerTable_INVALID_VALUE != newValue.rawValue, retval = OT_ERROR_INVALID_ARGS);
-
-    /* set the tx power configuration */
-    if (platformRadio_phyState_Sleep == sState || platformRadio_phyState_Disabled == sState ||
-        newValue.paType == oldValue.paType)
-    {
-        otEXPECT_ACTION(RF_StatSuccess == RF_setTxPower(sRfHandle, newValue), retval = OT_ERROR_FAILED);
-    }
-    else
-    {
-        rfCoreExecuteAbortCmd(sRfHandle, sReceiveCmdHandle);
-
-        otEXPECT_ACTION(RF_StatSuccess == RF_setTxPower(sRfHandle, newValue), retval = OT_ERROR_FAILED);
-
-        rfCoreSendReceiveCmd(sRfHandle);
-        otEXPECT_ACTION(sReceiveCmdHandle >= 0, retval = OT_ERROR_FAILED);
-    }
+    otEXPECT_ACTION(RF_StatSuccess == RF_setTxPower(sRfHandle, newValue), retval = OT_ERROR_FAILED);
 
 exit:
     return retval;
@@ -1648,6 +1632,7 @@ otError otPlatRadioTransmit(otInstance *aInstance, otRadioFrame *aFrame)
         updateIeInfoTxFrame(aInstance, aFrame);
         otEXPECT_ACTION(OT_ERROR_NONE == rfCoreProcessTransmitSecurity(aFrame), error = OT_ERROR_FAILED);
 
+        otPlatRadioSetTransmitPower(aInstance, sReqTxPower);
         sTransmitCmdHandle = rfCoreSendTransmitCmd(aInstance, sRfHandle, aFrame, false);
         otEXPECT_ACTION(sTransmitCmdHandle >= 0, error = OT_ERROR_FAILED);
         error = OT_ERROR_NONE;
