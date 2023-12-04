@@ -216,6 +216,7 @@ static RF_PriorityCoex sPriorityCoex = RF_PriorityCoexDefault;
  */
 static RF_RequestCoex sRequestCoex = RF_RequestCoexDefault;
 
+static uint32_t convertUsTimestamp(uint64_t timestamp);
 void finalizeAckCreation(void);
 /* Transmit security keying material */
 static uint8_t          sKeyId;
@@ -231,7 +232,7 @@ static uint32_t         sAckFrameCounter;
 // Uncertainty of scheduling a CSL transmission, in ±10 us units. This will
 // vary based on the LF clock source used for the system's alarm module. The RF
 // driver will use a combination of RAT/HF/LF clock to schedule commands.
-#define CSL_TX_UNCERTAINTY 50U
+#define CSL_TX_UNCERTAINTY 5U
 
 static uint32_t sCslPeriod;
 static uint32_t sCslSampleTime;
@@ -691,7 +692,7 @@ static void rfCoreTxCallback(RF_Handle aRfHandle, RF_CmdHandle aRfCmdHandle, RF_
  *
  * @return handle of the running command returned by the command scheduler
  */
-static RF_CmdHandle rfCoreSendTransmitCmd(otInstance *aInstance, RF_Handle aRfHandle, otRadioFrame *aFrame)
+static RF_CmdHandle rfCoreSendTransmitCmd(otInstance *aInstance, RF_Handle aRfHandle, otRadioFrame *aFrame, bool isAckFrame)
 {
     RF_ScheduleCmdParams rfScheduleCmdParams;
     RF_Op *op;
@@ -711,11 +712,18 @@ static RF_CmdHandle rfCoreSendTransmitCmd(otInstance *aInstance, RF_Handle aRfHa
     {
 // Number of RAT ticks from the command beginning to symbols being sent over the air
 #define RF_CORE_TX_CMD_LATENCY (320) // 80 uS: TX synth lock guard time
-        sTransmitCmd.startTime =
-            RF_convertUsToRatTicks(aFrame->mInfo.mTxInfo.mTxDelayBaseTime + aFrame->mInfo.mTxInfo.mTxDelay) -
-            RF_CORE_TX_CMD_LATENCY;
+        if (!isAckFrame){
+            sTransmitCmd.startTime =
+                convertUsTimestamp(aFrame->mInfo.mTxInfo.mTxDelayBaseTime + aFrame->mInfo.mTxInfo.mTxDelay) -
+                RF_CORE_TX_CMD_LATENCY;
+        }
+        else{
+            sTransmitCmd.startTime =
+                RF_convertUsToRatTicks(aFrame->mInfo.mTxInfo.mTxDelayBaseTime + aFrame->mInfo.mTxInfo.mTxDelay) -
+                RF_CORE_TX_CMD_LATENCY;
+        }
         sTransmitCmd.startTrigger.triggerType = TRIG_ABSTIME;
-        sTransmitCmd.startTrigger.pastTrig    = 0;
+        sTransmitCmd.startTrigger.pastTrig    = 1;
         rfScheduleCmdParams.startTime         = sTransmitCmd.startTime;
         rfScheduleCmdParams.startType         = RF_StartAbs;
         // rfScheduleCmdParams.allowDelay        = RF_AllowDelayNone;
@@ -1640,7 +1648,7 @@ otError otPlatRadioTransmit(otInstance *aInstance, otRadioFrame *aFrame)
         updateIeInfoTxFrame(aInstance, aFrame);
         otEXPECT_ACTION(OT_ERROR_NONE == rfCoreProcessTransmitSecurity(aFrame), error = OT_ERROR_FAILED);
 
-        sTransmitCmdHandle = rfCoreSendTransmitCmd(aInstance, sRfHandle, aFrame);
+        sTransmitCmdHandle = rfCoreSendTransmitCmd(aInstance, sRfHandle, aFrame, false);
         otEXPECT_ACTION(sTransmitCmdHandle >= 0, error = OT_ERROR_FAILED);
         error = OT_ERROR_NONE;
         otPlatRadioTxStarted(aInstance, aFrame);
@@ -1690,10 +1698,14 @@ otRadioCaps otPlatRadioGetCaps(otInstance *aInstance)
          * to handle this in future releases.
          *  OT_RADIO_CAPS_RECEIVE_TIMING   |
          */
+        /* DISABLED: Radio Timing
+         * The radio.c state machine will be blocked if commands are scheduled
+         * far into the future.
+         *  OT_RADIO_CAPS_TRANSMIT_TIMING   |
+         */
         /* ENABLED */
             OT_RADIO_CAPS_ENERGY_SCAN      |
             OT_RADIO_CAPS_TRANSMIT_SEC     |
-            OT_RADIO_CAPS_TRANSMIT_TIMING  |
             OT_RADIO_CAPS_NONE;
 }
 #ifdef __TI_ARM__
@@ -2246,6 +2258,22 @@ static void platformRadioProcessReceiveDone(otInstance *aInstance, otRadioFrame 
     }
 }
 
+static uint32_t convertUsTimestamp(uint64_t timestamp)
+{
+    /* The RAT runs at 4MHz while the RTC runs at 32kHz, when
+     * interfacing between Host<->RCP the Host clock may add
+     * considerable drift during its calculation of the next packet
+     * to send for CSL communication. Use the current embedded
+     * system time as a reference for the base amount of uS to
+     *  delay with respect to the RAT.
+     */
+    uint64_t currentSysTime = otPlatRadioGetNow(NULL); // uS
+    uint32_t currentRatTime = RF_getCurrentTime();     // RAT Ticks
+
+    uint64_t delta = currentSysTime - timestamp;       // uS
+
+    return currentRatTime - RF_convertUsToRatTicks(delta); // RAT Ticks
+}
 static uint64_t convertRatTimestamp(uint32_t timestamp)
 {
     /* The RAT runs at 4MHz and only returns 32 bits. This is not the format
@@ -2518,7 +2546,7 @@ void processAckCreation(otInstance *aInstance)
             /* 4 octets of sync + 1 octet of SFD + 1 octet of PHR + Frame Length = length in octets
              * length in octets * 32uS per octet + 192uS of turnaround = tx delay
              */
-            sTransmitAckCmdHandle = rfCoreSendTransmitCmd(aInstance, sRfHandle, &sAckFrame);
+            sTransmitAckCmdHandle = rfCoreSendTransmitCmd(aInstance, sRfHandle, &sAckFrame, true);
             if (sTransmitCmdHandle > 0)
             {
                 sState = platformRadio_phyState_RxTxAck;
