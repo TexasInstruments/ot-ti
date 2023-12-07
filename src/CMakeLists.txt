@@ -225,6 +225,7 @@ add_library(openthread-cc13xx_cc26xx
 
 list(APPEND TI_PLATFORM_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
 
+# retargeted 
 target_link_libraries(openthread-cc13xx_cc26xx
     PUBLIC
         cc13xx-cc26xx-sdk
@@ -233,6 +234,7 @@ target_link_libraries(openthread-cc13xx_cc26xx
         ${GENLIBS_INCLUDES}
         ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_utils_build_linker.cmd.genlibs
         cc13xx-cc26xx-driverlib
+        -Wl,${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_utils_build_linker.cmd.genlibs
     PRIVATE
         ot-config
 )
@@ -240,6 +242,7 @@ target_link_libraries(openthread-cc13xx_cc26xx
 # JJM - setting the user compile definitions here as there seems to be 
 # an issue with the .opt files 
 set(USR_COMPILE_DEFINITIONS
+    #"USE_DMM"
     "SYSCFG"
     "CC13X4"
     "CC13XX"
@@ -257,6 +260,8 @@ set(USR_COMPILE_DEFINITIONS
     "ICALL_MAX_NUM_TASKS=3"
     "OSAL_CBTIMER_NUM_TASKS=1"
     "ONE_BLE_LIB_SIZE_OPTIMIZATION"
+
+    # the following are from ti_build_config.opt 
     "HOST_CONFIG=PERIPHERAL_CFG"
     "USE_AE"
     "GAP_BOND_MGR"
