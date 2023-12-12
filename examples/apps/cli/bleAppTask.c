@@ -31,7 +31,8 @@
 #include <task.h>
 #include <mqueue.h>
 
-#if (!(defined __TI_COMPILER_VERSION__) && !(defined __GNUC__))
+/*#if (!(defined __TI_COMPILER_VERSION__) && !(defined __GNUC__))*/
+#if ((!(defined FREERTOS) && !(defined __TI_COMPILER_VERSION__)) && !(defined __GNUC__))
 #include <intrinsics.h>
 #endif
 
