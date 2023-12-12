@@ -43,10 +43,13 @@
 #include <ti/drivers/ECDSA.h>
 #include <ti/drivers/SHA2.h>
 
-#include <icall.h>
+//#include <icall.h>
+#include "bleAppTask.h"
+
 
 #ifndef USE_DEFAULT_USER_CFG
 #include "ble_user_config.h"
+
 // BLE user defined configuration
 icall_userCfg_t user0Cfg = BLE_USER_CFG;
 #endif // USE_DEFAULT_USER_CFG
@@ -57,6 +60,10 @@ extern int app_main(int argc, char *argv[]);
 
 StackType_t  appStack[APP_STACK_SIZE];
 StaticTask_t appTaskBuffer;
+
+#define BLEAPP_TASK_STACK_SIZE (2048)
+static TaskHandle_t BLEAPPTaskHandle;
+#define BLEAPP_TASK_PRIORITY 4
 
 void vApplicationStackOverflowHook(void)
 {
@@ -88,11 +95,10 @@ int main(void)
 
     SHA2_init();
 
-    // initialize the ICall module
-    ICall_init();
+    bleAppTask_init();
+ 
 
-    // Start tasks of external images - Priority 5 
-    ICall_createRemoteTasks();
+    
 
     if (NULL ==
         xTaskCreateStatic(vTaskCode, "APP", APP_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, appStack, &appTaskBuffer))

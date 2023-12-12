@@ -45,12 +45,15 @@ set(COMMON_INCLUDES
 
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/osal/src/inc
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/controller/cc26xx/inc
-    
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/profiles/dev_info
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/profiles/simple_profile
 )
 
 set(COMMON_SOURCES
     cli_uart.cpp
     main.c
+    bleAppTask.c
+    bleStackMenu.c
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/apps/common/ble_remote_display/stack/osal_icall_ble.c
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/rom/agama_r1/rom_init.c
 )
