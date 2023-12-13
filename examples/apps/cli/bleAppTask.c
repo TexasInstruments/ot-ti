@@ -390,7 +390,7 @@ static TaskHandle_t BLEAPPTaskHandle = NULL;
 
 void bleAppTask_init()
 {
-	// initialize the ICall module
+	  // initialize the ICall module
     ICall_init();
 
     // Start tasks of external images - Priority 5 
@@ -398,11 +398,9 @@ void bleAppTask_init()
 
     if (xTaskCreate(BleMain, "BleMain", BLEAPP_TASK_STACK_SIZE/sizeof(StackType_t), NULL, BLEAPP_TASK_PRIORITY, &BLEAPPTaskHandle)!=pdPASS)
     {
-                otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM,"BLEAPP Failed to created\n");
-                while (1)
-                ;
+      otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM,"BLEAPP Failed to created\n");
+      while (1) ;
     }
-
 }
 
 static void BleMain(void * pvParameter)
