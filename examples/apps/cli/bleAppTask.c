@@ -533,7 +533,7 @@ static uint8_t SimplePeripheral_processStackMsg(ICall_Hdr *pMsg)
         }
 
         case HCI_BLE_HARDWARE_ERROR_EVENT_CODE:
-          AssertHandler(HAL_ASSERT_CAUSE_HARDWARE_ERROR,0);
+          //AssertHandler(HAL_ASSERT_CAUSE_HARDWARE_ERROR,0);
           break;
 
         // HCI Commands Events

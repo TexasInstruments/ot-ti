@@ -12,6 +12,8 @@ const ble         = scripting.addModule("/ti/ble5stack/ble");
 const CCFG        = scripting.addModule("/ti/devices/CCFG");
 const custom      = scripting.addModule("/ti/devices/radioconfig/custom");
 const rfdesign    = scripting.addModule("/ti/devices/radioconfig/rfdesign");
+const Display     = scripting.addModule("/ti/display/Display", {}, false);
+const Display1    = Display.addInstance();
 const dmm         = scripting.addModule("/ti/dmm/dmm");
 const AESCCM      = scripting.addModule("/ti/drivers/AESCCM", {}, false);
 const AESCCM1     = AESCCM.addInstance();
@@ -98,6 +100,9 @@ custom.radioConfigieee154.codeExportConfig.cmdList_ieee_15_4 = ["cmdIeeeCsma","c
 
 rfdesign.rfDesign = "LP_EM_CC1354P10_1";
 
+Display1.$name      = "CONFIG_Display_0";
+Display1.uart.$name = "CONFIG_UART2_1";
+
 dmm.stackRoles                          = ["blePeripheral","custom1"];
 dmm.policyArray[0].$name                = "ti_dmm_policy_dmm_policy0";
 dmm.policyArray[0].custom1.$name        = "ti_dmm_policy_stack_dmm_stack_custom0";
@@ -163,16 +168,19 @@ Watchdog1.watchdog.$assign = "WDT0";
  * version of the tool will not impact the pinmux you originally saw.  These lines can be completely deleted in order to
  * re-solve from scratch.
  */
-GPIO1.gpioPin.$suggestSolution         = "boosterpack.11";
-GPIO2.gpioPin.$suggestSolution         = "boosterpack.17";
-GPIO3.gpioPin.$suggestSolution         = "DIO_7";
-GPIO4.gpioPin.$suggestSolution         = "DIO_6";
-RF.rfAntennaPin0.$suggestSolution      = "DIO_34";
-RF.rfAntennaPin1.$suggestSolution      = "DIO_3";
-RF.rfAntennaPin2.$suggestSolution      = "DIO_35";
-SPI1.spi.$suggestSolution              = "SPI0";
-SPI1.spi.dmaRxChannel.$suggestSolution = "DMA_CH3";
-SPI1.spi.dmaTxChannel.$suggestSolution = "DMA_CH4";
-UART21.uart.$suggestSolution           = "UART0";
-UART21.uart.txPin.$suggestSolution     = "boosterpack.4";
-UART21.uart.rxPin.$suggestSolution     = "boosterpack.3";
+Display1.uart.uart.$suggestSolution       = "UART0";
+Display1.uart.uart.txPin.$suggestSolution = "boosterpack.36";
+Display1.uart.uart.rxPin.$suggestSolution = "boosterpack.31";
+GPIO1.gpioPin.$suggestSolution            = "boosterpack.11";
+GPIO2.gpioPin.$suggestSolution            = "boosterpack.17";
+GPIO3.gpioPin.$suggestSolution            = "DIO_7";
+GPIO4.gpioPin.$suggestSolution            = "DIO_6";
+RF.rfAntennaPin0.$suggestSolution         = "DIO_34";
+RF.rfAntennaPin1.$suggestSolution         = "DIO_3";
+RF.rfAntennaPin2.$suggestSolution         = "DIO_35";
+SPI1.spi.$suggestSolution                 = "SPI0";
+SPI1.spi.dmaRxChannel.$suggestSolution    = "DMA_CH3";
+SPI1.spi.dmaTxChannel.$suggestSolution    = "DMA_CH4";
+UART21.uart.$suggestSolution              = "UART1";
+UART21.uart.txPin.$suggestSolution        = "boosterpack.4";
+UART21.uart.rxPin.$suggestSolution        = "boosterpack.3";

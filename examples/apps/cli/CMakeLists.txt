@@ -47,6 +47,8 @@ set(COMMON_INCLUDES
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/controller/cc26xx/inc
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/profiles/dev_info
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/profiles/simple_profile
+
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/display
 )
 
 set(COMMON_SOURCES
@@ -56,6 +58,9 @@ set(COMMON_SOURCES
     bleStackMenu.c
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/apps/common/ble_remote_display/stack/osal_icall_ble.c
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/rom/agama_r1/rom_init.c
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/common/cc26xx/util.c
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/common/cc26xx/menu/two_btn_menu.c
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/display/Display.c
 )
 
 if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
