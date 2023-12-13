@@ -47,7 +47,6 @@ set(COMMON_INCLUDES
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/controller/cc26xx/inc
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/profiles/dev_info
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/profiles/simple_profile
-
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/display
 )
 
@@ -61,6 +60,8 @@ set(COMMON_SOURCES
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/common/cc26xx/util.c
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/common/cc26xx/menu/two_btn_menu.c
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/display/Display.c
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/common/cc26xx/board_key.c
+    ${TI_SIMPLELINK_SDK_DIR}/kernel/nortos/dpl/SystemP_nortos.c
 )
 
 if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
