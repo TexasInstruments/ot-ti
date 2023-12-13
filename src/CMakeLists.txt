@@ -242,7 +242,7 @@ target_link_libraries(openthread-cc13xx_cc26xx
 # JJM - setting the user compile definitions here as there seems to be 
 # an issue with the .opt files 
 set(USR_COMPILE_DEFINITIONS
-    #"USE_DMM"
+    "USE_DMM"
     "SYSCFG"
     "CC13X4"
     "CC13XX"
