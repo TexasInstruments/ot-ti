@@ -810,9 +810,13 @@ static void SimplePeripheral_processGapMessage(gapEventHdr_t *pMsg)
 
         BLE_LOG_INT_INT(0, BLE_LOG_MODULE_APP, "APP : ---- call GapAdv_create set=%d,%d\n", 0, 0);
         // Create Advertisement set #1 and assign handle
-        status = GapAdv_create(&SimplePeripheral_advCallback, &advParams1,
-                               &advHandleLegacy);
-		//Wei				   
+        status = GapAdv_create(&SimplePeripheral_advCallback, &advParams1, &advHandleLegacy);
+		//Wei				 
+        if ( status != SUCCESS )  
+        {
+          Display_printf(dispHandle, SP_ROW_STATUS_1, 0, "Failed to create the GAP Adv (%d:0x%02x)", status, status);
+          vTaskDelay(pdMS_TO_TICKS(500));
+        }
         SIMPLEPERIPHERAL_ASSERT(status == SUCCESS);
 
         // Load advertising data for set #1 that is statically allocated by the app
