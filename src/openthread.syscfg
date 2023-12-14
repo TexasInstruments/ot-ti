@@ -45,7 +45,6 @@ const SPI1        = SPI.addInstance();
 const TRNG        = scripting.addModule("/ti/drivers/TRNG");
 const TRNG1       = TRNG.addInstance();
 const UART2       = scripting.addModule("/ti/drivers/UART2");
-const UART21      = UART2.addInstance();
 const Watchdog    = scripting.addModule("/ti/drivers/Watchdog");
 const Watchdog1   = Watchdog.addInstance();
 
@@ -100,8 +99,9 @@ custom.radioConfigieee154.codeExportConfig.cmdList_ieee_15_4 = ["cmdIeeeCsma","c
 
 rfdesign.rfDesign = "LP_EM_CC1354P10_1";
 
-Display1.$name      = "CONFIG_Display_0";
-Display1.uart.$name = "CONFIG_UART2_1";
+Display1.$name          = "CONFIG_Display_0";
+Display1.uart.$name     = "CONFIG_DISPLAY_UART";
+Display1.uart.$hardware = system.deviceData.board.components.XDS110UART;
 
 dmm.stackRoles                          = ["blePeripheral","custom1"];
 dmm.policyArray[0].$name                = "ti_dmm_policy_dmm_policy0";
@@ -157,9 +157,6 @@ SPI1.spi.csnPin.$assign  = "boosterpack.25";
 
 TRNG1.$name = "CONFIG_TRNG_THREAD";
 
-UART21.$name     = "CONFIG_UART2_0";
-UART21.$hardware = system.deviceData.board.components.XDS110UART;
-
 Watchdog1.$name            = "CONFIG_WATCHDOG0";
 Watchdog1.watchdog.$assign = "WDT0";
 
@@ -169,8 +166,8 @@ Watchdog1.watchdog.$assign = "WDT0";
  * re-solve from scratch.
  */
 Display1.uart.uart.$suggestSolution       = "UART0";
-Display1.uart.uart.txPin.$suggestSolution = "boosterpack.36";
-Display1.uart.uart.rxPin.$suggestSolution = "boosterpack.31";
+Display1.uart.uart.txPin.$suggestSolution = "boosterpack.4";
+Display1.uart.uart.rxPin.$suggestSolution = "boosterpack.3";
 GPIO1.gpioPin.$suggestSolution            = "boosterpack.11";
 GPIO2.gpioPin.$suggestSolution            = "boosterpack.17";
 GPIO3.gpioPin.$suggestSolution            = "DIO_7";
@@ -181,6 +178,3 @@ RF.rfAntennaPin2.$suggestSolution         = "DIO_35";
 SPI1.spi.$suggestSolution                 = "SPI0";
 SPI1.spi.dmaRxChannel.$suggestSolution    = "DMA_CH3";
 SPI1.spi.dmaTxChannel.$suggestSolution    = "DMA_CH4";
-UART21.uart.$suggestSolution              = "UART1";
-UART21.uart.txPin.$suggestSolution        = "boosterpack.4";
-UART21.uart.rxPin.$suggestSolution        = "boosterpack.3";

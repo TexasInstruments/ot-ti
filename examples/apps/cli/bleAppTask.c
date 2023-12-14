@@ -392,6 +392,7 @@ static TaskHandle_t BLEAPPTaskHandle = NULL;
 
 void bleAppTask_init()
 {
+  RegisterAssertCback(AssertHandler);
 	  // initialize the ICall module
     ICall_init();
 

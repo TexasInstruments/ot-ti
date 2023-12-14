@@ -112,7 +112,7 @@ otError otPlatUartEnable(void)
     params.writeCallback = uartWriteCallback;
 #endif
 
-    PlatformUart_uartHandle = UART2_open(CONFIG_UART2_0, &params);
+    PlatformUart_uartHandle = UART2_open(CONFIG_DISPLAY_UART, &params);
 
     UART2_read(PlatformUart_uartHandle, PlatformUart_receiveBuffer, sizeof(PlatformUart_receiveBuffer), NULL);
 
