@@ -49,6 +49,7 @@
 
 #ifndef USE_DEFAULT_USER_CFG
 #include "ble_user_config.h"
+#include <icall.h>
 
 // BLE user defined configuration
 icall_userCfg_t user0Cfg = BLE_USER_CFG;
@@ -95,10 +96,16 @@ int main(void)
 
     SHA2_init();
 
-    bleAppTask_init();
- 
+    user0Cfg.appServiceInfo->timerTickPeriod     = ICall_getTickPeriod();
+    user0Cfg.appServiceInfo->timerMaxMillisecond = ICall_getMaxMSecs();
 
-    
+#if 0
+    /* Initialize ICall module */
+    ICall_init();
+
+    /* Start tasks of external images */
+    ICall_createRemoteTasks();
+#endif 
 
     if (NULL ==
         xTaskCreateStatic(vTaskCode, "APP", APP_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, appStack, &appTaskBuffer))
@@ -107,6 +114,7 @@ int main(void)
             ;
     }
 
+    bleAppTask_init();
     vTaskStartScheduler();
 
     // Should never get here.

@@ -122,7 +122,7 @@ if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
         # JJM - mirror simple peripheral iCall folder
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/icall/src/icall_cc2650.c
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/icall/src/icall_user_config.c
-        ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/apps/common/freertos/icall_FreeRTOS.c
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/icall/src/icall_POSIX.c
 
         # JJM - mirror simple peripheral iCallBLE folder 
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/icall/stack/ble_user_config_stack.c
