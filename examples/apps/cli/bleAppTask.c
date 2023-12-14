@@ -11,6 +11,7 @@
 #include <ble_stack_api.h>
 #include <icall_ble_api.h>
 #include "util.h"
+#include "hal_assert.h"
 
 //Wei
 //#include <string.h>
@@ -313,6 +314,7 @@ static uint8 rpa[B_ADDR_LEN] = {0};
  */
 
 static void SimplePeripheral_init( void );
+static void simple_peripheral_spin( void );
 //Wei
 //static void SimplePeripheral_taskFxn(UArg a0, UArg a1);
 
@@ -533,7 +535,7 @@ static uint8_t SimplePeripheral_processStackMsg(ICall_Hdr *pMsg)
         }
 
         case HCI_BLE_HARDWARE_ERROR_EVENT_CODE:
-          //AssertHandler(HAL_ASSERT_CAUSE_HARDWARE_ERROR,0);
+          AssertHandler(HAL_ASSERT_CAUSE_HARDWARE_ERROR,0);
           break;
 
         // HCI Commands Events
@@ -812,19 +814,19 @@ static void SimplePeripheral_processGapMessage(gapEventHdr_t *pMsg)
         status = GapAdv_create(&SimplePeripheral_advCallback, &advParams1,
                                &advHandleLegacy);
 		//Wei				   
-        //SIMPLEPERIPHERAL_ASSERT(status == SUCCESS);
+        SIMPLEPERIPHERAL_ASSERT(status == SUCCESS);
 
         // Load advertising data for set #1 that is statically allocated by the app
 		//Wei
         status = GapAdv_loadByHandle(advHandleLegacy, GAP_ADV_DATA_TYPE_ADV,
                                      sizeof(advData1), advData1);
 		//Wei
-        //SIMPLEPERIPHERAL_ASSERT(status == SUCCESS);
+        SIMPLEPERIPHERAL_ASSERT(status == SUCCESS);
 
         // Load scan response data for set #1 that is statically allocated by the app
         status = GapAdv_loadByHandle(advHandleLegacy, GAP_ADV_DATA_TYPE_SCAN_RSP,
                                      sizeof(scanResData1), scanResData1);
-        //SIMPLEPERIPHERAL_ASSERT(status == SUCCESS);
+        SIMPLEPERIPHERAL_ASSERT(status == SUCCESS);
 
         // Set event mask for set #1
         status = GapAdv_setEventMask(advHandleLegacy,
@@ -835,20 +837,20 @@ static void SimplePeripheral_processGapMessage(gapEventHdr_t *pMsg)
         // Enable legacy advertising for set #1
         status = GapAdv_enable(advHandleLegacy, GAP_ADV_ENABLE_OPTIONS_USE_MAX , 0);
 		//Wei
-        //SIMPLEPERIPHERAL_ASSERT(status == SUCCESS);
+        SIMPLEPERIPHERAL_ASSERT(status == SUCCESS);
 
         BLE_LOG_INT_INT(0, BLE_LOG_MODULE_APP, "APP : ---- call GapAdv_create set=%d,%d\n", 1, 0);
         // Create Advertisement set #2 and assign handle
         status = GapAdv_create(&SimplePeripheral_advCallback, &advParams2,
                                &advHandleLongRange);
 		//Wei
-        //SIMPLEPERIPHERAL_ASSERT(status == SUCCESS);
+        SIMPLEPERIPHERAL_ASSERT(status == SUCCESS);
 
         // Load advertising data for set #2 that is statically allocated by the app
         status = GapAdv_loadByHandle(advHandleLongRange, GAP_ADV_DATA_TYPE_ADV,
                                      sizeof(advData2), advData2);
 		//Wei
-        //SIMPLEPERIPHERAL_ASSERT(status == SUCCESS);
+        SIMPLEPERIPHERAL_ASSERT(status == SUCCESS);
 
         // Set event mask for set #2
         status = GapAdv_setEventMask(advHandleLongRange,
@@ -860,7 +862,7 @@ static void SimplePeripheral_processGapMessage(gapEventHdr_t *pMsg)
         // Enable long range advertising for set #2
         status = GapAdv_enable(advHandleLongRange, GAP_ADV_ENABLE_OPTIONS_USE_MAX , 0);
 		//Wei
-        //SIMPLEPERIPHERAL_ASSERT(status == SUCCESS);
+        SIMPLEPERIPHERAL_ASSERT(status == SUCCESS);
 
         // Display device address
         Display_printf(dispHandle, SP_ROW_IDA, 0, "%s Addr: %s",
@@ -2113,7 +2115,7 @@ static status_t SimplePeripheral_startAutoPhyChange(uint16_t connHandle)
   // Get connection index from handle
   uint8_t connIndex = SimplePeripheral_getConnIndex(connHandle);
   //Wei
-  //SIMPLEPERIPHERAL_ASSERT(connIndex < MAX_NUM_BLE_CONNS);
+  SIMPLEPERIPHERAL_ASSERT(connIndex < MAX_NUM_BLE_CONNS);
 
   // Start Connection Event notice for RSSI calculation
   status = Gap_RegisterConnEventCb(SimplePeripheral_connEvtCB, GAP_CB_REGISTER, GAP_CB_CONN_EVENT_ALL, connHandle);
@@ -2142,7 +2144,7 @@ static status_t SimplePeripheral_stopAutoPhyChange(uint16_t connHandle)
   // Get connection index from handle
   uint8_t connIndex = SimplePeripheral_getConnIndex(connHandle);
   //Wei
-  //SIMPLEPERIPHERAL_ASSERT(connIndex < MAX_NUM_BLE_CONNS);
+  SIMPLEPERIPHERAL_ASSERT(connIndex < MAX_NUM_BLE_CONNS);
 
   // Stop connection event notice
   Gap_RegisterConnEventCb(NULL, GAP_CB_UNREGISTER, GAP_CB_CONN_EVENT_ALL, connHandle);
@@ -2556,4 +2558,44 @@ static void simple_peripheral_sendToNPI(uint8_t *buf, uint16_t len)
  }
 }
 #endif // PTM_MODE
+
+//self define AssertHandler
+void AssertHandler(uint8 assertCause, uint8 assertSubcause)
+{
+  //do nothing for now, need to define at application layer
+  switch (assertCause)
+  {
+    case HAL_ASSERT_CAUSE_OUT_OF_MEMORY:
+	    otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "OUT_OF_MEMORY\n");
+      break;
+
+    case HAL_ASSERT_CAUSE_INTERNAL_ERROR:
+      // check the subcause
+      if (assertSubcause == HAL_ASSERT_SUBCAUSE_FW_INERNAL_ERROR)
+      {
+	      otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "FW INTERNAL ERROR\n");
+      }
+      else
+      {
+       		otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM, "INTERNAL ERROR\n"); 
+      }
+      break;
+
+    case HAL_ASSERT_CAUSE_ICALL_ABORT:
+      HAL_ASSERT_SPINLOCK;
+      break;
+
+    case HAL_ASSERT_CAUSE_ICALL_TIMEOUT:
+      HAL_ASSERT_SPINLOCK;
+      break;
+
+    case HAL_ASSERT_CAUSE_WRONG_API_CALL:
+      HAL_ASSERT_SPINLOCK;
+      break;
+
+  default:
+      HAL_ASSERT_SPINLOCK;
+  }
+
+}
 
