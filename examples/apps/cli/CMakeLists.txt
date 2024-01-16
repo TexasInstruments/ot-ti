@@ -29,6 +29,7 @@
 set(COMMON_INCLUDES
     ${OT_PUBLIC_INCLUDES}
     ${TI_PUBLIC_INCLUDES}
+    ${PROJECT_SOURCE_DIR}/src
     ${PROJECT_SOURCE_DIR}/openthread/examples/platforms
     ${PROJECT_SOURCE_DIR}/openthread/src/core
 
@@ -39,6 +40,7 @@ set(COMMON_INCLUDES
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/hal/src/inc
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/hal/src/target/_common
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/common/cc26xx/
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack/common/cc26xx/freertos
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/common/nv
 
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/rom
@@ -62,6 +64,7 @@ set(COMMON_SOURCES
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/display/Display.c
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/common/cc26xx/board_key.c
     ${TI_SIMPLELINK_SDK_DIR}/kernel/nortos/dpl/SystemP_nortos.c
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack/common/cc26xx/freertos/bget.c
 )
 
 if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")

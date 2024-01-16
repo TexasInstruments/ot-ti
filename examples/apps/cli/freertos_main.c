@@ -45,7 +45,7 @@
 
 //#include <icall.h>
 #include "bleAppTask.h"
-
+#include <portmacro.h>
 
 #ifndef USE_DEFAULT_USER_CFG
 #include "ble_user_config.h"
@@ -66,6 +66,13 @@ StaticTask_t appTaskBuffer;
 static TaskHandle_t BLEAPPTaskHandle;
 #define BLEAPP_TASK_PRIORITY 4
 
+#include <bget.h>
+#define TOTAL_ICALL_HEAP_SIZE (0xf700)
+
+
+__attribute__((section(".heap"))) uint8_t GlobalHeapZoneBuffer[TOTAL_ICALL_HEAP_SIZE];
+uint32_t heapSize = TOTAL_ICALL_HEAP_SIZE;
+
 void vApplicationStackOverflowHook(void)
 {
     while (1)
@@ -83,6 +90,7 @@ void vTaskCode(void *pvParameters)
 int main(void)
 {
     Board_init();
+    bpool((void *) GlobalHeapZoneBuffer, TOTAL_ICALL_HEAP_SIZE);
 
     GPIO_init();
 
@@ -99,7 +107,7 @@ int main(void)
     user0Cfg.appServiceInfo->timerTickPeriod     = ICall_getTickPeriod();
     user0Cfg.appServiceInfo->timerMaxMillisecond = ICall_getMaxMSecs();
 
-#if 0
+#if 1
     /* Initialize ICall module */
     ICall_init();
 

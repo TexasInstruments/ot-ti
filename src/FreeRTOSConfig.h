@@ -69,7 +69,8 @@
 #elif defined(DeviceFamily_CC13X4_CC26X4) \
     || defined(DeviceFamily_CC13X4) \
     || defined(DeviceFamily_CC26X4)
-#define configTOTAL_HEAP_SIZE ((size_t)(0x14000))
+//#define configTOTAL_HEAP_SIZE ((size_t)(0x14000))
+#define configTOTAL_HEAP_SIZE ((size_t) (0))
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION 0
 /* TrustZone/PSA settings */
 /* We do not set ENABLE_TRUSTZONE, as this is only for Secure Side function call support */
