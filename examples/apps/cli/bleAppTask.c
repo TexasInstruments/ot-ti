@@ -59,6 +59,12 @@
 #include "bleStack_menu.h"
 #include "ti_ble_config.h"
 
+#include "ti_dmm_application_policy.h"
+#include <dmm/apps/common/freertos/util.h>
+#include <dmm/dmm_policy.h>
+#include <dmm/dmm_priority_ble_thread.h>
+#include <dmm/dmm_scheduler.h>
+
 #ifdef PTM_MODE
 #include "npi_task.h"               // To allow RX event registration
 #include "npi_ble.h"                // To enable transmission of messages to UART
@@ -392,18 +398,14 @@ static TaskHandle_t BLEAPPTaskHandle = NULL;
 
 void bleAppTask_init()
 {
-  RegisterAssertCback(AssertHandler);
-	  // initialize the ICall module
-    ICall_init();
-
-    // Start tasks of external images - Priority 5 
-    ICall_createRemoteTasks();
 
     if (xTaskCreate(BleMain, "BleMain", BLEAPP_TASK_STACK_SIZE/sizeof(StackType_t), NULL, BLEAPP_TASK_PRIORITY, &BLEAPPTaskHandle)!=pdPASS)
     {
       otPlatLog(OT_LOG_LEVEL_DEBG, OT_LOG_REGION_PLATFORM,"BLEAPP Failed to created\n");
       while (1) ;
     }
+ 
+    
 }
 
 static void BleMain(void * pvParameter)
@@ -1865,7 +1867,7 @@ static uint8_t SimplePeripheral_removeConn(uint16_t connHandle)
       }
 
       // Destruct the clock object
-      Clock_destruct(pUpdateClock);
+      ClockP_destruct((ClockP_Struct *) pUpdateClock);
       // Free clock struct
       ICall_free(pUpdateClock);
       // Free ParamUpdateEventData
@@ -1910,7 +1912,7 @@ static void SimplePeripheral_processParamUpdate(uint16_t connHandle)
   }
 
   // Deconstruct the clock object
-  Clock_destruct(connList[connIndex].pUpdateClock);
+  ClockP_destruct((ClockP_Struct *) connList[connIndex].pUpdateClock);
   // Free clock struct, only in case it is not NULL
   if (connList[connIndex].pUpdateClock != NULL)
   {
@@ -2351,6 +2353,21 @@ static void SimplePeripheral_menuSwitchCb(tbmMenuObj_t* pMenuObjCurr,
 
 static void bleStack_init(void)
 {
+    RegisterAssertCback(AssertHandler);
+        // initialize the ICall module
+      ICall_init();
+      vTaskPrioritySet(xTaskGetCurrentTaskHandle(), 5);
+      // Start tasks of external images - Priority 5 
+      ICall_createRemoteTasks();
+      TaskHandle_t blehndl =  ICall_getRemoteTaskHandle(0);
+      TaskHandle_t *blehndle2 = (TaskHandle_t*)blehndl;
+      DMMSch_registerClient(*blehndle2, DMMPolicy_StackRole_BlePeripheral);
+      DMMPolicy_updateStackState(DMMPolicy_StackRole_BlePeripheral, DMMPOLICY_BLE_IDLE);
+      vTaskPrioritySet(xTaskGetCurrentTaskHandle(), 3);
+    
+    
+    
+    
 	bleStack_buildMenu();
 
 	//Register the current thread as an ICall dispatcher application
@@ -2370,7 +2387,7 @@ static void bleStack_init(void)
   Util_constructQueue(&g_POSIX_appMsgQueue);
 
   // Create one-shot clock for internal periodic events.
-  //Wei
+  //Weiadv
   Util_constructClock(&clkPeriodic, (void *)SimplePeripheral_clockHandler,
                       SP_PERIODIC_EVT_PERIOD, 0, false, (uint32_t)&argPeriodic);
 

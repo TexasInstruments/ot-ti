@@ -86,6 +86,7 @@ if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
         ${TI_SIMPLELINK_SDK_DIR}/source/ti
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/common/cc26xx
+#        ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/apps/common/freertos
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/common/cc26xx/npi/stack/
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/common/cc26xx/rcosc
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/controller/cc26xx/inc
@@ -260,13 +261,38 @@ set(USR_COMPILE_DEFINITIONS
     "ICALL_MAX_NUM_TASKS=3"
     "OSAL_CBTIMER_NUM_TASKS=1"
     "ONE_BLE_LIB_SIZE_OPTIMIZATION"
+    "FLASH_ONLY_BUILD"
 
     # the following are from ti_build_config.opt 
     "HOST_CONFIG=PERIPHERAL_CFG"
     "USE_AE"
+
+
     "GAP_BOND_MGR"
     "HCI_TL_NONE"
     "FREERTOS"
+#"BROADCASTER_CFG=0x1"
+#"OBSERVER_CFG=0x2"
+"PERIPHERAL_CFG=0x4"
+#"CERTRAL_CFG=0x8"
+"ADV_NCONN_CFG=0x2"
+"SCAN_CFG=0x4"
+"INIT_CFG=0x08"
+"ADV_CFG=ADV_NCONN_CFG+ADV_CONN_CFG"
+"LINK_CFG=ADV_CONN_CFG+INIT_CFG"
+"FULL_CFG=INIT_CFG+SCAN_CFG+ADV_NCONN_CFG+ADV_CONN_CFG"
+"L2CAP_COC_CFG=0x80"
+"HOST_V41_MASK=0x80"
+"CTRL_V41_MASK=0x7F"
+"SCAN_REQ_RPT_CFG=0x2"
+"PHY_2MBS_CFG=0x1"
+"PHY_LR_CFG=0x02"
+"HCD_NC_ADV_CFG=0x04"
+"AE_CFG=0x08"
+"PERIODIC_ADV_CFG=0x10"
+"CHAN_ALGO2_CFG=0x40"
+#"EXTENDED_STACK_SETTINGS_DEFAULT=0x0"
+#"MASTER_GUARD_TIME_ENABLE=0x01"
 )
 
 target_compile_definitions(openthread-cc13xx_cc26xx

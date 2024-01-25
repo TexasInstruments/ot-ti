@@ -42,6 +42,7 @@
 #include <ti/drivers/ECDH.h>
 #include <ti/drivers/ECDSA.h>
 #include <ti/drivers/SHA2.h>
+#include "bget.h"
 
 //#include <icall.h>
 #include "bleAppTask.h"
@@ -50,6 +51,11 @@
 #ifndef USE_DEFAULT_USER_CFG
 #include "ble_user_config.h"
 #include <icall.h>
+
+#include <dmm/dmm_policy.h>
+#include <dmm/dmm_scheduler.h>
+#include "ti_dmm_application_policy.h"
+#include <dmm/dmm_priority_ble_thread.h>
 
 // BLE user defined configuration
 icall_userCfg_t user0Cfg = BLE_USER_CFG;
@@ -67,10 +73,10 @@ static TaskHandle_t BLEAPPTaskHandle;
 #define BLEAPP_TASK_PRIORITY 4
 
 #include <bget.h>
-#define TOTAL_ICALL_HEAP_SIZE (0xf700)
 
+#define TOTAL_ICALL_HEAP_SIZE (0xc700)
 
-__attribute__((section(".heap"))) uint8_t GlobalHeapZoneBuffer[TOTAL_ICALL_HEAP_SIZE];
+__attribute__((section(".heap"))) uint8_t ucHeap[TOTAL_ICALL_HEAP_SIZE];
 uint32_t heapSize = TOTAL_ICALL_HEAP_SIZE;
 
 void vApplicationStackOverflowHook(void)
@@ -90,7 +96,7 @@ void vTaskCode(void *pvParameters)
 int main(void)
 {
     Board_init();
-    bpool((void *) GlobalHeapZoneBuffer, TOTAL_ICALL_HEAP_SIZE);
+    bpool((void *) ucHeap, TOTAL_ICALL_HEAP_SIZE);
 
     GPIO_init();
 
@@ -107,7 +113,7 @@ int main(void)
     user0Cfg.appServiceInfo->timerTickPeriod     = ICall_getTickPeriod();
     user0Cfg.appServiceInfo->timerMaxMillisecond = ICall_getMaxMSecs();
 
-#if 1
+#if 0
     /* Initialize ICall module */
     ICall_init();
 
@@ -115,14 +121,34 @@ int main(void)
     ICall_createRemoteTasks();
 #endif 
 
+
+    DMMPolicy_Params dmmPolicyParams;
+    DMMSch_Params dmmSchedulerParams;
+    
+    DMMPolicy_init();
+    DMMPolicy_Params_init(&dmmPolicyParams);
+    dmmPolicyParams.numPolicyTableEntries = DMMPolicy_ApplicationPolicySize;
+    dmmPolicyParams.policyTable = DMMPolicy_ApplicationPolicyTable;
+    dmmPolicyParams.globalPriorityTable = globalPriorityTable_bleLthreadH;
+    DMMPolicy_open(&dmmPolicyParams);
+    
+    DMMSch_init();
+    DMMSch_Params_init(&dmmSchedulerParams);
+    
+    memcpy(dmmSchedulerParams.stackRoles, DMMPolicy_ApplicationPolicyTable.stackRole,
+           sizeof(DMMPolicy_StackRole) * DMMPOLICY_NUM_STACKS);
+    dmmSchedulerParams.indexTable = DMMPolicy_ApplicationPolicyTable.indexTable;
+    DMMSch_open(&dmmSchedulerParams);
+    bleAppTask_init();
+#if 0
     if (NULL ==
-        xTaskCreateStatic(vTaskCode, "APP", APP_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, appStack, &appTaskBuffer))
+        xTaskCreateStatic(vTaskCode, "APP", APP_STACK_SIZE, NULL, tskIDLE_PRIORITY + 4, appStack, &appTaskBuffer))
     {
         while (1)
             ;
     }
-
-    bleAppTask_init();
+#endif
+    
     vTaskStartScheduler();
 
     // Should never get here.

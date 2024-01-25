@@ -125,6 +125,7 @@
 
 /* Required by TI driver implementations */
 #define configSUPPORT_STATIC_ALLOCATION 1
+#define configAPPLICATION_ALLOCATED_HEAP 1
 
 /* Constants that build features in or out. */
 #define configUSE_MUTEXES 1

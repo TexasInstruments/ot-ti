@@ -44,6 +44,7 @@ const SPI         = scripting.addModule("/ti/drivers/SPI");
 const SPI1        = SPI.addInstance();
 const TRNG        = scripting.addModule("/ti/drivers/TRNG");
 const TRNG1       = TRNG.addInstance();
+const TRNG2       = TRNG.addInstance();
 const UART2       = scripting.addModule("/ti/drivers/UART2");
 const Watchdog    = scripting.addModule("/ti/drivers/Watchdog");
 const Watchdog1   = Watchdog.addInstance();
@@ -108,6 +109,9 @@ dmm.policyArray[0].$name                = "ti_dmm_policy_dmm_policy0";
 dmm.policyArray[0].custom1.$name        = "ti_dmm_policy_stack_dmm_stack_custom0";
 dmm.policyArray[0].blePeripheral.$name  = "ti_dmm_policy_stack_dmm_stack_ble0";
 dmm.policyArray[0].blePeripheral.weight = 1;
+dmm.numApplicationStates                = 2;
+dmm.applicationState0                   = "ANY";
+dmm.applicationState1                   = "DMMPOLICY_BLE_IDLE";
 
 AESCCM1.$name = "CONFIG_AESCCM_0";
 
@@ -155,7 +159,7 @@ SPI1.spi.pociPin.$assign = "boosterpack.6";
 SPI1.spi.picoPin.$assign = "boosterpack.23";
 SPI1.spi.csnPin.$assign  = "boosterpack.25";
 
-TRNG1.$name = "CONFIG_TRNG_THREAD";
+TRNG2.$name = "CONFIG_TRNG_THREAD";
 
 Watchdog1.$name            = "CONFIG_WATCHDOG0";
 Watchdog1.watchdog.$assign = "WDT0";
