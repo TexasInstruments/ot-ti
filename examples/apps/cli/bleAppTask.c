@@ -210,7 +210,7 @@ typedef struct
 {
   uint16_t         	    connHandle;                        // Connection Handle
   spClockEventData_t*   pParamUpdateEventData;
-  Clock_Struct*    	    pUpdateClock;                      // pointer to clock struct
+  ClockP_Struct*    	    pUpdateClock;                      // pointer to clock struct
   int8_t           	    rssiArr[SP_MAX_RSSI_STORE_DEPTH];
   uint8_t          	    rssiCntr;
   int8_t           	    rssiAvg;
@@ -273,14 +273,15 @@ mqd_t g_POSIX_appMsgQueue;
 
 // Queue object used for app messages
 //Wei
-//static Queue_Struct appMsgQueue;
 static QueueHandle_t appMsgQueueHandle;
+QueueHandle_t appEventsQueueID;
+QueueHandle_t appMsgQueueID;
 
 // Clock instance for internal periodic events. Only one is needed since
 // GattServApp will handle notifying all connected GATT clients
-static Clock_Struct clkPeriodic;
+static ClockP_Struct clkPeriodic;
 // Clock instance for RPA read events.
-static Clock_Struct clkRpaRead;
+static ClockP_Struct clkRpaRead;
 
 // Memory to pass periodic event ID to clock handler
 spClockEventData_t argPeriodic =
@@ -307,7 +308,7 @@ uint8_t autoConnect = AUTOCONNECT_DISABLE;
 
 // Advertising handles
 static uint8 advHandleLegacy;
-static uint8 advHandleLongRange;
+//static uint8 advHandleLongRange;
 
 // Address mode
 static GAP_Addr_Modes_t addrMode = DEFAULT_ADDRESS_MODE;
@@ -334,7 +335,7 @@ static void SimplePeripheral_processCharValueChangeEvt(uint8_t paramId);
 static void SimplePeripheral_performPeriodicTask(void);
 static void SimplePeripheral_updateRPA(void);
 //Wei
-static void SimplePeripheral_clockHandler(void *arg);
+static void SimplePeripheral_clockHandler(uintptr_t arg);
 //static void SimplePeripheral_clockHandler(UArg arg);
 static void SimplePeripheral_passcodeCb(uint8_t *pDeviceAddr, uint16_t connHandle,
                                         uint8_t uiInputs, uint8_t uiOutputs,
@@ -425,7 +426,7 @@ static void BleMain(void * pvParameter)
     // message is queued to the message receive queue of the thread
 
 	//Wei
-	mq_receive(syncEvent, (char*)&events, sizeof(uint32_t), NULL);
+	xQueueReceive(syncEvent, (char*)&events, portMAX_DELAY);
     //events = Event_pend(syncEvent, Event_Id_NONE, SP_ALL_EVENTS,
      //                   ICALL_TIMEOUT_FOREVER);
 
@@ -462,23 +463,22 @@ static void BleMain(void * pvParameter)
       // If RTOS queue is not empty, process app message.
       if (events & SP_QUEUE_EVT)
       {
-		//Wei
-		spEvt_t *pMsg;
-          do {
-              pMsg = (spEvt_t *)Util_dequeueMsg(g_POSIX_appMsgQueue);
-              if (NULL != pMsg)
-              {
-                  // Process message.
-				SimplePeripheral_processAppMsg(pMsg);
+        spEvt_t *pMsg;
+        do {
+            pMsg = (spEvt_t *)Util_dequeueMsg(appMsgQueueID);
+            if (NULL != pMsg)
+            {
+                // Process message.
+                SimplePeripheral_processAppMsg(pMsg);
 
-                  // Free the space from the message.
-                  ICall_free(pMsg);
-              }
-              else
-              {
-                  break;
-              }
-          }while(1);
+                // Free the space from the message.
+                ICall_free(pMsg);
+            }
+            else
+            {
+                break;
+            }
+        } while(1);
         //while (!Queue_empty(appMsgQueueHandle))
         //{
         //  spEvt_t *pMsg = (spEvt_t *)Util_dequeueMsg(appMsgQueueHandle);
@@ -844,6 +844,7 @@ static void SimplePeripheral_processGapMessage(gapEventHdr_t *pMsg)
 		//Wei
         SIMPLEPERIPHERAL_ASSERT(status == SUCCESS);
 
+#if 0
         BLE_LOG_INT_INT(0, BLE_LOG_MODULE_APP, "APP : ---- call GapAdv_create set=%d,%d\n", 1, 0);
         // Create Advertisement set #2 and assign handle
         status = GapAdv_create(&SimplePeripheral_advCallback, &advParams2,
@@ -868,7 +869,7 @@ static void SimplePeripheral_processGapMessage(gapEventHdr_t *pMsg)
         status = GapAdv_enable(advHandleLongRange, GAP_ADV_ENABLE_OPTIONS_USE_MAX , 0);
 		//Wei
         SIMPLEPERIPHERAL_ASSERT(status == SUCCESS);
-
+#endif
         // Display device address
         Display_printf(dispHandle, SP_ROW_IDA, 0, "%s Addr: %s",
                        (addrMode <= ADDRMODE_RANDOM) ? "Dev" : "ID",
@@ -881,7 +882,7 @@ static void SimplePeripheral_processGapMessage(gapEventHdr_t *pMsg)
           // Create one-shot clock for RPA check event.
 		  //Wei
 	
-		  Util_constructClock(&clkRpaRead,(void*)SimplePeripheral_clockHandler, READ_RPA_PERIOD, 0, true, (uint32_t)&argRpaRead);
+		  Util_constructClock(&clkRpaRead,(void*)SimplePeripheral_clockHandler, READ_RPA_PERIOD, 0, true, (uintptr_t)&argRpaRead);
 		  //          Util_constructClock(&clkRpaRead, SimplePeripheral_clockHandler,
           //                    READ_RPA_PERIOD, 0, true,
           //                    (void *)&argRpaRead);
@@ -921,12 +922,12 @@ static void SimplePeripheral_processGapMessage(gapEventHdr_t *pMsg)
       {
         // Start advertising since there is room for more connections
         GapAdv_enable(advHandleLegacy, GAP_ADV_ENABLE_OPTIONS_USE_MAX , 0);
-        GapAdv_enable(advHandleLongRange, GAP_ADV_ENABLE_OPTIONS_USE_MAX , 0);
+        //GapAdv_enable(advHandleLongRange, GAP_ADV_ENABLE_OPTIONS_USE_MAX , 0);
       }
       else
       {
         // Stop advertising since there is no room for more connections
-        GapAdv_disable(advHandleLongRange);
+        //GapAdv_disable(advHandleLongRange);
         GapAdv_disable(advHandleLegacy);
       }
       break;
@@ -958,7 +959,7 @@ static void SimplePeripheral_processGapMessage(gapEventHdr_t *pMsg)
       BLE_LOG_INT_STR(0, BLE_LOG_MODULE_APP, "APP : GAP msg: status=%d, opcode=%s\n", 0, "GAP_LINK_TERMINATED_EVENT");
       // Start advertising since there is room for more connections
       GapAdv_enable(advHandleLegacy, GAP_ADV_ENABLE_OPTIONS_USE_MAX , 0);
-      GapAdv_enable(advHandleLongRange, GAP_ADV_ENABLE_OPTIONS_USE_MAX , 0);
+      //GapAdv_enable(advHandleLongRange, GAP_ADV_ENABLE_OPTIONS_USE_MAX , 0);
 
       // Clear remaining lines
       Display_clearLine(dispHandle, SP_ROW_CONNECTION);
@@ -1178,7 +1179,7 @@ static void SimplePeripheral_updateRPA(void)
  * @return  None.
  */
  //Wei
-static void SimplePeripheral_clockHandler(void *arg)
+static void SimplePeripheral_clockHandler(uintptr_t arg)
 {
   spClockEventData_t *pData = (spClockEventData_t *)arg;
 
@@ -1591,7 +1592,7 @@ static status_t SimplePeripheral_enqueueMsg(uint8_t event, void *pData)
     pMsg->pData = pData;
 
     // Enqueue the message.
-    success = Util_enqueueMsg(g_POSIX_appMsgQueue, syncEvent, (uint8_t *)pMsg);
+    success = Util_enqueueMsg(appMsgQueueID, syncEvent, (uint8_t *)pMsg);
     return (success) ? SUCCESS : FAILURE;
   }
 
@@ -1638,14 +1639,14 @@ bool SimplePeripheral_doAutoConnect(uint8_t index)
     {
       if (autoConnect != AUTOCONNECT_GROUP_A)
       {
-        GapAdv_disable(advHandleLongRange);
+        //GapAdv_disable(advHandleLongRange);
         GapAdv_disable(advHandleLegacy);
         advData1[2] = 'G';
         advData1[3] = 'A';
-        advData2[2] = 'G';
-        advData2[3] = 'A';
+        //advData2[2] = 'G';
+        //advData2[3] = 'A';
         GapAdv_enable(advHandleLegacy, GAP_ADV_ENABLE_OPTIONS_USE_MAX , 0);
-        GapAdv_enable(advHandleLongRange, GAP_ADV_ENABLE_OPTIONS_USE_MAX , 0);
+        //GapAdv_enable(advHandleLongRange, GAP_ADV_ENABLE_OPTIONS_USE_MAX , 0);
         autoConnect = AUTOCONNECT_GROUP_A;
       }
 	    Display_printf(dispHandle, SP_ROW_AC, 0, "AutoConnect enabled: Group A");
@@ -1654,14 +1655,14 @@ bool SimplePeripheral_doAutoConnect(uint8_t index)
     {
       if (autoConnect != AUTOCONNECT_GROUP_B)
       {
-        GapAdv_disable(advHandleLongRange);
+        //GapAdv_disable(advHandleLongRange);
         GapAdv_disable(advHandleLegacy);
         advData1[2] = 'G';
         advData1[3] = 'B';
-        advData2[2] = 'G';
-        advData2[3] = 'B';
+        //advData2[2] = 'G';
+        //advData2[3] = 'B';
         GapAdv_enable(advHandleLegacy, GAP_ADV_ENABLE_OPTIONS_USE_MAX , 0);
-        GapAdv_enable(advHandleLongRange, GAP_ADV_ENABLE_OPTIONS_USE_MAX , 0);
+        //GapAdv_enable(advHandleLongRange, GAP_ADV_ENABLE_OPTIONS_USE_MAX , 0);
         autoConnect = AUTOCONNECT_GROUP_B;
       }
       Display_printf(dispHandle, SP_ROW_AC, 0, "AutoConnect enabled: Group B");
@@ -1670,14 +1671,14 @@ bool SimplePeripheral_doAutoConnect(uint8_t index)
     {
       if (autoConnect)
       {
-        GapAdv_disable(advHandleLongRange);
+        //GapAdv_disable(advHandleLongRange);
         GapAdv_disable(advHandleLegacy);
         advData1[2] = 'S';
         advData1[3] = 'P';
-        advData2[2] = 'S';
-        advData2[3] = 'P';
+        //advData2[2] = 'S';
+        //advData2[3] = 'P';
         GapAdv_enable(advHandleLegacy, GAP_ADV_ENABLE_OPTIONS_USE_MAX , 0);
-        GapAdv_enable(advHandleLongRange, GAP_ADV_ENABLE_OPTIONS_USE_MAX , 0);
+        //GapAdv_enable(advHandleLongRange, GAP_ADV_ENABLE_OPTIONS_USE_MAX , 0);
         autoConnect = AUTOCONNECT_DISABLE;
       }
       Display_printf(dispHandle, SP_ROW_AC, 0, "AutoConnect disabled");
@@ -1721,7 +1722,7 @@ static uint8_t SimplePeripheral_addConn(uint16_t connHandle)
 
         // Create a clock object and start
         connList[i].pUpdateClock
-          = (Clock_Struct*) ICall_malloc(sizeof(Clock_Struct));
+          = (ClockP_Struct*) ICall_malloc(sizeof(ClockP_Struct));
 
         if (connList[i].pUpdateClock)
         {
@@ -1856,7 +1857,7 @@ static uint8_t SimplePeripheral_removeConn(uint16_t connHandle)
 
   if(connIndex != MAX_NUM_BLE_CONNS)
   {
-    Clock_Struct* pUpdateClock = connList[connIndex].pUpdateClock;
+    ClockP_Struct* pUpdateClock = connList[connIndex].pUpdateClock;
 
     if (pUpdateClock != NULL)
     {
@@ -2384,7 +2385,7 @@ static void bleStack_init(void)
   // Create an RTOS queue for message from profile to be sent to app.
   //Wei
   //appMsgQueueHandle = Util_constructQueue(&appMsgQueue);
-  Util_constructQueue(&g_POSIX_appMsgQueue);
+  Util_constructQueue(&appMsgQueueID);
 
   // Create one-shot clock for internal periodic events.
   //Weiadv

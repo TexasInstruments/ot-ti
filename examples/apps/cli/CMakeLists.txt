@@ -34,6 +34,9 @@ set(COMMON_INCLUDES
     ${PROJECT_SOURCE_DIR}/openthread/src/core
     ${PROJECT_SOURCE_DIR}/examples/apps/cli
 
+    ${PROJECT_SOURCE_DIR}/examples/../src/
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/apps/dmm_thread_ts_remote_display/source/
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/apps/common/freertos/
     # JJM include paths for ICall module
     ${TI_SIMPLELINK_SDK_DIR}/source/ti
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/inc/
@@ -64,13 +67,13 @@ set(COMMON_SOURCES
     bget.c
     TI_heap_wrapper.c
     ble_user_config.c
-    icall_FreeRTOS.c
+    #icall_FreeRTOS.c
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/apps/common/ble_remote_display/stack/osal_icall_ble.c
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/dmm_priority_ble_thread.c
 
-    ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/common/cc26xx/util.c
-    #${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/apps/common/freertos/util.c
-#    ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/apps/common/freertos/icall_FreeRTOS.c
+    #${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/common/cc26xx/util.c
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/apps/common/freertos/util.c
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/apps/common/freertos/icall_FreeRTOS.c
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/rom/agama_r1/rom_init.c
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/common/cc26xx/menu/two_btn_menu.c
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/display/Display.c
