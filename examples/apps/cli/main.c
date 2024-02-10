@@ -41,6 +41,8 @@
 
 #include "lib/platform/reset_util.h"
 
+otInstance *instance;
+
 /**
  * This function initializes the CLI app.
  *
@@ -96,7 +98,7 @@ static const otCliCommand kCommands[] = {
 
 int app_main(int argc, char *argv[])
 {
-    otInstance *instance;
+    
 
     OT_SETUP_RESET_JUMP(argv);
 
@@ -156,3 +158,27 @@ void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat
     va_end(ap);
 }
 #endif
+
+otInstance *OtInstance_get(void)
+{
+    otInstance *ret;
+
+    if (NULL != instance)
+    {
+        ret = instance;
+    }
+    else
+    {
+        /* lock and unlock the API to make sure that the stack is initialized
+         *  before the caller tries to use this pointer.
+         */
+        // FIXME: Not sure about the locking here, as these symbols are
+        // not defined.
+        //
+        //OtRtosApi_lock();
+        ret = instance;
+        //OtRtosApi_unlock();
+    }
+
+    return ret;
+}
