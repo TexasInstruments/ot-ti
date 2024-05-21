@@ -1,9 +1,4 @@
-/**
- * These arguments were used when this file was generated. They will be automatically applied on subsequent loads
- * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
- * @cliArgs --board "/ti/boards/LP_EM_CC1354P10_1" --product "simplelink_cc13xx_cc26xx_sdk@7.10.00.98"
- * @versions {"tool":"1.16.2+3028"}
- */
+// @cliArgs --product ../../ot-ti/third_party/ti_simplelink_sdk/repo_cc13xx_cc26xx/.metadata/product.json --board /ti/boards/LP_EM_CC1354P10_1 --rtos freertos 
 
 /**
  * Import the modules used in this configuration.
@@ -12,8 +7,6 @@ const ble         = scripting.addModule("/ti/ble5stack/ble");
 const CCFG        = scripting.addModule("/ti/devices/CCFG");
 const custom      = scripting.addModule("/ti/devices/radioconfig/custom");
 const rfdesign    = scripting.addModule("/ti/devices/radioconfig/rfdesign");
-const Display     = scripting.addModule("/ti/display/Display", {}, false);
-const Display1    = Display.addInstance();
 const dmm         = scripting.addModule("/ti/dmm/dmm");
 const AESCCM      = scripting.addModule("/ti/drivers/AESCCM", {}, false);
 const AESCCM1     = AESCCM.addInstance();
@@ -21,6 +14,7 @@ const AESCTRDRBG  = scripting.addModule("/ti/drivers/AESCTRDRBG", {}, false);
 const AESCTRDRBG1 = AESCTRDRBG.addInstance();
 const AESECB      = scripting.addModule("/ti/drivers/AESECB");
 const AESECB1     = AESECB.addInstance();
+const AESECB2     = AESECB.addInstance();
 const DMA         = scripting.addModule("/ti/drivers/DMA");
 const ECDH        = scripting.addModule("/ti/drivers/ECDH");
 const ECDH1       = ECDH.addInstance();
@@ -34,6 +28,8 @@ const GPIO2       = GPIO.addInstance();
 const GPIO3       = GPIO.addInstance();
 const GPIO4       = GPIO.addInstance();
 const GPIO5       = GPIO.addInstance();
+const GPIO17      = GPIO.addInstance();
+const GPIO18      = GPIO.addInstance();
 const NVS         = scripting.addModule("/ti/drivers/NVS");
 const NVS1        = NVS.addInstance();
 const Power       = scripting.addModule("/ti/drivers/Power");
@@ -46,13 +42,14 @@ const TRNG        = scripting.addModule("/ti/drivers/TRNG");
 const TRNG1       = TRNG.addInstance();
 const TRNG2       = TRNG.addInstance();
 const UART2       = scripting.addModule("/ti/drivers/UART2");
+const UART21      = UART2.addInstance();
 const Watchdog    = scripting.addModule("/ti/drivers/Watchdog");
 const Watchdog1   = Watchdog.addInstance();
 
 /**
  * Write custom configuration values to the imported modules.
  */
-ble.radioConfig.codeExportConfig.$name                    = "ti_devices_radioconfig_code_export_param1";
+ble.radioConfig.codeExportConfig.$name                    = "ti_devices_radioconfig_code_export_param2";
 ble.connUpdateParamsPeripheral.$name                      = "ti_ble5stack_general_ble_conn_update_params0";
 ble.advSet1.$name                                         = "ti_ble5stack_broadcaster_advertisement_set0";
 ble.advSet1.advParam1.$name                               = "ti_ble5stack_broadcaster_advertisement_params0";
@@ -100,24 +97,22 @@ custom.radioConfigieee154.codeExportConfig.cmdList_ieee_15_4 = ["cmdIeeeCsma","c
 
 rfdesign.rfDesign = "LP_EM_CC1354P10_1";
 
-Display1.$name          = "CONFIG_Display_0";
-Display1.uart.$name     = "CONFIG_DISPLAY_UART";
-Display1.uart.$hardware = system.deviceData.board.components.XDS110UART;
-
 dmm.stackRoles                          = ["blePeripheral","custom1"];
+dmm.numApplicationStates                = 2;
+dmm.applicationState0                   = "ANY";
+dmm.applicationState1                   = "DMMPOLICY_BLE_IDLE";
 dmm.policyArray[0].$name                = "ti_dmm_policy_dmm_policy0";
 dmm.policyArray[0].custom1.$name        = "ti_dmm_policy_stack_dmm_stack_custom0";
 dmm.policyArray[0].blePeripheral.$name  = "ti_dmm_policy_stack_dmm_stack_ble0";
 dmm.policyArray[0].blePeripheral.weight = 1;
-dmm.numApplicationStates                = 2;
-dmm.applicationState0                   = "ANY";
-dmm.applicationState1                   = "DMMPOLICY_BLE_IDLE";
 
 AESCCM1.$name = "CONFIG_AESCCM_0";
 
 AESCTRDRBG1.$name = "CONFIG_AESCTRDRBG_0";
 
 AESECB1.$name = "CONFIG_AESECB_MBEDTLS";
+
+AESECB2.$name = "CONFIG_AESECB_0";
 
 ECDH1.$name = "CONFIG_ECDH_0";
 
@@ -143,12 +138,23 @@ GPIO5.outputStrength     = "High";
 GPIO5.initialOutputState = "High";
 GPIO5.gpioPin.$assign    = "boosterpack.32";
 
+GPIO17.$name           = "CONFIG_GPIO_RF_RX";
+GPIO17.mode            = "Output";
+GPIO17.gpioPin.$assign = "boosterpack.39";
+
+GPIO18.$name           = "CONFIG_GPIO_RF_TX";
+GPIO18.mode            = "Output";
+GPIO18.gpioPin.$assign = "boosterpack.40";
+
 NVS1.$name                    = "CONFIG_NVSINTERNAL";
 NVS1.internalFlash.$name      = "ti_drivers_nvs_NVSCC26XX0";
 NVS1.internalFlash.regionBase = 0x52000;
 NVS1.internalFlash.regionSize = 0x4000;
 
-RF.$hardware = system.deviceData.board.components["SKY13317-373LF"];
+RF.$hardware  = system.deviceData.board.components["SKY13317-373LF"];
+RF.coexEnable = true;
+RF.coexPhy    = ["ieee_15_4"];
+RF.coexMode   = "coexMode2Wire";
 
 SHA21.$name = "CONFIG_SHA2_0";
 
@@ -159,7 +165,13 @@ SPI1.spi.pociPin.$assign = "boosterpack.6";
 SPI1.spi.picoPin.$assign = "boosterpack.23";
 SPI1.spi.csnPin.$assign  = "boosterpack.25";
 
+TRNG1.$name = "CONFIG_TRNG_0";
+
 TRNG2.$name = "CONFIG_TRNG_THREAD";
+
+UART21.$name             = "CONFIG_UART2_0";
+UART21.$hardware         = system.deviceData.board.components.XDS110UART;
+UART21.interruptPriority = "1";
 
 Watchdog1.$name            = "CONFIG_WATCHDOG0";
 Watchdog1.watchdog.$assign = "WDT0";
@@ -169,16 +181,18 @@ Watchdog1.watchdog.$assign = "WDT0";
  * version of the tool will not impact the pinmux you originally saw.  These lines can be completely deleted in order to
  * re-solve from scratch.
  */
-Display1.uart.uart.$suggestSolution       = "UART0";
-Display1.uart.uart.txPin.$suggestSolution = "boosterpack.4";
-Display1.uart.uart.rxPin.$suggestSolution = "boosterpack.3";
-GPIO1.gpioPin.$suggestSolution            = "boosterpack.11";
-GPIO2.gpioPin.$suggestSolution            = "boosterpack.17";
-GPIO3.gpioPin.$suggestSolution            = "DIO_7";
-GPIO4.gpioPin.$suggestSolution            = "DIO_6";
-RF.rfAntennaPin0.$suggestSolution         = "DIO_34";
-RF.rfAntennaPin1.$suggestSolution         = "DIO_3";
-RF.rfAntennaPin2.$suggestSolution         = "DIO_35";
-SPI1.spi.$suggestSolution                 = "SPI0";
-SPI1.spi.dmaRxChannel.$suggestSolution    = "DMA_CH3";
-SPI1.spi.dmaTxChannel.$suggestSolution    = "DMA_CH4";
+GPIO1.gpioPin.$suggestSolution         = "boosterpack.11";
+GPIO2.gpioPin.$suggestSolution         = "boosterpack.17";
+GPIO3.gpioPin.$suggestSolution         = "DIO_7";
+GPIO4.gpioPin.$suggestSolution         = "DIO_6";
+RF.rfAntennaPin0.$suggestSolution      = "DIO_34";
+RF.rfAntennaPin1.$suggestSolution      = "DIO_3";
+RF.rfAntennaPin2.$suggestSolution      = "DIO_35";
+RF.rfCoexRequestPin.$suggestSolution   = "boosterpack.9";
+RF.rfCoexGrantPin.$suggestSolution     = "boosterpack.10";
+SPI1.spi.$suggestSolution              = "SPI0";
+SPI1.spi.dmaRxChannel.$suggestSolution = "DMA_CH3";
+SPI1.spi.dmaTxChannel.$suggestSolution = "DMA_CH4";
+UART21.uart.$suggestSolution           = "UART0";
+UART21.uart.txPin.$suggestSolution     = "boosterpack.4";
+UART21.uart.rxPin.$suggestSolution     = "boosterpack.3";

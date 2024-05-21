@@ -24,7 +24,7 @@
 //#include <ti/sysbios/knl/Event.h>
 //#include <ti/sysbios/knl/Queue.h>
 
-#include <ti/display/Display.h>
+//#include <ti/display/Display.h>
 
 //Wei
 /* add freertos code */
@@ -66,9 +66,9 @@
 #include <dmm/dmm_scheduler.h>
 
 #ifdef PTM_MODE
-#include "npi_task.h"               // To allow RX event registration
-#include "npi_ble.h"                // To enable transmission of messages to UART
-#include "icall_hci_tl.h"   // To allow ICall HCI Transport Layer
+//#include "npi_task.h"               // To allow RX event registration
+//#include "npi_ble.h"                // To enable transmission of messages to UART
+//#include "icall_hci_tl.h"   // To allow ICall HCI Transport Layer
 #endif // PTM_MODE
 
 
@@ -228,7 +228,7 @@ typedef struct
 mqd_t g_EventsQueueID;
 
 // Display Interface
-Display_Handle dispHandle = NULL;
+//Display_Handle dispHandle = NULL;
 
 // Task configuration
 //Wei
@@ -366,8 +366,8 @@ static void SimplePeripheral_menuSwitchCb(tbmMenuObj_t* pMenuObjCurr,
 static void SimplePeripheral_connEvtCB(Gap_ConnEventRpt_t *pReport);
 static void SimplePeripheral_processConnEvt(Gap_ConnEventRpt_t *pReport);
 #ifdef PTM_MODE
-void simple_peripheral_handleNPIRxInterceptEvent(uint8_t *pMsg);  // Declaration
-static void simple_peripheral_sendToNPI(uint8_t *buf, uint16_t len);  // Declaration
+//void simple_peripheral_handleNPIRxInterceptEvent(uint8_t *pMsg);  // Declaration
+//static void simple_peripheral_sendToNPI(uint8_t *buf, uint16_t len);  // Declaration
 #endif // PTM_MODE
 
 /*********************************************************************
@@ -549,14 +549,14 @@ static uint8_t SimplePeripheral_processStackMsg(ICall_Hdr *pMsg)
             {
               if (pMyMsg->cmdStatus == HCI_ERROR_CODE_UNSUPPORTED_REMOTE_FEATURE)
               {
-                Display_printf(dispHandle, SP_ROW_STATUS_1, 0,
-                        "PHY Change failure, peer does not support this");
+//                Display_printf(dispHandle, SP_ROW_STATUS_1, 0,
+//                        "PHY Change failure, peer does not support this");
               }
               else
               {
-                Display_printf(dispHandle, SP_ROW_STATUS_1, 0,
-                               "PHY Update Status Event: 0x%x",
-                               pMyMsg->cmdStatus);
+//                Display_printf(dispHandle, SP_ROW_STATUS_1, 0,
+//                               "PHY Update Status Event: 0x%x",
+//                               pMyMsg->cmdStatus);
               }
 
               SimplePeripheral_updatePHYStat(HCI_LE_SET_PHY, (uint8_t *)pMsg);
@@ -580,18 +580,18 @@ static uint8_t SimplePeripheral_processStackMsg(ICall_Hdr *pMsg)
           {
             if (pPUC->status != SUCCESS)
             {
-              Display_printf(dispHandle, SP_ROW_STATUS_1, 0,
-                             "PHY Change failure");
+//              Display_printf(dispHandle, SP_ROW_STATUS_1, 0,
+//                             "PHY Change failure");
             }
             else
             {
               // Only symmetrical PHY is supported.
               // rxPhy should be equal to txPhy.
-              Display_printf(dispHandle, SP_ROW_STATUS_2, 0,
-                             "PHY Updated to %s",
-                             (pPUC->rxPhy == PHY_UPDATE_COMPLETE_EVENT_1M) ? "1M" :
-                             (pPUC->rxPhy == PHY_UPDATE_COMPLETE_EVENT_2M) ? "2M" :
-                             (pPUC->rxPhy == PHY_UPDATE_COMPLETE_EVENT_CODED) ? "CODED" : "Unexpected PHY Value");
+//              Display_printf(dispHandle, SP_ROW_STATUS_2, 0,
+//                             "PHY Updated to %s",
+//                             (pPUC->rxPhy == PHY_UPDATE_COMPLETE_EVENT_1M) ? "1M" :
+//                             (pPUC->rxPhy == PHY_UPDATE_COMPLETE_EVENT_2M) ? "2M" :
+//                             (pPUC->rxPhy == PHY_UPDATE_COMPLETE_EVENT_CODED) ? "CODED" : "Unexpected PHY Value");
             }
 
             SimplePeripheral_updatePHYStat(HCI_BLE_PHY_UPDATE_COMPLETE_EVENT, (uint8_t *)pMsg);
@@ -613,7 +613,7 @@ static uint8_t SimplePeripheral_processStackMsg(ICall_Hdr *pMsg)
 
 #ifdef PTM_MODE
   // Check for NPI Messages
-  hciPacket_t *pBuf = (hciPacket_t *)pMsg;
+/*  hciPacket_t *pBuf = (hciPacket_t *)pMsg;
 
   // Serialized HCI Event
   if (pBuf->hdr.event == HCI_CTRL_TO_HOST_EVENT)
@@ -647,7 +647,7 @@ static uint8_t SimplePeripheral_processStackMsg(ICall_Hdr *pMsg)
       default:
         break;
     }
-  }
+  }*/
 #endif // PTM_MODE
 
   return (safeToDealloc);
@@ -669,12 +669,12 @@ static uint8_t SimplePeripheral_processGATTMsg(gattMsgEvent_t *pMsg)
     // The app is informed in case it wants to drop the connection.
 
     // Display the opcode of the message that caused the violation.
-    Display_printf(dispHandle, SP_ROW_STATUS_1, 0, "FC Violated: %d", pMsg->msg.flowCtrlEvt.opcode);
+//    Display_printf(dispHandle, SP_ROW_STATUS_1, 0, "FC Violated: %d", pMsg->msg.flowCtrlEvt.opcode);
   }
   else if (pMsg->method == ATT_MTU_UPDATED_EVENT)
   {
     // MTU size updated
-    Display_printf(dispHandle, SP_ROW_STATUS_1, 0, "MTU Size: %d", pMsg->msg.mtuEvt.MTU);
+//    Display_printf(dispHandle, SP_ROW_STATUS_1, 0, "MTU Size: %d", pMsg->msg.mtuEvt.MTU);
   }
 
   // Free message payload. Needed only for ATT Protocol messages
@@ -803,7 +803,7 @@ static void SimplePeripheral_processGapMessage(gapEventHdr_t *pMsg)
         // Set Device Info Service Parameter
         DevInfo_SetParameter(DEVINFO_SYSTEM_ID, DEVINFO_SYSTEM_ID_LEN, systemId);
 
-        Display_printf(dispHandle, SP_ROW_STATUS_1, 0, "Initialized");
+//        Display_printf(dispHandle, SP_ROW_STATUS_1, 0, "Initialized");
 
         BLE_LOG_INT_TIME(0, BLE_LOG_MODULE_APP, "APP : ---- got GAP_DEVICE_INIT_DONE_EVENT", 0);
         // Setup and start Advertising
@@ -816,7 +816,7 @@ static void SimplePeripheral_processGapMessage(gapEventHdr_t *pMsg)
 		//Wei				 
         if ( status != SUCCESS )  
         {
-          Display_printf(dispHandle, SP_ROW_STATUS_1, 0, "Failed to create the GAP Adv (%d:0x%02x)", status, status);
+//          Display_printf(dispHandle, SP_ROW_STATUS_1, 0, "Failed to create the GAP Adv (%d:0x%02x)", status, status);
           vTaskDelay(pdMS_TO_TICKS(500));
         }
         SIMPLEPERIPHERAL_ASSERT(status == SUCCESS);
@@ -871,9 +871,9 @@ static void SimplePeripheral_processGapMessage(gapEventHdr_t *pMsg)
         SIMPLEPERIPHERAL_ASSERT(status == SUCCESS);
 #endif
         // Display device address
-        Display_printf(dispHandle, SP_ROW_IDA, 0, "%s Addr: %s",
-                       (addrMode <= ADDRMODE_RANDOM) ? "Dev" : "ID",
-                       Util_convertBdAddr2Str(pPkt->devAddr));
+//        Display_printf(dispHandle, SP_ROW_IDA, 0, "%s Addr: %s",
+//                       (addrMode <= ADDRMODE_RANDOM) ? "Dev" : "ID",
+//                       Util_convertBdAddr2Str(pPkt->devAddr));
 
         if (addrMode > ADDRMODE_RANDOM)
         {
@@ -887,7 +887,7 @@ static void SimplePeripheral_processGapMessage(gapEventHdr_t *pMsg)
           //                    READ_RPA_PERIOD, 0, true,
           //                    (void *)&argRpaRead);
         }
-        tbm_setItemStatus(&spMenuMain, SP_ITEM_AUTOCONNECT, TBM_ITEM_NONE);
+//        tbm_setItemStatus(&spMenuMain, SP_ITEM_AUTOCONNECT, TBM_ITEM_NONE);
       }
 
       break;
@@ -900,8 +900,8 @@ static void SimplePeripheral_processGapMessage(gapEventHdr_t *pMsg)
       BLE_LOG_INT_TIME(0, BLE_LOG_MODULE_APP, "APP : ---- got GAP_LINK_ESTABLISHED_EVENT", 0);
       // Display the amount of current connections
       uint8_t numActive = linkDB_NumActive();
-      Display_printf(dispHandle, SP_ROW_STATUS_2, 0, "Num Conns: %d",
-                     (uint16_t)numActive);
+//      Display_printf(dispHandle, SP_ROW_STATUS_2, 0, "Num Conns: %d",
+//                     (uint16_t)numActive);
 
       if (pPkt->hdr.status == SUCCESS)
       {
@@ -909,11 +909,11 @@ static void SimplePeripheral_processGapMessage(gapEventHdr_t *pMsg)
         SimplePeripheral_addConn(pPkt->connectionHandle);
 
         // Display the address of this connection
-        Display_printf(dispHandle, SP_ROW_STATUS_1, 0, "Connected to %s",
-                       Util_convertBdAddr2Str(pPkt->devAddr));
+//        Display_printf(dispHandle, SP_ROW_STATUS_1, 0, "Connected to %s",
+//                       Util_convertBdAddr2Str(pPkt->devAddr));
 
         // Enable connection selection option
-        tbm_setItemStatus(&spMenuMain, SP_ITEM_SELECT_CONN,SP_ITEM_AUTOCONNECT);
+//        tbm_setItemStatus(&spMenuMain, SP_ITEM_SELECT_CONN,SP_ITEM_AUTOCONNECT);
 
         // Start Periodic Clock.
         Util_startClock(&clkPeriodic);
@@ -939,9 +939,9 @@ static void SimplePeripheral_processGapMessage(gapEventHdr_t *pMsg)
 
       // Display the amount of current connections
       uint8_t numActive = linkDB_NumActive();
-      Display_printf(dispHandle, SP_ROW_STATUS_1, 0, "Device Disconnected!");
-      Display_printf(dispHandle, SP_ROW_STATUS_2, 0, "Num Conns: %d",
-                     (uint16_t)numActive);
+//      Display_printf(dispHandle, SP_ROW_STATUS_1, 0, "Device Disconnected!");
+//      Display_printf(dispHandle, SP_ROW_STATUS_2, 0, "Num Conns: %d",
+//                    (uint16_t)numActive);
 
       // Remove the connection from the list and disable RSSI if needed
       SimplePeripheral_removeConn(pPkt->connectionHandle);
@@ -953,7 +953,7 @@ static void SimplePeripheral_processGapMessage(gapEventHdr_t *pMsg)
         Util_stopClock(&clkPeriodic);
 
         // Disable Connection Selection option
-        tbm_setItemStatus(&spMenuMain, SP_ITEM_AUTOCONNECT, SP_ITEM_SELECT_CONN);
+//        tbm_setItemStatus(&spMenuMain, SP_ITEM_AUTOCONNECT, SP_ITEM_SELECT_CONN);
       }
 
       BLE_LOG_INT_STR(0, BLE_LOG_MODULE_APP, "APP : GAP msg: status=%d, opcode=%s\n", 0, "GAP_LINK_TERMINATED_EVENT");
@@ -962,7 +962,7 @@ static void SimplePeripheral_processGapMessage(gapEventHdr_t *pMsg)
       //GapAdv_enable(advHandleLongRange, GAP_ADV_ENABLE_OPTIONS_USE_MAX , 0);
 
       // Clear remaining lines
-      Display_clearLine(dispHandle, SP_ROW_CONNECTION);
+//      Display_clearLine(dispHandle, SP_ROW_CONNECTION);
 
       break;
     }
@@ -1008,15 +1008,15 @@ static void SimplePeripheral_processGapMessage(gapEventHdr_t *pMsg)
       if(pPkt->status == SUCCESS)
       {
         // Display the address of the connection update
-        Display_printf(dispHandle, SP_ROW_STATUS_2, 0, "Link Param Updated: %s",
-                       Util_convertBdAddr2Str(linkInfo.addr));
+//        Display_printf(dispHandle, SP_ROW_STATUS_2, 0, "Link Param Updated: %s",
+//                       Util_convertBdAddr2Str(linkInfo.addr));
       }
       else
       {
         // Display the address of the connection update failure
-        Display_printf(dispHandle, SP_ROW_STATUS_2, 0,
-                       "Link Param Update Failed 0x%x: %s", pPkt->opcode,
-                       Util_convertBdAddr2Str(linkInfo.addr));
+//        Display_printf(dispHandle, SP_ROW_STATUS_2, 0,
+//                       "Link Param Update Failed 0x%x: %s", pPkt->opcode,
+//                       Util_convertBdAddr2Str(linkInfo.addr));
       }
 
       // Check if there are any queued parameter updates
@@ -1043,16 +1043,16 @@ static void SimplePeripheral_processGapMessage(gapEventHdr_t *pMsg)
       linkDB_GetInfo(pPkt->connectionHandle, &linkInfo);
 
       // Display the address of the connection update failure
-      Display_printf(dispHandle, SP_ROW_STATUS_2, 0,
-                     "Peer Device's Update Request Rejected 0x%x: %s", pPkt->opcode,
-                     Util_convertBdAddr2Str(linkInfo.addr));
+//      Display_printf(dispHandle, SP_ROW_STATUS_2, 0,
+//                     "Peer Device's Update Request Rejected 0x%x: %s", pPkt->opcode,
+//                     Util_convertBdAddr2Str(linkInfo.addr));
 
       break;
     }
 #endif
 
     default:
-      Display_clearLines(dispHandle, SP_ROW_STATUS_1, SP_ROW_STATUS_2);
+//      Display_clearLines(dispHandle, SP_ROW_STATUS_1, SP_ROW_STATUS_2);
       break;
   }
 }
@@ -1099,13 +1099,13 @@ static void SimplePeripheral_processCharValueChangeEvt(uint8_t paramId)
     case SIMPLEPROFILE_CHAR1:
       SimpleProfile_GetParameter(SIMPLEPROFILE_CHAR1, &newValue);
 
-      Display_printf(dispHandle, SP_ROW_STATUS_1, 0, "Char 1: %d", (uint16_t)newValue);
+//      Display_printf(dispHandle, SP_ROW_STATUS_1, 0, "Char 1: %d", (uint16_t)newValue);
       break;
 
     case SIMPLEPROFILE_CHAR3:
       SimpleProfile_GetParameter(SIMPLEPROFILE_CHAR3, &newValue);
 
-      Display_printf(dispHandle, SP_ROW_STATUS_1, 0, "Char 3: %d", (uint16_t)newValue);
+//      Display_printf(dispHandle, SP_ROW_STATUS_1, 0, "Char 3: %d", (uint16_t)newValue);
       break;
 
     default:
@@ -1163,8 +1163,8 @@ static void SimplePeripheral_updateRPA(void)
   if (memcmp(pRpaNew, rpa, B_ADDR_LEN))
   {
     // If the RPA has changed, update the display
-    Display_printf(dispHandle, SP_ROW_RPA, 0, "RP Addr: %s",
-                   Util_convertBdAddr2Str(pRpaNew));
+//    Display_printf(dispHandle, SP_ROW_RPA, 0, "RP Addr: %s",
+//                   Util_convertBdAddr2Str(pRpaNew));
     memcpy(rpa, pRpaNew, B_ADDR_LEN);
   }
 }
@@ -1246,7 +1246,7 @@ static void SimplePeripheral_handleKeys(uint8_t keys)
     // Check if the key is still pressed. Workaround for possible bouncing.
     if (GPIO_read(CONFIG_GPIO_BTN1) == 0)
     {
-      tbm_buttonLeft();
+//      tbm_buttonLeft();
     }
   }
   else if (keys & KEY_RIGHT)
@@ -1254,7 +1254,7 @@ static void SimplePeripheral_handleKeys(uint8_t keys)
     // Check if the key is still pressed. Workaround for possible bouncing.
     if (GPIO_read(CONFIG_GPIO_BTN2) == 0)
     {
-      tbm_buttonRight();
+//      tbm_buttonRight();
     }
   }
 }
@@ -1285,7 +1285,7 @@ bool SimplePeripheral_doSetConnPhy(uint8 index)
   uint8_t connIndex = SimplePeripheral_getConnIndex(menuConnHandle);
   if (connIndex >= MAX_NUM_BLE_CONNS)
   {
-    Display_printf(dispHandle, SP_ROW_STATUS_1, 0, "Connection handle is not in the connList !!!");
+//    Display_printf(dispHandle, SP_ROW_STATUS_1, 0, "Connection handle is not in the connList !!!");
     return FALSE;
   }
 
@@ -1301,8 +1301,8 @@ bool SimplePeripheral_doSetConnPhy(uint8 index)
 
     SimplePeripheral_setPhy(menuConnHandle, 0, phy[index], phy[index], 0);
 
-    Display_printf(dispHandle, SP_ROW_STATUS_1, 0, "PHY preference: %s",
-                   TBM_GET_ACTION_DESC(&spMenuConnPhy, index));
+//    Display_printf(dispHandle, SP_ROW_STATUS_1, 0, "PHY preference: %s",
+//                   TBM_GET_ACTION_DESC(&spMenuConnPhy, index));
   }
   else
   {
@@ -1348,13 +1348,13 @@ static void SimplePeripheral_processAdvEvent(spGapAdvEventData_t *pEventData)
   {
     case GAP_EVT_ADV_START_AFTER_ENABLE:
       BLE_LOG_INT_TIME(0, BLE_LOG_MODULE_APP, "APP : ---- GAP_EVT_ADV_START_AFTER_ENABLE", 0);
-      Display_printf(dispHandle, SP_ROW_ADVSTATE, 0, "Adv Set %d Enabled",
-                     *(uint8_t *)(pEventData->pBuf));
+//      Display_printf(dispHandle, SP_ROW_ADVSTATE, 0, "Adv Set %d Enabled",
+//                     *(uint8_t *)(pEventData->pBuf));
       break;
 
     case GAP_EVT_ADV_END_AFTER_DISABLE:
-      Display_doPrintf(dispHandle, SP_ROW_ADVSTATE, 0, "Adv Set %d Disabled",
-                     *(uint8_t *)(pEventData->pBuf));
+//      Display_doPrintf(dispHandle, SP_ROW_ADVSTATE, 0, "Adv Set %d Disabled",
+//                     *(uint8_t *)(pEventData->pBuf));
       break;
 
     case GAP_EVT_ADV_START:
@@ -1368,8 +1368,8 @@ static void SimplePeripheral_processAdvEvent(spGapAdvEventData_t *pEventData)
 #ifndef Display_DISABLE_ALL
       GapAdv_setTerm_t *advSetTerm = (GapAdv_setTerm_t *)(pEventData->pBuf);
 
-      Display_printf(dispHandle, SP_ROW_ADVSTATE, 0, "Adv Set %d disabled after conn %d",
-                     advSetTerm->handle, advSetTerm->connHandle );
+//      Display_printf(dispHandle, SP_ROW_ADVSTATE, 0, "Adv Set %d disabled after conn %d",
+//                     advSetTerm->handle, advSetTerm->connHandle );
 #endif
     }
     break;
@@ -1467,39 +1467,39 @@ static void SimplePeripheral_processPairState(spPairStateData_t *pPairData)
   switch (state)
   {
     case GAPBOND_PAIRING_STATE_STARTED:
-      Display_printf(dispHandle, SP_ROW_CONNECTION, 0, "Pairing started");
+//      Display_printf(dispHandle, SP_ROW_CONNECTION, 0, "Pairing started");
       break;
 
     case GAPBOND_PAIRING_STATE_COMPLETE:
       if (status == SUCCESS)
       {
-        Display_printf(dispHandle, SP_ROW_CONNECTION, 0, "Pairing success");
+//        Display_printf(dispHandle, SP_ROW_CONNECTION, 0, "Pairing success");
       }
       else
       {
-        Display_printf(dispHandle, SP_ROW_CONNECTION, 0, "Pairing fail: %d", status);
+//        Display_printf(dispHandle, SP_ROW_CONNECTION, 0, "Pairing fail: %d", status);
       }
       break;
 
     case GAPBOND_PAIRING_STATE_ENCRYPTED:
       if (status == SUCCESS)
       {
-        Display_printf(dispHandle, SP_ROW_CONNECTION, 0, "Encryption success");
+//        Display_printf(dispHandle, SP_ROW_CONNECTION, 0, "Encryption success");
       }
       else
       {
-        Display_printf(dispHandle, SP_ROW_CONNECTION, 0, "Encryption failed: %d", status);
+//        Display_printf(dispHandle, SP_ROW_CONNECTION, 0, "Encryption failed: %d", status);
       }
       break;
 
     case GAPBOND_PAIRING_STATE_BOND_SAVED:
       if (status == SUCCESS)
       {
-        Display_printf(dispHandle, SP_ROW_CONNECTION, 0, "Bond save success");
+//        Display_printf(dispHandle, SP_ROW_CONNECTION, 0, "Bond save success");
       }
       else
       {
-        Display_printf(dispHandle, SP_ROW_CONNECTION, 0, "Bond save failed: %d", status);
+//        Display_printf(dispHandle, SP_ROW_CONNECTION, 0, "Bond save failed: %d", status);
       }
       break;
 
@@ -1520,8 +1520,8 @@ static void SimplePeripheral_processPasscode(spPasscodeData_t *pPasscodeData)
   // Display passcode to user
   if (pPasscodeData->uiOutputs != 0)
   {
-    Display_doPrintf(dispHandle, SP_ROW_CONNECTION, 0, "Passcode: %d",
-                   B_APP_DEFAULT_PASSCODE);
+//    Display_doPrintf(dispHandle, SP_ROW_CONNECTION, 0, "Passcode: %d",
+//                   B_APP_DEFAULT_PASSCODE);
   }
 
   // Send passcode response
@@ -1559,7 +1559,7 @@ static void SimplePeripheral_processConnEvt(Gap_ConnEventRpt_t *pReport)
 
   if (connIndex >= MAX_NUM_BLE_CONNS)
   {
-    Display_doPrintf(dispHandle, SP_ROW_STATUS_1, 0, "Connection handle is not in the connList !!!");
+//    Display_doPrintf(dispHandle, SP_ROW_STATUS_1, 0, "Connection handle is not in the connList !!!");
     return;
   }
 
@@ -1613,12 +1613,12 @@ bool SimplePeripheral_doSelectConn(uint8_t index)
   menuConnHandle = connList[index].connHandle;
 
   // Set the menu title and go to this connection's context
-  TBM_SET_TITLE(&spMenuPerConn, TBM_GET_ACTION_DESC(&spMenuSelectConn, index));
+//  TBM_SET_TITLE(&spMenuPerConn, TBM_GET_ACTION_DESC(&spMenuSelectConn, index));
 
   // Clear non-connection-related message
-  Display_clearLine(dispHandle, SP_ROW_CONNECTION);
+//  Display_clearLine(dispHandle, SP_ROW_CONNECTION);
 
-  tbm_goTo(&spMenuPerConn);
+//  tbm_goTo(&spMenuPerConn);
 
   return (true);
 }
@@ -1649,7 +1649,7 @@ bool SimplePeripheral_doAutoConnect(uint8_t index)
         //GapAdv_enable(advHandleLongRange, GAP_ADV_ENABLE_OPTIONS_USE_MAX , 0);
         autoConnect = AUTOCONNECT_GROUP_A;
       }
-	    Display_printf(dispHandle, SP_ROW_AC, 0, "AutoConnect enabled: Group A");
+//	    Display_printf(dispHandle, SP_ROW_AC, 0, "AutoConnect enabled: Group A");
     }
     else if (index == 2)
     {
@@ -1665,7 +1665,7 @@ bool SimplePeripheral_doAutoConnect(uint8_t index)
         //GapAdv_enable(advHandleLongRange, GAP_ADV_ENABLE_OPTIONS_USE_MAX , 0);
         autoConnect = AUTOCONNECT_GROUP_B;
       }
-      Display_printf(dispHandle, SP_ROW_AC, 0, "AutoConnect enabled: Group B");
+//      Display_printf(dispHandle, SP_ROW_AC, 0, "AutoConnect enabled: Group B");
     }
     else
     {
@@ -1681,9 +1681,9 @@ bool SimplePeripheral_doAutoConnect(uint8_t index)
         //GapAdv_enable(advHandleLongRange, GAP_ADV_ENABLE_OPTIONS_USE_MAX , 0);
         autoConnect = AUTOCONNECT_DISABLE;
       }
-      Display_printf(dispHandle, SP_ROW_AC, 0, "AutoConnect disabled");
+//      Display_printf(dispHandle, SP_ROW_AC, 0, "AutoConnect disabled");
     }
-    tbm_goTo(&spMenuMain);
+//    tbm_goTo(&spMenuMain);
 
     return (true);
 }
@@ -1908,7 +1908,7 @@ static void SimplePeripheral_processParamUpdate(uint16_t connHandle)
   connIndex = SimplePeripheral_getConnIndex(connHandle);
   if (connIndex >= MAX_NUM_BLE_CONNS)
   {
-    Display_printf(dispHandle, SP_ROW_STATUS_1, 0, "Connection handle is not in the connList !!!");
+//    Display_printf(dispHandle, SP_ROW_STATUS_1, 0, "Connection handle is not in the connList !!!");
     return;
   }
 
@@ -1968,7 +1968,7 @@ static void SimplePeripheral_processCmdCompleteEvt(hciEvt_CmdComplete_t *pMsg)
         uint8_t index = SimplePeripheral_getConnIndex(handle);
         if (index >= MAX_NUM_BLE_CONNS)
         {
-          Display_printf(dispHandle, SP_ROW_STATUS_1, 0, "Connection handle is not in the connList !!!");
+//          Display_printf(dispHandle, SP_ROW_STATUS_1, 0, "Connection handle is not in the connList !!!");
           return;
         }
 
@@ -2056,10 +2056,10 @@ static void SimplePeripheral_processCmdCompleteEvt(hciEvt_CmdComplete_t *pMsg)
           } // end of if (connList[index].phyCngRq == FALSE)
         } // end of if (rssi != LL_RSSI_NOT_AVAILABLE)
 
-        Display_printf(dispHandle, SP_ROW_RSSI, 0,
-                       "RSSI:%d dBm, AVG RSSI:%d dBm",
-                       (uint32_t)(rssi),
-                       connList[index].rssiAvg);
+//        Display_printf(dispHandle, SP_ROW_RSSI, 0,
+//                       "RSSI:%d dBm, AVG RSSI:%d dBm",
+//                       (uint32_t)(rssi),
+//                       connList[index].rssiAvg);
 
 	  } // end of if (status == SUCCESS)
       break;
@@ -2069,8 +2069,8 @@ static void SimplePeripheral_processCmdCompleteEvt(hciEvt_CmdComplete_t *pMsg)
     {
       if (status == SUCCESS)
       {
-        Display_printf(dispHandle, SP_ROW_RSSI + 2, 0, "RXPh: %d, TXPh: %d",
-                       pMsg->pReturnParam[3], pMsg->pReturnParam[4]);
+//        Display_printf(dispHandle, SP_ROW_RSSI + 2, 0, "RXPh: %d, TXPh: %d",
+//                       pMsg->pReturnParam[3], pMsg->pReturnParam[4]);
       }
       break;
     }
@@ -2307,13 +2307,13 @@ static void SimplePeripheral_menuSwitchCb(tbmMenuObj_t* pMenuObjCurr,
 
     if (pAddrs == NULL)
     {
-      TBM_SET_NUM_ITEM(&spMenuSelectConn, 0);
+//      TBM_SET_NUM_ITEM(&spMenuSelectConn, 0);
     }
     else
     {
       uint8_t i;
 
-      TBM_SET_NUM_ITEM(&spMenuSelectConn, MAX_NUM_BLE_CONNS);
+//      TBM_SET_NUM_ITEM(&spMenuSelectConn, MAX_NUM_BLE_CONNS);
 
       pAddrTemp = pAddrs;
 
@@ -2329,14 +2329,14 @@ static void SimplePeripheral_menuSwitchCb(tbmMenuObj_t* pMenuObjCurr,
           // the address of this connection and enable the item.
           memcpy(pAddrTemp, Util_convertBdAddr2Str(linkInfo.addr),
                  SP_ADDR_STR_SIZE);
-          TBM_SET_ACTION_DESC(&spMenuSelectConn, i, pAddrTemp);
-          tbm_setItemStatus(&spMenuSelectConn, (1 << i), SP_ITEM_NONE);
+//          TBM_SET_ACTION_DESC(&spMenuSelectConn, i, pAddrTemp);
+//          tbm_setItemStatus(&spMenuSelectConn, (1 << i), SP_ITEM_NONE);
           pAddrTemp += SP_ADDR_STR_SIZE;
         }
         else
         {
           // This connection is not active. Disable the corresponding menu item.
-          tbm_setItemStatus(&spMenuSelectConn, SP_ITEM_NONE, (1 << i));
+//          tbm_setItemStatus(&spMenuSelectConn, SP_ITEM_NONE, (1 << i));
         }
       }
     }
@@ -2346,7 +2346,7 @@ static void SimplePeripheral_menuSwitchCb(tbmMenuObj_t* pMenuObjCurr,
     // Now we are not in a specific connection's context
 
     // Clear connection-related message
-    Display_clearLine(dispHandle, SP_ROW_CONNECTION);
+//    Display_clearLine(dispHandle, SP_ROW_CONNECTION);
   }
 }
 /*********************************************************************
@@ -2369,7 +2369,7 @@ static void bleStack_init(void)
     
     
     
-	bleStack_buildMenu();
+//	bleStack_buildMenu();
 
 	//Register the current thread as an ICall dispatcher application
 	ICall_registerApp(&selfEntity, &syncEvent);
@@ -2482,28 +2482,28 @@ static void bleStack_init(void)
 
   // The type of display is configured based on the BOARD_DISPLAY_USE...
   // preprocessor definitions
-  dispHandle = Display_open(Display_Type_ANY, NULL);
+//  dispHandle = Display_open(Display_Type_ANY, NULL);
 
   // Initialize Two-Button Menu module
-  TBM_SET_TITLE(&spMenuMain, "Simple Peripheral");
-  tbm_setItemStatus(&spMenuMain, TBM_ITEM_NONE, TBM_ITEM_ALL);
+//  TBM_SET_TITLE(&spMenuMain, "Simple Peripheral");
+//  tbm_setItemStatus(&spMenuMain, TBM_ITEM_NONE, TBM_ITEM_ALL);
 
-  tbm_initTwoBtnMenu(dispHandle, &spMenuMain, 5, SimplePeripheral_menuSwitchCb);
-  Display_printf(dispHandle, SP_ROW_SEPARATOR_1, 0, "====================");
+//  tbm_initTwoBtnMenu(dispHandle, &spMenuMain, 5, SimplePeripheral_menuSwitchCb);
+//  Display_printf(dispHandle, SP_ROW_SEPARATOR_1, 0, "====================");
 
-#ifdef PTM_MODE
+//#ifdef PTM_MODE
   // Intercept NPI RX events.
-  NPITask_registerIncomingRXEventAppCB(simple_peripheral_handleNPIRxInterceptEvent, INTERCEPT);
+//  NPITask_registerIncomingRXEventAppCB(simple_peripheral_handleNPIRxInterceptEvent, INTERCEPT);
 
   // Register for Command Status information
-  HCI_TL_Init(NULL, (HCI_TL_CommandStatusCB_t) simple_peripheral_sendToNPI, NULL, selfEntity);
+//  HCI_TL_Init(NULL, (HCI_TL_CommandStatusCB_t) simple_peripheral_sendToNPI, NULL, selfEntity);
 
   // Register for Events
-  HCI_TL_getCmdResponderID(ICall_getLocalMsgEntityId(ICALL_SERVICE_CLASS_BLE_MSG, selfEntity));
+//  HCI_TL_getCmdResponderID(ICall_getLocalMsgEntityId(ICALL_SERVICE_CLASS_BLE_MSG, selfEntity));
 
   // Inform Stack to Initialize PTM
-  HCI_EXT_EnablePTMCmd();
-#endif // PTM_MODE
+//  HCI_EXT_EnablePTMCmd();
+//#endif // PTM_MODE
 }
 
 /*********************************************************************
@@ -2537,7 +2537,7 @@ static void simple_peripheral_spin(void)
 *
 * @return  none.
 */
-void simple_peripheral_handleNPIRxInterceptEvent(uint8_t *pMsg)
+/*void simple_peripheral_handleNPIRxInterceptEvent(uint8_t *pMsg)
 {
  // Send Command via HCI TL
  HCI_TL_SendToStack(((NPIMSG_msg_t *)pMsg)->pBuf);
@@ -2548,7 +2548,7 @@ void simple_peripheral_handleNPIRxInterceptEvent(uint8_t *pMsg)
  // Free container.
  ICall_free(pMsg);
 }
-
+*/
 /*********************************************************************
 * @fn      simple_peripheral_sendToNPI
 *
@@ -2560,7 +2560,7 @@ void simple_peripheral_handleNPIRxInterceptEvent(uint8_t *pMsg)
 *
 * @return  none
 */
-static void simple_peripheral_sendToNPI(uint8_t *buf, uint16_t len)
+/*static void simple_peripheral_sendToNPI(uint8_t *buf, uint16_t len)
 {
  npiPkt_t *pNpiPkt = (npiPkt_t *)ICall_allocMsg(sizeof(npiPkt_t) + len);
 
@@ -2577,7 +2577,7 @@ static void simple_peripheral_sendToNPI(uint8_t *buf, uint16_t len)
    // Note: there is no need to free this packet.  NPI will do that itself.
    NPITask_sendToHost((uint8_t *)pNpiPkt);
  }
-}
+}*/
 #endif // PTM_MODE
 
 //self define AssertHandler

@@ -29,7 +29,7 @@
 if(NOT $ENV{TI_SYSCONFIG_ROOT} STREQUAL "")
     set(TI_SYSCONFIG_INSTALL_DIR $ENV{TI_SYSCONFIG_ROOT} CACHE PATH "")
 else()
-    set(TI_SYSCONFIG_INSTALL_DIR $ENV{HOME}/ti/sysconfig_1.15.0 CACHE PATH "")
+    set(TI_SYSCONFIG_INSTALL_DIR $ENV{HOME}/ti/sysconfig_1.16.2 CACHE PATH "")
 endif()
 
 if(WIN32)
@@ -197,11 +197,16 @@ add_custom_command(
             -s ${TI_SIMPLELINK_SDK_DIR}/.metadata/product.json
             -o ${CMAKE_CURRENT_BINARY_DIR}/syscfg
             --compiler gcc
-            --board /ti/boards/${TI_SIMPLELINK_BOARD}
+            #--board /ti/boards/${TI_SIMPLELINK_BOARD}
             --rtos ${TI_SIMPLELINK_KERNEL}
-            ${CMAKE_CURRENT_SOURCE_DIR}/openthread.syscfg
+            --device "CC2674R10RGZ" 
+            --package "RGZ" 
+            --part "Default" 
+            #${CMAKE_CURRENT_SOURCE_DIR}/openthread.syscfg
+            ${CMAKE_CURRENT_SOURCE_DIR}/CC2674.syscfg
     DEPENDS
-        openthread.syscfg
+        #openthread.syscfg
+        CC2674.syscfg
     VERBATIM
 )
 
@@ -221,6 +226,7 @@ add_library(openthread-cc13xx_cc26xx
     system.c
     system.h
     uart.c
+    dmm_scheduler.c
     $<TARGET_OBJECTS:openthread-platform-utils>
 )
 
@@ -247,11 +253,15 @@ set(USR_COMPILE_DEFINITIONS
     "SYSCFG"
     "CC13X4"
     "CC13XX"
-    "POWER_SAVING"
-    "TBM_ACTIVE_ITEMS_ONLY"
+    "DeviceFamily_CC26X4"
+    "CC1354P10_1_LP"
+    "NVOCMP_NWSAMEITEM=1"
+    "NVOCMP_POSIX_MUTEX"
+#    "POWER_SAVING"
+#    "TBM_ACTIVE_ITEMS_ONLY"
     "STACK_LIBRARY"
     "EXTENDED_STACK_SETTINGS=EXTENDED_STACK_SETTINGS_DEFAULT"
-    "NPI_USE_UART"
+#    "NPI_USE_UART"
     "ICALL_EVENTS"
     "ICALL_JT"
     "ICALL_LITE"

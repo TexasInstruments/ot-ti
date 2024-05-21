@@ -63,7 +63,7 @@ set(COMMON_SOURCES
     cli_uart.cpp
     main.c
     bleAppTask.c
-    bleStackMenu.c
+    #bleStackMenu.c
     bget.c
     TI_heap_wrapper.c
     ble_user_config.c
@@ -75,8 +75,8 @@ set(COMMON_SOURCES
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/apps/common/freertos/util.c
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/apps/common/freertos/icall_FreeRTOS.c
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/rom/agama_r1/rom_init.c
-    ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/common/cc26xx/menu/two_btn_menu.c
-    ${TI_SIMPLELINK_SDK_DIR}/source/ti/display/Display.c
+    #${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/common/cc26xx/menu/two_btn_menu.c
+    #${TI_SIMPLELINK_SDK_DIR}/source/ti/display/Display.c
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack_flash/common/cc26xx/board_key.c
     ${TI_SIMPLELINK_SDK_DIR}/kernel/nortos/dpl/SystemP_nortos.c
     #${TI_SIMPLELINK_SDK_DIR}/source/ti/ble5stack/common/cc26xx/freertos/bget.c
@@ -92,9 +92,9 @@ else()
     message(FATAL_ERROR "Unsuported TI_SIMPLELINK_KERNEL: ${TI_SIMPLELINK_KERNEL}")
 endif()
 
-#if(OT_FTD)
-#    include(ftd.cmake)
-#endif()
+if(OT_FTD)
+    include(ftd.cmake)
+endif()
 
 if(OT_MTD)
     include(mtd.cmake)

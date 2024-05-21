@@ -109,6 +109,16 @@ int main(void)
     AESECB_init();
 
     SHA2_init();
+    
+    GPIO_setConfig(CONFIG_GPIO_FEM_CHL, GPIO_CFG_OUT_STD | GPIO_CFG_OUT_HIGH);
+    GPIO_setConfig(CONFIG_GPIO_FEM_CPS, GPIO_CFG_OUT_STD | GPIO_CFG_OUT_LOW);
+    GPIO_setConfig(CONFIG_GPIO_FEM_CRX, GPIO_CFG_OUT_STD | GPIO_CFG_OUT_HIGH);
+    GPIO_setConfig(CONFIG_GPIO_FEM_CSD, GPIO_CFG_OUT_STD | GPIO_CFG_OUT_HIGH);
+    GPIO_setConfig(CONFIG_GPIO_FEM_CTX, GPIO_CFG_OUT_STD | GPIO_CFG_OUT_LOW);
+    
+    GPIO_setMux(CONFIG_GPIO_FEM_CRX, IOC_PORT_RFC_GPO0);
+    GPIO_setMux(CONFIG_GPIO_FEM_CTX, IOC_PORT_RFC_GPO3);
+    GPIO_setMux(CONFIG_GPIO_FEM_CHL, IOC_PORT_RFC_GPO3);
 
     user0Cfg.appServiceInfo->timerTickPeriod     = ICall_getTickPeriod();
     user0Cfg.appServiceInfo->timerMaxMillisecond = ICall_getMaxMSecs();
@@ -140,14 +150,14 @@ int main(void)
     dmmSchedulerParams.indexTable = DMMPolicy_ApplicationPolicyTable.indexTable;
     DMMSch_open(&dmmSchedulerParams);
     bleAppTask_init();
-#if 0
+//#if 0
     if (NULL ==
-        xTaskCreateStatic(vTaskCode, "APP", APP_STACK_SIZE, NULL, tskIDLE_PRIORITY + 4, appStack, &appTaskBuffer))
+        xTaskCreateStatic(vTaskCode, "APP", APP_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, appStack, &appTaskBuffer))
     {
         while (1)
             ;
     }
-#endif
+//#endif
     
     vTaskStartScheduler();
 
