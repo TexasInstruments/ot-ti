@@ -182,7 +182,7 @@ void platformUartSignal(uintptr_t arg)
     (void) ret;
 }
 
-void platformSpiSignal()
+/*void platformSpiSignal()
 {
     struct OtStack_procQueueMsg msg;
     int                         ret;
@@ -191,7 +191,7 @@ void platformSpiSignal()
     assert(0 == ret);
 
     (void) ret;
-}
+}*/
 
 void platformRadioSignal(uintptr_t arg)
 {
@@ -263,7 +263,7 @@ void otSysProcessDrivers(otInstance *aInstance)
 
             case OtStack_procQueueCmd_spi:
             {
-                platformSpiProcess();
+//                platformSpiProcess();
                 break;
             }
 

@@ -69,7 +69,8 @@
 #elif defined(DeviceFamily_CC13X4_CC26X4) \
     || defined(DeviceFamily_CC13X4) \
     || defined(DeviceFamily_CC26X4)
-#define configTOTAL_HEAP_SIZE ((size_t)(0x14000))
+//#define configTOTAL_HEAP_SIZE ((size_t)(0x14000))
+#define configTOTAL_HEAP_SIZE ((size_t) (0))
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION 0
 /* TrustZone/PSA settings */
 /* We do not set ENABLE_TRUSTZONE, as this is only for Secure Side function call support */
@@ -111,7 +112,7 @@
     }
 
 /* Constants related to the behaviour or the scheduler. */
-#define configTICK_RATE_HZ ((TickType_t)100000)
+#define configTICK_RATE_HZ ((TickType_t)10000)
 #define configUSE_PREEMPTION 1
 #define configUSE_TIME_SLICING 0
 #define configMAX_PRIORITIES (10UL)
@@ -124,6 +125,7 @@
 
 /* Required by TI driver implementations */
 #define configSUPPORT_STATIC_ALLOCATION 1
+#define configAPPLICATION_ALLOCATED_HEAP 1
 
 /* Constants that build features in or out. */
 #define configUSE_MUTEXES 1

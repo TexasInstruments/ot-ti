@@ -1,0 +1,206 @@
+/**
+ * These arguments were used when this file was generated. They will be automatically applied on subsequent loads
+ * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
+ * @cliArgs --device "CC2674R10RGZ" --package "RGZ" --part "Default" --rtos "freertos" --product "simplelink_cc13xx_cc26xx_sdk@7.10.01.24"
+ * @versions {"tool":"1.16.2+3028"}
+ */
+
+/**
+ * Import the modules used in this configuration.
+ */
+const ble         = scripting.addModule("/ti/ble5stack/ble");
+const CCFG        = scripting.addModule("/ti/devices/CCFG");
+const custom      = scripting.addModule("/ti/devices/radioconfig/custom");
+const rfdesign    = scripting.addModule("/ti/devices/radioconfig/rfdesign");
+const dmm         = scripting.addModule("/ti/dmm/dmm");
+const AESCCM      = scripting.addModule("/ti/drivers/AESCCM", {}, false);
+const AESCCM1     = AESCCM.addInstance();
+const AESCTRDRBG  = scripting.addModule("/ti/drivers/AESCTRDRBG", {}, false);
+const AESCTRDRBG1 = AESCTRDRBG.addInstance();
+const AESECB      = scripting.addModule("/ti/drivers/AESECB");
+const AESECB1     = AESECB.addInstance();
+const AESECB2     = AESECB.addInstance();
+const DMA         = scripting.addModule("/ti/drivers/DMA");
+const ECDH        = scripting.addModule("/ti/drivers/ECDH");
+const ECDH1       = ECDH.addInstance();
+const ECDSA       = scripting.addModule("/ti/drivers/ECDSA");
+const ECDSA1      = ECDSA.addInstance();
+const ECJPAKE     = scripting.addModule("/ti/drivers/ECJPAKE");
+const ECJPAKE1    = ECJPAKE.addInstance();
+const GPIO        = scripting.addModule("/ti/drivers/GPIO");
+const GPIO1       = GPIO.addInstance();
+const GPIO2       = GPIO.addInstance();
+const GPIO3       = GPIO.addInstance();
+const GPIO4       = GPIO.addInstance();
+const GPIO5       = GPIO.addInstance();
+const GPIO6       = GPIO.addInstance();
+const GPIO7       = GPIO.addInstance();
+const GPIO8       = GPIO.addInstance();
+const GPIO9       = GPIO.addInstance();
+const GPIO10      = GPIO.addInstance();
+const NVS         = scripting.addModule("/ti/drivers/NVS");
+const NVS1        = NVS.addInstance();
+const Power       = scripting.addModule("/ti/drivers/Power");
+const RF          = scripting.addModule("/ti/drivers/RF");
+const SHA2        = scripting.addModule("/ti/drivers/SHA2");
+const SHA21       = SHA2.addInstance();
+const SPI         = scripting.addModule("/ti/drivers/SPI");
+const SPI1        = SPI.addInstance();
+const TRNG        = scripting.addModule("/ti/drivers/TRNG");
+const TRNG1       = TRNG.addInstance();
+const TRNG2       = TRNG.addInstance();
+const UART2       = scripting.addModule("/ti/drivers/UART2");
+const UART21      = UART2.addInstance();
+const Watchdog    = scripting.addModule("/ti/drivers/Watchdog");
+const Watchdog1   = Watchdog.addInstance();
+
+/**
+ * Write custom configuration values to the imported modules.
+ */
+ble.radioConfig.codeExportConfig.$name                    = "ti_devices_radioconfig_code_export_param2";
+ble.connUpdateParamsPeripheral.$name                      = "ti_ble5stack_general_ble_conn_update_params0";
+ble.advSet1.$name                                         = "ti_ble5stack_broadcaster_advertisement_set0";
+ble.advSet1.advParam1.$name                               = "ti_ble5stack_broadcaster_advertisement_params0";
+ble.advSet1.advData1.$name                                = "ti_ble5stack_broadcaster_advertisement_data0";
+ble.advSet1.advData1.GAP_ADTYPE_LOCAL_NAME_SHORT          = true;
+ble.advSet1.advData1.shortenedLocalName                   = "SP";
+ble.advSet1.advData1.GAP_ADTYPE_FLAGS                     = true;
+ble.advSet1.advData1.advertisingFlags                     = ["GAP_ADTYPE_FLAGS_BREDR_NOT_SUPPORTED"];
+ble.advSet1.advData1.GAP_ADTYPE_16BIT_MORE                = true;
+ble.advSet1.advData1.numOfUUIDs16More                     = 1;
+ble.advSet1.advData1.UUID016More                          = 0xFFF0;
+ble.advSet1.scanRes1.$name                                = "ti_ble5stack_broadcaster_advertisement_data1";
+ble.advSet1.scanRes1.GAP_ADTYPE_LOCAL_NAME_COMPLETE       = true;
+ble.advSet1.scanRes1.GAP_ADTYPE_POWER_LEVEL               = true;
+ble.advSet1.scanRes1.GAP_ADTYPE_SLAVE_CONN_INTERVAL_RANGE = true;
+ble.advSet1.scanRes1.maxConnInterval                      = 130;
+ble.advSet2.$name                                         = "ti_ble5stack_broadcaster_advertisement_set1";
+ble.advSet2.advParam2.$name                               = "ti_ble5stack_broadcaster_advertisement_params1";
+ble.advSet2.advData2.$name                                = "ti_ble5stack_broadcaster_advertisement_data2";
+ble.advSet2.advData2.GAP_ADTYPE_LOCAL_NAME_SHORT          = true;
+ble.advSet2.advData2.shortenedLocalName                   = "SP";
+ble.advSet2.advData2.GAP_ADTYPE_FLAGS                     = true;
+ble.advSet2.advData2.advertisingFlags                     = ["GAP_ADTYPE_FLAGS_BREDR_NOT_SUPPORTED"];
+ble.advSet2.advData2.GAP_ADTYPE_16BIT_MORE                = true;
+ble.advSet2.advData2.numOfUUIDs16More                     = 1;
+ble.advSet2.advData2.UUID016More                          = 0xFFF0;
+ble.advSet2.scanRes2.$name                                = "ti_ble5stack_broadcaster_advertisement_data3";
+
+CCFG.xoscCapArrayDelta       = 0xD5;
+CCFG.enableBootloader        = true;
+CCFG.dioBootloaderBackdoor   = 15;
+CCFG.levelBootloaderBackdoor = "Active low";
+CCFG.srcClkLF                = "Derived from HF XOSC";
+CCFG.ccfgTemplate.$name      = "ti_devices_CCFG_CCFGCC26XXTemplate0";
+
+custom.ieee                                                  = ["ieee154"];
+custom.radioConfigieee154.$name                              = "ti_devices_radioconfig_settings_ieee_15_40";
+custom.radioConfigieee154.txPower                            = "3";
+custom.radioConfigieee154.codeExportConfig.$name             = "ti_devices_radioconfig_code_export_param0";
+custom.radioConfigieee154.codeExportConfig.cmdList_ieee_15_4 = ["cmdFs","cmdIeeeCsma","cmdIeeeEdScan","cmdIeeeRx","cmdIeeeRxAck","cmdIeeeTx","cmdRadioSetup","cmdTxTest"];
+custom.radioConfigieee154.codeExportConfig.useConst          = true;
+custom.radioConfigieee154.codeExportConfig.useMulti          = true;
+custom.radioConfigieee154.codeExportConfig.symGenMethod      = "Custom";
+custom.radioConfigieee154.codeExportConfig.cmdRadioSetup     = "RF_cmdIeeeRadioSetup";
+
+dmm.stackRoles                          = ["blePeripheral","custom1"];
+dmm.numApplicationStates                = 2;
+dmm.applicationState0                   = "ANY";
+dmm.applicationState1                   = "DMMPOLICY_BLE_IDLE";
+dmm.policyArray[0].$name                = "ti_dmm_policy_dmm_policy0";
+dmm.policyArray[0].custom1.$name        = "ti_dmm_policy_stack_dmm_stack_custom0";
+dmm.policyArray[0].blePeripheral.$name  = "ti_dmm_policy_stack_dmm_stack_ble0";
+dmm.policyArray[0].blePeripheral.weight = 1;
+
+AESCCM1.$name = "CONFIG_AESCCM_0";
+
+AESCTRDRBG1.$name = "CONFIG_AESCTRDRBG_0";
+
+AESECB1.$name = "CONFIG_AESECB_MBEDTLS";
+
+AESECB2.$name = "CONFIG_AESECB_0";
+
+ECDH1.$name = "CONFIG_ECDH_0";
+
+ECDSA1.$name = "CONFIG_ECDSA_0";
+
+ECJPAKE1.$name = "CONFIG_ECJPAKE_0";
+
+GPIO1.$name           = "CONFIG_GPIO_BTN1";
+GPIO1.gpioPin.$assign = "DIO_13";
+
+GPIO2.$name           = "CONFIG_GPIO_BTN2";
+GPIO2.gpioPin.$assign = "DIO_14";
+
+GPIO3.mode            = "Output";
+GPIO3.$name           = "CONFIG_GPIO_GLED";
+GPIO3.gpioPin.$assign = "DIO_16";
+
+GPIO4.mode            = "Output";
+GPIO4.$name           = "CONFIG_GPIO_RLED";
+GPIO4.gpioPin.$assign = "DIO_6";
+
+GPIO5.$name              = "CONFIG_SPINEL_INT";
+GPIO5.mode               = "Output";
+GPIO5.outputStrength     = "High";
+GPIO5.initialOutputState = "High";
+GPIO5.gpioPin.$assign    = "DIO_15";
+
+GPIO6.mode               = "Output";
+GPIO6.$name              = "CONFIG_GPIO_FEM_CHL";
+GPIO6.initialOutputState = "High";
+GPIO6.gpioPin.$assign    = "DIO_4";
+
+GPIO7.mode               = "Output";
+GPIO7.$name              = "CONFIG_GPIO_FEM_CTX";
+GPIO7.initialOutputState = "High";
+GPIO7.gpioPin.$assign    = "DIO_7";
+
+GPIO8.$name           = "CONFIG_GPIO_FEM_CPS";
+GPIO8.mode            = "Output";
+GPIO8.gpioPin.$assign = "DIO_8";
+
+GPIO9.$name           = "CONFIG_GPIO_FEM_CRX";
+GPIO9.mode            = "Output";
+GPIO9.gpioPin.$assign = "DIO_5";
+
+GPIO10.$name              = "CONFIG_GPIO_FEM_CSD";
+GPIO10.mode               = "Output";
+GPIO10.initialOutputState = "High";
+GPIO10.gpioPin.$assign    = "DIO_1";
+
+NVS1.$name                    = "CONFIG_NVSINTERNAL";
+NVS1.internalFlash.$name      = "ti_drivers_nvs_NVSCC26XX0";
+NVS1.internalFlash.regionBase = 0x52000;
+NVS1.internalFlash.regionSize = 0x4000;
+
+RF.coexEnable               = true;
+RF.coexPhy                  = ["ieee_15_4"];
+RF.coexMode                 = "coexMode2Wire";
+RF.rfCoexRequestPin.$assign = "DIO_20";
+RF.rfCoexGrantPin.$assign   = "DIO_19";
+
+SHA21.$name = "CONFIG_SHA2_0";
+
+SPI1.$name                    = "CONFIG_SPI_1";
+SPI1.mode                     = "Four Pin CS Active Low";
+SPI1.spi.$assign              = "SPI3";
+SPI1.spi.sclkPin.$assign      = "DIO_28";
+SPI1.spi.pociPin.$assign      = "DIO_30";
+SPI1.spi.picoPin.$assign      = "DIO_29";
+SPI1.spi.dmaRxChannel.$assign = "DMA_CH25";
+SPI1.spi.dmaTxChannel.$assign = "DMA_CH26";
+SPI1.spi.csnPin.$assign       = "DIO_27";
+
+TRNG1.$name = "CONFIG_TRNG_0";
+
+TRNG2.$name = "CONFIG_TRNG_THREAD";
+
+UART21.$name              = "CONFIG_UART2_0";
+UART21.interruptPriority  = "1";
+UART21.uart.$assign       = "UART0";
+UART21.uart.txPin.$assign = "DIO_3";
+UART21.uart.rxPin.$assign = "DIO_2";
+
+Watchdog1.$name            = "CONFIG_WATCHDOG0";
+Watchdog1.watchdog.$assign = "WDT0";

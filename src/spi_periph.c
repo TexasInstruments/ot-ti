@@ -63,6 +63,8 @@
 #define SPINEL_INT_ASSERT 0
 #define SPINEL_INT_DEASSERT 1
 
+#if 0
+
 otPlatSpiSlaveTransactionCompleteCallback sCompleteCallback = NULL;
 otPlatSpiSlaveTransactionProcessCallback  sProcessCallback  = NULL;
 void *                                    sContext          = NULL;
@@ -384,3 +386,4 @@ exit:
 
     return retval;
 }
+#endif

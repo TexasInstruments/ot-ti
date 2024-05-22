@@ -43,7 +43,7 @@ set(FREERTOS_SRCS
 
 if(TI_SIMPLELINK_ISA STREQUAL "m4f")
     set(FREERTOS_PORT_SRCS
-        ${CMAKE_CURRENT_SOURCE_DIR}/repo/portable/MemMang/heap_4.c
+#        ${CMAKE_CURRENT_SOURCE_DIR}/repo/portable/MemMang/heap_4.c
         ${CMAKE_CURRENT_SOURCE_DIR}/repo/portable/GCC/ARM_CM4F/port.c
     )
 
@@ -53,7 +53,7 @@ if(TI_SIMPLELINK_ISA STREQUAL "m4f")
 
 elseif(TI_SIMPLELINK_ISA STREQUAL "m33f")
     set(FREERTOS_PORT_SRCS
-        ${CMAKE_CURRENT_SOURCE_DIR}/repo/portable/MemMang/heap_4.c
+#        ${CMAKE_CURRENT_SOURCE_DIR}/repo/portable/MemMang/heap_4.c
         ${CMAKE_CURRENT_SOURCE_DIR}/repo/portable/GCC/ARM_CM33_NTZ/non_secure/port.c
         ${CMAKE_CURRENT_SOURCE_DIR}/repo/portable/GCC/ARM_CM33_NTZ/non_secure/portasm.c
     )
