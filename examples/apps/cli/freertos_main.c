@@ -79,7 +79,7 @@ static TaskHandle_t BLEAPPTaskHandle;
 __attribute__((section(".heap"))) uint8_t ucHeap[TOTAL_ICALL_HEAP_SIZE];
 uint32_t heapSize = TOTAL_ICALL_HEAP_SIZE;
 
-void vApplicationStackOverflowHook(void)
+void vApplicationStackOverflowHook( TaskHandle_t xTask, char * pcTaskName )
 {
     while (1)
     {
