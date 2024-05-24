@@ -29,7 +29,7 @@
 if(NOT $ENV{TI_SYSCONFIG_ROOT} STREQUAL "")
     set(TI_SYSCONFIG_INSTALL_DIR $ENV{TI_SYSCONFIG_ROOT} CACHE PATH "")
 else()
-    set(TI_SYSCONFIG_INSTALL_DIR $ENV{HOME}/ti/sysconfig_1.15.0 CACHE PATH "")
+    set(TI_SYSCONFIG_INSTALL_DIR $ENV{HOME}/ti/sysconfig_1.18.1 CACHE PATH "")
 endif()
 
 if(WIN32)
@@ -65,34 +65,31 @@ if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
         -L${TI_SIMPLELINK_SDK_DIR}/source
     )
 
-elseif(TI_SIMPLELINK_KERNEL STREQUAL "tirtos7")
-    set(SYSCONFIG_OUTPUT_C
-        ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_drivers_config.h
-        ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_radio_config.h
-        ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_sysbios_config.h
-        ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_devices_config.c
-        ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_drivers_config.c
-        ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_radio_config.c
-        ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_sysbios_config.c
-    )
-    set(SYSCONFIG_OUTPUT_OTHER
-        ${CMAKE_CURRENT_BINARY_DIR}/syscfg/syscfg_c.rov.xs
-        ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_utils_build_linker.cmd.genlibs
-        ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_utils_runtime_Makefile
-        ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_utils_runtime_model.gv
-    )
-    set(SYSCONFIG_INCLUDES
-        ${TI_SIMPLELINK_SDK_DIR}/source
-        ${TI_SIMPLELINK_SDK_DIR}/kernel/tirtos7/packages
-        ${TI_SIMPLELINK_SDK_DIR}/source/ti/posix/gcc
-    )
-    set(GENLIBS_INCLUDES
-        -L${TI_SIMPLELINK_SDK_DIR}/source
-        -L${TI_SIMPLELINK_SDK_DIR}/kernel/tirtos7/packages
-    )
 
 else()
     message(FATAL_ERROR "Unsuported TI_SIMPLELINK_KERNEL: ${TI_SIMPLELINK_KERNEL}")
+endif()
+
+#if statement used for 2674 migration
+if(${TI_SIMPLELINK_BOARD} MATCHES "CC2674*")
+    set(syscfg_cmd ${TI_SYSCONFIG_CMD}
+                    -s ${TI_SIMPLELINK_SDK_DIR}/.metadata/product.json
+                    -o ${CMAKE_CURRENT_BINARY_DIR}/syscfg
+                    --compiler gcc
+                    --rtos ${TI_SIMPLELINK_KERNEL}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/CC2674.syscfg)
+
+    set(sysconfig_file CC2674.syscfg)
+else()
+    set(syscfg_cmd ${TI_SYSCONFIG_CMD}
+                    -s ${TI_SIMPLELINK_SDK_DIR}/.metadata/product.json
+                    -o ${CMAKE_CURRENT_BINARY_DIR}/syscfg
+                    --board /ti/boards/${TI_SIMPLELINK_BOARD}
+                    --compiler gcc
+                    --rtos ${TI_SIMPLELINK_KERNEL}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/openthread.syscfg)
+
+    set(sysconfig_file openthread.syscfg)
 endif()
 
 add_custom_command(
@@ -100,15 +97,9 @@ add_custom_command(
         ${SYSCONFIG_OUTPUT_C}
         ${SYSCONFIG_OUTPUT_OTHER}
     COMMAND
-        ${TI_SYSCONFIG_CMD}
-            -s ${TI_SIMPLELINK_SDK_DIR}/.metadata/product.json
-            -o ${CMAKE_CURRENT_BINARY_DIR}/syscfg
-            --compiler gcc
-            --board /ti/boards/${TI_SIMPLELINK_BOARD}
-            --rtos ${TI_SIMPLELINK_KERNEL}
-            ${CMAKE_CURRENT_SOURCE_DIR}/openthread.syscfg
+        ${syscfg_cmd}
     DEPENDS
-        openthread.syscfg
+        ${sysconfig_file} 
     VERBATIM
 )
 
@@ -126,6 +117,8 @@ add_library(openthread-cc13xx_cc26xx
     system.c
     system.h
     uart.c
+    #cfs.c
+    #cfs.h
     $<TARGET_OBJECTS:openthread-platform-utils>
 )
 
@@ -146,6 +139,8 @@ target_link_libraries(openthread-cc13xx_cc26xx
 target_compile_definitions(openthread-cc13xx_cc26xx
     PUBLIC
         ${OT_PLATFORM_DEFINES}
+	#TIOP_RADIO_USE_CFS
+	#PLAT_RADIO_SOFTWARE_IMM_ACK=1
         OT_TI_KERNEL_${TI_SIMPLELINK_KERNEL}
 )
 

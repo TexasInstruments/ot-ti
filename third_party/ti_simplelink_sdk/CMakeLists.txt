@@ -65,43 +65,16 @@ if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/posix/freertos/sleep.c
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/posix/freertos/timer.c
     )
-    set(CC13XX_CC26XX_LDS
-        ${TI_SIMPLELINK_SDK_DIR}/source/ti/boards/${TI_SIMPLELINK_DEVICE}/${TI_SIMPLELINK_DEVICE}_freertos.lds
-    )
 
-elseif(TI_SIMPLELINK_KERNEL STREQUAL "tirtos7")
-    set(CC13XX_CC26XX_DPL_SRCS
-        ${TI_SIMPLELINK_SDK_DIR}/kernel/tirtos7/packages/ti/dpl/ClockP_tirtos.c
-        ${TI_SIMPLELINK_SDK_DIR}/kernel/tirtos7/packages/ti/dpl/DebugP_tirtos.c
-        ${TI_SIMPLELINK_SDK_DIR}/kernel/tirtos7/packages/ti/dpl/HwiP_tirtos.c
-        ${TI_SIMPLELINK_SDK_DIR}/kernel/tirtos7/packages/ti/dpl/MutexP_tirtos.c
-        ${TI_SIMPLELINK_SDK_DIR}/kernel/tirtos7/packages/ti/dpl/PowerCC26X2_tirtos.c
-        ${TI_SIMPLELINK_SDK_DIR}/kernel/tirtos7/packages/ti/dpl/SemaphoreP_tirtos.c
-        ${TI_SIMPLELINK_SDK_DIR}/kernel/tirtos7/packages/ti/dpl/SwiP_tirtos.c
-        ${TI_SIMPLELINK_SDK_DIR}/kernel/tirtos7/packages/ti/dpl/SystemP_tirtos.c
-    )
-    set(CC13XX_CC26XX_DPL_INCLUDES
-        ${TI_SIMPLELINK_SDK_DIR}/kernel/tirtos7/packages
-    )
-    set(CC13XX_CC26XX_POSIX_SRCS
-        ${TI_SIMPLELINK_SDK_DIR}/source/ti/posix/tirtos/clock.c
-        ${TI_SIMPLELINK_SDK_DIR}/source/ti/posix/tirtos/mqueue.c
-        ${TI_SIMPLELINK_SDK_DIR}/source/ti/posix/tirtos/pthread.c
-        ${TI_SIMPLELINK_SDK_DIR}/source/ti/posix/tirtos/pthread_barrier.c
-        ${TI_SIMPLELINK_SDK_DIR}/source/ti/posix/tirtos/pthread_cond.c
-        ${TI_SIMPLELINK_SDK_DIR}/source/ti/posix/tirtos/pthread_key.c
-        ${TI_SIMPLELINK_SDK_DIR}/source/ti/posix/tirtos/pthread_mutex.c
-        ${TI_SIMPLELINK_SDK_DIR}/source/ti/posix/tirtos/pthread_rwlock.c
-        ${TI_SIMPLELINK_SDK_DIR}/source/ti/posix/tirtos/pthread_util.c
-        ${TI_SIMPLELINK_SDK_DIR}/source/ti/posix/tirtos/sched.c
-        ${TI_SIMPLELINK_SDK_DIR}/source/ti/posix/tirtos/semaphore.c
-        ${TI_SIMPLELINK_SDK_DIR}/source/ti/posix/tirtos/sleep.c
-        ${TI_SIMPLELINK_SDK_DIR}/source/ti/posix/tirtos/timer.c
-    )
-    set(CC13XX_CC26XX_LDS
-        ${TI_SIMPLELINK_SDK_DIR}/source/ti/boards/${TI_SIMPLELINK_DEVICE}/${TI_SIMPLELINK_DEVICE}_tirtos7.lds
-    )
-
+    if(TI_SIMPLELINK_BOARD STREQUAL "LP_CC2653P10")
+        set(CC13XX_CC26XX_LDS
+            ${TI_SIMPLELINK_SDK_DIR}/source/ti/boards/cc26x3/cc26x3_freertos.lds
+        )
+    else()
+        set(CC13XX_CC26XX_LDS
+            ${TI_SIMPLELINK_SDK_DIR}/source/ti/boards/${TI_SIMPLELINK_DEVICE}/${TI_SIMPLELINK_DEVICE}_freertos.lds
+        )
+    endif()
 
 else()
     message(FATAL_ERROR "Unsuported TI_SIMPLELINK_KERNEL: ${TI_SIMPLELINK_KERNEL}")
@@ -116,15 +89,17 @@ set(CC13XX_CC26XX_NVOCMP_SRCS
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/common/nv/nvintf.h
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/common/nv/nvocmp.h
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/common/nv/crc.c
-    ${TI_SIMPLELINK_SDK_DIR}/source/ti/common/nv/nvocmp.c
+    ${TI_SIMPLELINK_SDK_DIR}/../../../src/nvocmp.c
 )
 
 set(CC13XX_CC26XX_NVOCMP_DEFS
     NVOCMP_POSIX_MUTEX
+    NVOCMP_NVPAGES=3
 )
 
 set(CC13XX_CC26XX_NVOCMP_INCLUDES
-    ${TI_SIMPLELINK_SDK_DIR}/source/ti/devices/${TI_SIMPLELINK_DEVICE}
+${TI_SIMPLELINK_SDK_DIR}/source/ti/devices/${TI_SIMPLELINK_DEVICE}
+${TI_SIMPLELINK_SDK_DIR}/source/ti/common/nv
 )
 
 add_library(cc13xx-cc26xx-sdk)
@@ -146,9 +121,19 @@ elseif(TI_SIMPLELINK_DEVICE STREQUAL "cc13x2x7_cc26x2x7")
     target_compile_definitions(cc13xx-cc26xx-sdk PUBLIC DeviceFamily_CC13X2X7_CC26X2X7)
     target_compile_definitions(ot-config INTERFACE DeviceFamily_CC13X2X7_CC26X2X7)
 
+elseif(TI_SIMPLELINK_BOARD STREQUAL "LP_CC2653P10")
+    target_compile_definitions(cc13xx-cc26xx-sdk PUBLIC DeviceFamily_CC26X3)
+    target_compile_definitions(ot-config INTERFACE DeviceFamily_CC26X3)
+
 elseif(TI_SIMPLELINK_DEVICE STREQUAL "cc13x4_cc26x4")
     target_compile_definitions(cc13xx-cc26xx-sdk PUBLIC DeviceFamily_CC13X4_CC26X4)
     target_compile_definitions(ot-config INTERFACE DeviceFamily_CC13X4_CC26X4)
+
+    if(${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC13*")
+        target_compile_definitions(cc13xx-cc26xx-sdk PUBLIC DeviceFamily_CC13X4)
+    else()
+        target_compile_definitions(cc13xx-cc26xx-sdk PUBLIC DeviceFamily_CC26X4)
+    endif()
 
 else()
     message(FATAL_ERROR "Unsuported TI_SIMPLELINK_DEVICE: ${TI_SIMPLELINK_DEVICE}")
@@ -185,4 +170,3 @@ target_link_libraries(cc13xx-cc26xx-sdk
         -Wl,--undefined=__ccfg
         -T${CC13XX_CC26XX_LDS}
 )
-

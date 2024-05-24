@@ -34,6 +34,7 @@
 #include <openthread-system.h>
 #include <openthread/cli.h>
 #include <openthread/logging.h>
+#include <openthread/thread.h>
 
 #include "cli/cli_config.h"
 #include "common/code_utils.hpp"
@@ -80,6 +81,20 @@
 
 #if OPENTHREAD_CONFIG_CLI_MAX_LINE_LENGTH > OPENTHREAD_CONFIG_CLI_UART_RX_BUFFER_SIZE
 #error "command line should be should be smaller than CLI rx buffer"
+#endif
+
+
+
+#define TIOP_POWER_MEASUREMENT  0
+#define TIOP_POWER_SED          0
+#define TIOP_POWER_SSED         0
+
+#if TIOP_POWER_MEASUREMENT & OPENTHREAD_MTD
+#define OT_MASTER_KEY_SIZE 16
+#define TIOP_POWER_PANID        0x5b35
+#define TIOP_POWER_CH           23
+#define TIOP_POWER_POLL_PERIOD  1000
+#define TIOP_POWER_CSL_PERIOD   500 * 6.25 //Multiply value by 6.25 to get csl value
 #endif
 
 enum
@@ -385,7 +400,48 @@ extern "C" void otAppCliInit(otInstance *aInstance)
     sTxLength   = 0;
     sSendLength = 0;
 
+    #if TIOP_POWER_MEASUREMENT & OPENTHREAD_MTD
+
+    otNetworkKey networkKey;
+    otLinkModeConfig linkMode;
+         
+    /**********************SED/SSED settings*******************************/
+    #if TIOP_POWER_SED
+    //Set these to make it SED
+    linkMode.mRxOnWhenIdle = false;
+    linkMode.mDeviceType = false;
+    linkMode.mNetworkData = false;
+
+    otLinkSetPollPeriod(aInstance, TIOP_POWER_POLL_PERIOD);
+
+    otThreadSetLinkMode(aInstance, linkMode);
+    #endif /* TIOP_POWER_SED */
+
+    #if TIOP_POWER_SSED
+    //set CSL period to enable SSED
+    otLinkCslSetPeriod(aInstance, TIOP_POWER_CSL_PERIOD);
+    #endif /* TIOP_POWER_SSED */
+    /*********************************************************************/
+
+
+    
+    /**********************network settings/enable*******************************/
+    uint8_t networkKeyVal[OT_MASTER_KEY_SIZE] = {0x00,0x11,0x22,0x33,0x44,0x55,0x66,0x77,0x88,0x99,0xaa,0xbb,0xcc,0xdd,0xee,0x00};
+    memcpy(networkKey.m8, networkKeyVal, sizeof(networkKeyVal));
+    otThreadSetNetworkKey(aInstance, &networkKey);
+
+    otLinkSetPanId(aInstance, TIOP_POWER_PANID);
+
+    otLinkSetChannel(aInstance, TIOP_POWER_CH);
+
+    otIp6SetEnabled(aInstance, true);
+
+    otThreadSetEnabled(aInstance, true);
+    /****************************************************************************/
+
+    #else
     IgnoreError(otPlatUartEnable());
 
     otCliInit(aInstance, CliUartOutput, aInstance);
+    #endif /* TIOP_POWER_MEASUREMENT */
 }

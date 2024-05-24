@@ -21,9 +21,8 @@ default in some programs.
 The SimpleLink drivers require a kernel running underneath them for certain
 primitives like semaphores. This requires the `main()` function to be used to
 setup the drivers and start the kernel. It is not easy to re-write the
-SimpleLink SDK `ResetISR` to create a new entry point. Instead two files have
-been added to each example, one to bootstrap TI-RTOS and one to bootstrap
-FreeRTOS. The `main()` function in the example applications have been re-named
+SimpleLink SDK `ResetISR` to create a new entry point. Instead a file has
+been added to each example, one to bootstrap FreeRTOS. The `main()` function in the example applications have been re-named
 to `app_main()` to follow the conventions set in the SimpleLink SDK.
 
 ### Possible changes
@@ -37,6 +36,6 @@ there are any pending tasklets before pending on the queue and returning if
 there are any.
 
 A weak implementation of the `otTaskletsSignalPending()` function is provided
-in the `system.c` file if the application code does not handle this
-functionality.
+in the `system.c` file and `OT_TASKLET_SIGNALING` should be defined if the
+application code does not handle this functionality.
 

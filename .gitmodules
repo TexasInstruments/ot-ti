@@ -6,7 +6,7 @@
 	url = https://github.com/FreeRTOS/FreeRTOS-Kernel.git
 [submodule "third_party/ti_simplelink_sdk/repo_cc13xx_cc26xx"]
 	path = third_party/ti_simplelink_sdk/repo_cc13xx_cc26xx
-	url = https://github.com/TexasInstruments/cc13xx_cc26xx_sdk.git
+	url = https://github.com/TexasInstruments/simplelink-lowpower-f2-sdk.git
 	ignore = dirty
 [submodule "mbedtls"]
 	path = third_party/mbedtls/repo

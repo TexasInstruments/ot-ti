@@ -29,15 +29,15 @@
 
 set -euxo pipefail
 
-SYSCONFIG_VERSION=sysconfig_1.15.0
+SYSCONFIG_VERSION=sysconfig_1.18.1
 SYSCONFIG_USER=~/ti/${SYSCONFIG_VERSION}/
 SYSCONFIG_SYSTEM=/opt/ti/${SYSCONFIG_VERSION}/
-SYSCONFIG_DL=https://dr-download.ti.com/software-development/ide-configuration-compiler-or-debugger/MD-nsUM6f7Vvb/1.15.0.2826/sysconfig-1.15.0_2826-setup.run
+SYSCONFIG_DL=https://dr-download.ti.com/software-development/ide-configuration-compiler-or-debugger/MD-nsUM6f7Vvb/1.18.1.3343/sysconfig-1.18.1_3343-setup.run
 
-if [ ! -d "$SYSCONFIG_USER" ] && [ ! -d "$SYSCONFIG_SYSTEM"]; then
-    wget "$SYSCONFIG_DL" --tries 4 --no-check-certificate --quiet -c -O /tmp/sysconfig-1.15.0_2826-setup.run
-    chmod +x /tmp/sysconfig-1.15.0_2826-setup.run
-    /tmp/sysconfig-1.15.0_2826-setup.run --mode unattended
+if [ ! -d "$SYSCONFIG_USER" ] && [ ! -d "$SYSCONFIG_SYSTEM" ]; then
+    wget "$SYSCONFIG_DL" --tries 4 --no-check-certificate --quiet -c -O /tmp/sysconfig-1.18.1_3343-setup.run
+    chmod +x /tmp/sysconfig-1.18.1_3343-setup.run
+    /tmp/sysconfig-1.18.1_3343-setup.run --mode unattended
 fi
 
 "$(dirname "$0")"/../openthread/script/bootstrap

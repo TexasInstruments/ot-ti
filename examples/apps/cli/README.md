@@ -122,4 +122,5 @@ Done
 
 ## 4. Explore More
 
-See the [OpenThread CLI Reference README.md](../../../src/cli/README.md) to explore more.
+See the [OpenThread CLI Reference README.md](../../../openthread/src/cli/README.md) to explore more.
+

@@ -37,23 +37,25 @@
 
 #include "ti_drivers_config.h"
 #include <ti/drivers/UART2.h>
+#include <ti/drivers/dpl/HwiP.h>
 
 #include "system.h"
+#include <string.h>
+#include <mqueue.h>
 
 /* Ensure all bytes are written in blocking mode before notifying the stack it
  * can send more data. Less efficient than callback mode. Necessary for certain
  * versions of the UART2 driver.
  */
-#define TI_PLAT_UART_BLOCKING 0
+#define TI_PLAT_UART_BLOCKING 1
 
 #define PLATFORM_UART_EVENT_TX_DONE (1U << 0)
 #define PLATFORM_UART_EVENT_RX_DONE (1U << 1)
 
-#define PLATFORM_UART_RECV_BUF_LEN 32
+#define PLATFORM_UART_RECV_BUF_LEN 256
+#define PLATFORM_UART_RECV_MQUEUE_LEN 6
 
 static uint8_t PlatformUart_receiveBuffer[PLATFORM_UART_RECV_BUF_LEN];
-
-static size_t PlatformUart_receiveLen;
 
 static UART2_Handle PlatformUart_uartHandle;
 
@@ -62,14 +64,30 @@ static SemaphoreP_Struct PlatformUart_writeSem;
 static SemaphoreP_Handle PlatformUart_writeSemHandle;
 #endif
 
+/* Local Message Queue for Incoming Data */
+const  char  UART_procQueueName[] = "/uartrx_process";
+static mqd_t UART_procQueueDesc;
+struct UART_procQueueMsg {
+    uint8_t rxBuffer[PLATFORM_UART_RECV_BUF_LEN];
+    uint8_t readLen;
+};
+
 static void uartReadCallback(UART2_Handle aHandle, void *aBuf, size_t aLen, void *userArg, int_fast16_t status)
 {
     (void)aHandle;
     (void)aBuf;
     (void)userArg;
     (void)status;
-    PlatformUart_receiveLen = aLen;
+    struct UART_procQueueMsg rxMsg;
+
+    memcpy(rxMsg.rxBuffer, PlatformUart_receiveBuffer, aLen);
+    rxMsg.readLen = aLen;
+
+    /* Process incoming data in task context */
+    mq_send(UART_procQueueDesc, (char *)&rxMsg, sizeof(struct UART_procQueueMsg), 0);
     platformUartSignal(PLATFORM_UART_EVENT_RX_DONE);
+
+    UART2_read(PlatformUart_uartHandle, PlatformUart_receiveBuffer, sizeof(PlatformUart_receiveBuffer), NULL);
 }
 
 #if !TI_PLAT_UART_BLOCKING
@@ -88,9 +106,10 @@ static void uartWriteCallback(UART2_Handle aHandle, void *aBuf, size_t aLen, voi
 otError otPlatUartEnable(void)
 {
     UART2_Params params;
+    struct mq_attr attr;
 
 #if !TI_PLAT_UART_BLOCKING
-    PlatformUart_writeSemHandle = SemaphoreP_constructBinary(&PlatformUart_writeSem, 0U);
+    PlatformUart_writeSemHandle = SemaphoreP_constructBinary(&PlatformUart_writeSem, 1U);
 #endif
 
     UART2_Params_init(&params);
@@ -112,6 +131,13 @@ otError otPlatUartEnable(void)
     params.writeCallback = uartWriteCallback;
 #endif
 
+    attr.mq_curmsgs = 0;
+    attr.mq_flags   = 0;
+    attr.mq_maxmsg  = PLATFORM_UART_RECV_MQUEUE_LEN;
+    attr.mq_msgsize = sizeof(struct UART_procQueueMsg);
+
+    UART_procQueueDesc = mq_open(UART_procQueueName, (O_RDWR | O_NONBLOCK | O_CREAT), 0, &attr);
+
     PlatformUart_uartHandle = UART2_open(CONFIG_UART2_0, &params);
 
     UART2_read(PlatformUart_uartHandle, PlatformUart_receiveBuffer, sizeof(PlatformUart_receiveBuffer), NULL);
@@ -130,6 +156,10 @@ otError otPlatUartSend(const uint8_t *aBuf, uint16_t aBufLength)
 {
     int_fast16_t ret;
 
+    /* Block any incoming Tx requests if one is already in progress */
+#if !TI_PLAT_UART_BLOCKING
+    SemaphoreP_pend(PlatformUart_writeSemHandle, UINT32_MAX);
+#endif
     ret = UART2_write(PlatformUart_uartHandle, aBuf, aBufLength, NULL);
 
 #if TI_PLAT_UART_BLOCKING
@@ -143,34 +173,19 @@ void platformUartProcess(uintptr_t arg)
 {
     if (arg & PLATFORM_UART_EVENT_TX_DONE)
     {
-#if TI_PLAT_UART_BLOCKING
         otPlatUartSendDone();
-#else
-        if (SemaphoreP_OK == SemaphoreP_pend(PlatformUart_writeSemHandle, 0U))
-        {
-            otPlatUartSendDone();
-        }
-        else
-        {
-            // A flush must have handled the end condition
-        }
-#endif
     }
 
     if (arg & PLATFORM_UART_EVENT_RX_DONE)
     {
-        otPlatUartReceived(PlatformUart_receiveBuffer, PlatformUart_receiveLen);
-        PlatformUart_receiveLen = 0;
-        UART2_read(PlatformUart_uartHandle, PlatformUart_receiveBuffer, sizeof(PlatformUart_receiveBuffer), NULL);
+        struct UART_procQueueMsg rxMsg;
+
+        mq_receive(UART_procQueueDesc, (char *)&rxMsg, sizeof(struct UART_procQueueMsg), NULL);
+        otPlatUartReceived(rxMsg.rxBuffer, rxMsg.readLen);
     }
 }
 
 otError otPlatUartFlush(void)
 {
-#if TI_PLAT_UART_BLOCKING
     return OT_ERROR_NOT_IMPLEMENTED;
-#else
-    SemaphoreP_pend(PlatformUart_writeSemHandle, UINT32_MAX);
-    return OT_ERROR_NONE;
-#endif
 }

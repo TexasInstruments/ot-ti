@@ -38,6 +38,11 @@ set(TI_BOARD_VALUES
     "LP_CC2652R7"
     "LP_CC2652RB"
     "LP_CC2652RSIP"
+    "LP_CC2653P10"
+    "CC2674P10RGZ"
+    "CC2674P10RSK"
+    "CC2674R10RGZ"
+    "CC2674R10RSK"
 )
 
 set_property(CACHE TI_SIMPLELINK_BOARD PROPERTY STRINGS ${TI_BOARD_VALUES})
@@ -107,6 +112,30 @@ elseif(TI_SIMPLELINK_BOARD STREQUAL "LP_EM_CC1354P10_6")
     set(TI_SIMPLELINK_FAMILY    "cc13x4_cc26x4"    )
     set(TI_SIMPLELINK_ISA       "m33f"             )
 
+elseif(TI_SIMPLELINK_BOARD STREQUAL "LP_CC2653P10")
+    set(TI_SIMPLELINK_DEVICE    "cc13x4_cc26x4"    )
+    set(TI_SIMPLELINK_FAMILY    "cc13x4_cc26x4"    )
+    set(TI_SIMPLELINK_ISA       "m33f"             )
+
+elseif(TI_SIMPLELINK_BOARD STREQUAL "CC2674P10RGZ")
+    set(TI_SIMPLELINK_DEVICE    "cc13x4_cc26x4"    )
+    set(TI_SIMPLELINK_FAMILY    "cc13x4_cc26x4"    )
+    set(TI_SIMPLELINK_ISA       "m33f"             )
+
+elseif(TI_SIMPLELINK_BOARD STREQUAL "CC2674P10RSK")
+    set(TI_SIMPLELINK_DEVICE    "cc13x4_cc26x4"    )
+    set(TI_SIMPLELINK_FAMILY    "cc13x4_cc26x4"    )
+    set(TI_SIMPLELINK_ISA       "m33f"             )
+
+elseif(TI_SIMPLELINK_BOARD STREQUAL "CC2674R10RGZ")
+    set(TI_SIMPLELINK_DEVICE    "cc13x4_cc26x4"    )
+    set(TI_SIMPLELINK_FAMILY    "cc13x4_cc26x4"    )
+    set(TI_SIMPLELINK_ISA       "m33f"             )
+
+elseif(TI_SIMPLELINK_BOARD STREQUAL "CC2674R10RSK")
+    set(TI_SIMPLELINK_DEVICE    "cc13x4_cc26x4"    )
+    set(TI_SIMPLELINK_FAMILY    "cc13x4_cc26x4"    )
+    set(TI_SIMPLELINK_ISA       "m33f"             )
 else()
     if(TI_PLATFORM STREQUAL "cc13xx_cc26xx"
             AND NOT TI_SIMPLELINK_BOARD IN_LIST TI_BOARD_VALUES)

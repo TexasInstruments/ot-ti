@@ -27,6 +27,8 @@
  */
 
 #include <openthread/config.h>
+#include OPENTHREAD_PROJECT_CORE_CONFIG_FILE
+
 
 #include <core/config/logging.h>
 #include <openthread/platform/logging.h>

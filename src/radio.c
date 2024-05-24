@@ -29,6 +29,7 @@
 #include <openthread/config.h>
 
 #include "radio.h"
+#include <region_settings.h>
 
 #if defined(USE_DMM)
 #include <dmm/dmm_rfmap.h>
@@ -85,6 +86,13 @@
 #define PLATFORM_RADIO_TX_TEST_MODULATED_WORD 0xAAAA
 #define PLATFORM_RADIO_TX_TEST_UNMODULATED_WORD 0xFFFF
 
+/* Threshold above receiver sensitivity for minimum energy detect in dBm (see 6.9.7) */
+#define PLATFORM_MAC_SPEC_ED_MIN_DBM_ABOVE_RECEIVER_SENSITIVITY    10
+#define PLATFORM_RADIO_RECEIVER_SENSITIVITY_DBM -90 /* dBm */
+#define PLATFORM_RADIO_RECEIVER_SATURATION_DBM -20  /* dBm */
+#define PLATFORM_MAC_SPEC_ED_MAX  0xFF
+#define PLATFORM_RF_POWER_MIN_DBM   (PLATFORM_RADIO_RECEIVER_SENSITIVITY_DBM + PLATFORM_MAC_SPEC_ED_MIN_DBM_ABOVE_RECEIVER_SENSITIVITY)
+#define PLATFORM_RF_POWER_MAX_DBM   PLATFORM_RADIO_RECEIVER_SATURATION_DBM
 /* state of the RF interface */
 static volatile platformRadio_phyState sState;
 
@@ -171,6 +179,7 @@ static RF_CmdHandle sTxTestCmdHandle;
  * @ref otPlatRadioSetTransmitPower.
  */
 static int8_t sReqTxPower = 0U;
+static uint16_t sCurrentRegionCode = 0;
 
 /**
  * Array of back-off values necessary for passing FCC testing.
@@ -209,6 +218,8 @@ static RF_PriorityCoex sPriorityCoex = RF_PriorityCoexDefault;
  */
 static RF_RequestCoex sRequestCoex = RF_RequestCoexDefault;
 
+static uint32_t convertUsTimestamp(uint64_t timestamp);
+void finalizeAckCreation(void);
 /* Transmit security keying material */
 static uint8_t          sKeyId;
 static uint8_t          sAckKeyId;
@@ -223,7 +234,7 @@ static uint32_t         sAckFrameCounter;
 // Uncertainty of scheduling a CSL transmission, in ±10 us units. This will
 // vary based on the LF clock source used for the system's alarm module. The RF
 // driver will use a combination of RAT/HF/LF clock to schedule commands.
-#define CSL_TX_UNCERTAINTY 5U
+#define CSL_TX_UNCERTAINTY 80U
 
 static uint32_t sCslPeriod;
 static uint32_t sCslSampleTime;
@@ -683,7 +694,7 @@ static void rfCoreTxCallback(RF_Handle aRfHandle, RF_CmdHandle aRfCmdHandle, RF_
  *
  * @return handle of the running command returned by the command scheduler
  */
-static RF_CmdHandle rfCoreSendTransmitCmd(otInstance *aInstance, RF_Handle aRfHandle, otRadioFrame *aFrame)
+static RF_CmdHandle rfCoreSendTransmitCmd(otInstance *aInstance, RF_Handle aRfHandle, otRadioFrame *aFrame, bool isAckFrame)
 {
     RF_ScheduleCmdParams rfScheduleCmdParams;
     RF_Op *op;
@@ -703,11 +714,18 @@ static RF_CmdHandle rfCoreSendTransmitCmd(otInstance *aInstance, RF_Handle aRfHa
     {
 // Number of RAT ticks from the command beginning to symbols being sent over the air
 #define RF_CORE_TX_CMD_LATENCY (320) // 80 uS: TX synth lock guard time
-        sTransmitCmd.startTime =
-            RF_convertUsToRatTicks(aFrame->mInfo.mTxInfo.mTxDelayBaseTime + aFrame->mInfo.mTxInfo.mTxDelay) -
-            RF_CORE_TX_CMD_LATENCY;
+        if (!isAckFrame){
+            sTransmitCmd.startTime =
+                convertUsTimestamp(aFrame->mInfo.mTxInfo.mTxDelayBaseTime + aFrame->mInfo.mTxInfo.mTxDelay) -
+                RF_CORE_TX_CMD_LATENCY;
+        }
+        else{
+            sTransmitCmd.startTime =
+                RF_convertUsToRatTicks(aFrame->mInfo.mTxInfo.mTxDelayBaseTime + aFrame->mInfo.mTxInfo.mTxDelay) -
+                RF_CORE_TX_CMD_LATENCY;
+        }
         sTransmitCmd.startTrigger.triggerType = TRIG_ABSTIME;
-        sTransmitCmd.startTrigger.pastTrig    = 0;
+        sTransmitCmd.startTrigger.pastTrig    = 1;
         rfScheduleCmdParams.startTime         = sTransmitCmd.startTime;
         rfScheduleCmdParams.startType         = RF_StartAbs;
         // rfScheduleCmdParams.allowDelay        = RF_AllowDelayNone;
@@ -816,6 +834,7 @@ static void rfCoreRxCallback(RF_Handle aRfHandle, RF_CmdHandle aRfCmdHandle, RF_
         /* A packet was received the packet MAY require an ACK Or the
          * packet might not (ie: a broadcast)
          */
+        finalizeAckCreation();
         evts |= RF_EVENT_RX_DONE;
     }
 
@@ -903,7 +922,6 @@ static void rfCoreSendReceiveCmd(RF_Handle aRfHandle)
 static otError rfCoreSetTransmitPower(int8_t aPower)
 {
     otError               retval = OT_ERROR_NONE;
-    RF_TxPowerTable_Value oldValue;
     RF_TxPowerTable_Value newValue;
     unsigned int          i;
 
@@ -919,24 +937,9 @@ static otError rfCoreSetTransmitPower(int8_t aPower)
 
     /* find the tx power configuration */
     newValue = RF_TxPowerTable_findValue(txPowerTable, aPower);
-    oldValue = RF_getTxPower(sRfHandle);
+
     otEXPECT_ACTION(RF_TxPowerTable_INVALID_VALUE != newValue.rawValue, retval = OT_ERROR_INVALID_ARGS);
-
-    /* set the tx power configuration */
-    if (platformRadio_phyState_Sleep == sState || platformRadio_phyState_Disabled == sState ||
-        newValue.paType == oldValue.paType)
-    {
-        otEXPECT_ACTION(RF_StatSuccess == RF_setTxPower(sRfHandle, newValue), retval = OT_ERROR_FAILED);
-    }
-    else
-    {
-        rfCoreExecuteAbortCmd(sRfHandle, sReceiveCmdHandle);
-
-        otEXPECT_ACTION(RF_StatSuccess == RF_setTxPower(sRfHandle, newValue), retval = OT_ERROR_FAILED);
-
-        rfCoreSendReceiveCmd(sRfHandle);
-        otEXPECT_ACTION(sReceiveCmdHandle >= 0, retval = OT_ERROR_FAILED);
-    }
+    otEXPECT_ACTION(RF_StatSuccess == RF_setTxPower(sRfHandle, newValue), retval = OT_ERROR_FAILED);
 
 exit:
     return retval;
@@ -1107,6 +1110,7 @@ void platformRadioInit(void)
     rfCoreInitReceiveParams();
 
     sState = platformRadio_phyState_Disabled;
+    sCurrentRegionCode = CC_UINT16('W', 'W');
 }
 
 otError otPlatRadioEnable(otInstance *aInstance)
@@ -1446,7 +1450,21 @@ static otError rfCoreGenerateEmptyEnhAck(otRadioFrame *aRxFrame, otRadioFrame *a
 
 #if OPENTHREAD_CONFIG_MLE_LINK_METRICS_SUBJECT_ENABLE
     {
-        ieLen += otLinkMetricsEnhAckGetDataLen(&srcAddr);
+        uint8_t      linkMetricsIeDataLen = 0;
+        uint8_t      linkMetricsData[OT_ENH_PROBING_IE_DATA_MAX_SIZE] = {0};
+        uint8_t ackIeData[OT_ACK_IE_MAX_SIZE] = {0};
+
+
+        // Length of LQI/RSSI/Link Margin if available for device
+        linkMetricsIeDataLen = otLinkMetricsEnhAckGetDataLen(&srcAddr);
+
+        // Length of Vendor specific data
+        if (linkMetricsIeDataLen > 0)
+        {
+            // API returns total length, Vendor IE + linkMetrics data
+            linkMetricsIeDataLen = otMacFrameGenerateEnhAckProbingIe(ackIeData, linkMetricsData, linkMetricsIeDataLen);
+        }
+        ieLen += linkMetricsIeDataLen;
     }
 #endif
 
@@ -1617,7 +1635,8 @@ otError otPlatRadioTransmit(otInstance *aInstance, otRadioFrame *aFrame)
         updateIeInfoTxFrame(aInstance, aFrame);
         otEXPECT_ACTION(OT_ERROR_NONE == rfCoreProcessTransmitSecurity(aFrame), error = OT_ERROR_FAILED);
 
-        sTransmitCmdHandle = rfCoreSendTransmitCmd(aInstance, sRfHandle, aFrame);
+        otPlatRadioSetTransmitPower(aInstance, sReqTxPower);
+        sTransmitCmdHandle = rfCoreSendTransmitCmd(aInstance, sRfHandle, aFrame, false);
         otEXPECT_ACTION(sTransmitCmdHandle >= 0, error = OT_ERROR_FAILED);
         error = OT_ERROR_NONE;
         otPlatRadioTxStarted(aInstance, aFrame);
@@ -1652,7 +1671,6 @@ otRadioCaps otPlatRadioGetCaps(otInstance *aInstance)
          * Changes to enable IEEE 802.15.4-2015 Enh-Ack make using the built in
          * protocol features of the RF Core difficult. This may be enabled in a
          * future release.
-         *  OT_RADIO_CAPS_ACK_TIMEOUT      |
          *  OT_RADIO_CAPS_TRANSMIT_RETRIES |
          *  OT_RADIO_CAPS_CSMA_BACKOFF     |
          */
@@ -1668,9 +1686,10 @@ otRadioCaps otPlatRadioGetCaps(otInstance *aInstance)
          *  OT_RADIO_CAPS_RECEIVE_TIMING   |
          */
         /* ENABLED */
+            OT_RADIO_CAPS_ACK_TIMEOUT      |
+            OT_RADIO_CAPS_TRANSMIT_TIMING  |
             OT_RADIO_CAPS_ENERGY_SCAN      |
             OT_RADIO_CAPS_TRANSMIT_SEC     |
-            OT_RADIO_CAPS_TRANSMIT_TIMING  |
             OT_RADIO_CAPS_NONE;
 }
 #ifdef __TI_ARM__
@@ -2168,20 +2187,75 @@ otError otPlatRadioSetChannelMaxTransmitPower(otInstance *aInstance, uint8_t aCh
     return OT_ERROR_NOT_IMPLEMENTED;
 }
 
+static otPlat_radioRegion_t regionCodeToPowerTableIndex(uint16_t region_code)
+{
+     otPlat_radioRegion_t region_index = OT_HAL_REGION_MAX;
+     switch (region_code)
+     {
+         case CC_UINT16('U', 'S'):
+             region_index = OT_HAL_REGION_UNITED_STATES;
+             break;
+         case CC_UINT16('J', 'P'):
+             region_index = OT_HAL_REGION_JAPAN;
+             break;
+         case CC_UINT16('I', 'N'):
+             region_index = OT_HAL_REGION_INDIA;
+             break;
+         case CC_UINT16('C', 'A'):
+             region_index = OT_HAL_REGION_CANADA;
+             break;
+         case CC_UINT16('A', 'U'):
+         case CC_UINT16('N', 'Z'):
+             region_index = OT_HAL_REGION_AU_NZ;
+             break;
+         case CC_UINT16('B', 'R'):
+             region_index = OT_HAL_REGION_BRAZIL;
+             break;
+         case CC_UINT16('M', 'X'):
+             region_index = OT_HAL_REGION_MEXICO;
+             break;
+         case CC_UINT16('G', 'B'):
+         case CC_UINT16('D', 'E'):
+         case CC_UINT16('F', 'R'):
+         case CC_UINT16('I', 'T'):
+         case CC_UINT16('E', 'S'):
+             region_index = OT_HAL_REGION_EUROPE;
+             break;
+         default:
+             region_index = OT_HAL_REGION_WORLD_WIDE;
+             break;
+     }
+     return region_index;
+}
 otError otPlatRadioSetRegion(otInstance *aInstance, uint16_t aRegionCode)
 {
-    OT_UNUSED_VARIABLE(aInstance);
-    OT_UNUSED_VARIABLE(aRegionCode);
+    otError retval = OT_ERROR_NONE;
+    int8_t powerDbm;
 
-    return OT_ERROR_NOT_IMPLEMENTED;
+    otPlat_radioRegion_t regionIndex = regionCodeToPowerTableIndex(aRegionCode);
+    otEXPECT_ACTION(regionIndex != OT_HAL_REGION_MAX, retval = OT_ERROR_INVALID_ARGS);
+    otEXPECT_ACTION(regionIndex < otARRAY_LENGTH(otPlat_powerTable),
+                    retval = OT_ERROR_INVALID_ARGS);
+    otEXPECT_ACTION(sReceiveCmdHandle != RF_ALLOC_ERROR,
+                    retval = OT_ERROR_INVALID_STATE);
+    powerDbm = otPlat_powerTable[regionIndex][sReceiveCmd.channel - OT_RADIO_2P4GHZ_OQPSK_CHANNEL_MIN];
+    otEXPECT_ACTION(REGION_IS_CH_DISABLED(powerDbm) == false,
+                    retval = OT_ERROR_INVALID_ARGS);
+    retval = otPlatRadioSetTransmitPower(aInstance, powerDbm);
+    sCurrentRegionCode = aRegionCode;
+exit:
+    return retval;
 }
 
 otError otPlatRadioGetRegion(otInstance *aInstance, uint16_t *aRegionCode)
 {
     OT_UNUSED_VARIABLE(aInstance);
-    OT_UNUSED_VARIABLE(aRegionCode);
+    otError retval = OT_ERROR_NONE;
 
-    return OT_ERROR_NOT_IMPLEMENTED;
+    otEXPECT_ACTION(aRegionCode != NULL, retval = OT_ERROR_INVALID_ARGS);
+    *aRegionCode = sCurrentRegionCode;
+exit:
+    return retval;
 }
 
 #endif /* OPENTHREAD_CONFIG_RADIO_NO_WEAK_DEFINITIONS */
@@ -2223,6 +2297,22 @@ static void platformRadioProcessReceiveDone(otInstance *aInstance, otRadioFrame 
     }
 }
 
+static uint32_t convertUsTimestamp(uint64_t timestamp)
+{
+    /* The RAT runs at 4MHz while the RTC runs at 32kHz, when
+     * interfacing between Host<->RCP the Host clock may add
+     * considerable drift during its calculation of the next packet
+     * to send for CSL communication. Use the current embedded
+     * system time as a reference for the base amount of uS to
+     *  delay with respect to the RAT.
+     */
+    uint64_t currentSysTime = otPlatRadioGetNow(NULL); // uS
+    uint32_t currentRatTime = RF_getCurrentTime();     // RAT Ticks
+
+    uint64_t delta = currentSysTime - timestamp;       // uS
+
+    return currentRatTime - RF_convertUsToRatTicks(delta); // RAT Ticks
+}
 static uint64_t convertRatTimestamp(uint32_t timestamp)
 {
     /* The RAT runs at 4MHz and only returns 32 bits. This is not the format
@@ -2245,6 +2335,44 @@ static uint64_t convertRatTimestamp(uint32_t timestamp)
     return currentSysTime - RF_convertRatTicksToUs(delta);
 }
 
+/*=================================================================================================
+ * @fn          radioComputeED
+ *
+ * @brief       Compute energy detect measurement.
+ *
+ * @param       rssi - raw RSSI value from radio hardware
+ *
+ * @return      energy detect measurement in the range of 0x00-0xFF
+ *=================================================================================================
+ */
+static uint8_t radioComputeED(int8_t rssiDbm)
+{
+    uint8_t ed;
+    int8_t min, max;
+    /*
+    *  Keep RF power between minimum and maximum values.
+    *  This min/max range is derived from datasheet and specification.
+    */
+    min = PLATFORM_RF_POWER_MIN_DBM;
+    max = PLATFORM_RF_POWER_MAX_DBM;
+    if (rssiDbm < min)
+    {
+        rssiDbm = min;
+    }
+    else if (rssiDbm > max)
+    {
+        rssiDbm = max;
+    }
+    /*
+    *  Create energy detect measurement by normalizing and scaling RF power level.
+    *
+    *  Note : The division operation below is designed for maximum accuracy and
+    *         best granularity.  This is done by grouping the math operations to
+    *         compute the entire numerator before doing any division.
+    */
+    ed = (PLATFORM_MAC_SPEC_ED_MAX * (rssiDbm - PLATFORM_RF_POWER_MIN_DBM)) / (PLATFORM_RF_POWER_MAX_DBM - PLATFORM_RF_POWER_MIN_DBM);
+    return(ed);
+}
 static otError populateReceiveFrame(otRadioFrame *aFrame, uint8_t *aData)
 {
     int                  infoIdx;
@@ -2274,7 +2402,7 @@ static otError populateReceiveFrame(otRadioFrame *aFrame, uint8_t *aData)
     aFrame->mPsdu               = &(aData[2]);     // start of psdu
     aFrame->mChannel            = sReceiveCmd.channel;
     aFrame->mInfo.mRxInfo.mRssi = aInfo->rssi;
-    aFrame->mInfo.mRxInfo.mLqi  = crcCorr->status.corr;
+    aFrame->mInfo.mRxInfo.mLqi  = (radioComputeED((int8_t)aInfo->rssi));
 
     bool pend = false;
 
@@ -2373,51 +2501,10 @@ static void handleRxDataFinish(otInstance *aInstance, unsigned int aEvents, rfc_
 
             curEntry->status = DATA_ENTRY_PENDING;
         }
-        else
-        {
-            // ack has not been sent
-            if (otMacFrameIsVersion2015(&receiveFrame))
-            {
-                if (sState == platformRadio_phyState_RxTxAck)
-                {
-                    // We have queued up an ack transmission, update the frame with LQI
-                    rfCoreGenerateEnhAck(&receiveFrame, &sAckFrame);
-#if OPENTHREAD_CONFIG_MAC_CSL_RECEIVER_ENABLE
-                    // Update IE data in the 802.15.4 header with the newest CSL period / phase
-                    if (sCslPeriod > 0)
-                    {
-                        otMacFrameSetCslIe(&sAckFrame, (uint16_t)sCslPeriod, getCslPhase(&sAckFrame));
-                    }
-#endif
-                    rfCoreProcessTransmitSecurity(&sAckFrame);
-                }
-                else
-                {
-                    // something failed in the setup of the TX command, drop the frame
-                    curEntry->status = DATA_ENTRY_PENDING;
-                }
-            }
-            else
-            {
-#if PLAT_RADIO_SOFTWARE_IMM_ACK
-                if (sState == platformRadio_phyState_RxTxAck)
-                {
-                    /* software is handling the imm-ack, update with the pend-bit
-                     * set correctly. We use the RF Core's source match idx.
-                     */
-                    otMacFrameGenerateImmAck(&receiveFrame, receiveFrame.mInfo.mRxInfo.mAckedWithFramePending, &sAckFrame);
-                }
-                else
-                {
-                    // something failed in the setup of the TX command, drop the frame
-                    curEntry->status = DATA_ENTRY_PENDING;
-                }
-#endif
-            }
-        }
+
     }
-    else
-    {
+    else {
+
         platformRadioProcessReceiveDone(aInstance, &receiveFrame, OT_ERROR_NONE);
 
         curEntry->status = DATA_ENTRY_PENDING;
@@ -2498,7 +2585,7 @@ void processAckCreation(otInstance *aInstance)
             /* 4 octets of sync + 1 octet of SFD + 1 octet of PHR + Frame Length = length in octets
              * length in octets * 32uS per octet + 192uS of turnaround = tx delay
              */
-            sTransmitAckCmdHandle = rfCoreSendTransmitCmd(aInstance, sRfHandle, &sAckFrame);
+            sTransmitAckCmdHandle = rfCoreSendTransmitCmd(aInstance, sRfHandle, &sAckFrame, true);
             if (sTransmitCmdHandle > 0)
             {
                 sState = platformRadio_phyState_RxTxAck;
@@ -2513,6 +2600,81 @@ void processAckCreation(otInstance *aInstance)
     } while (curEntry != startEntry);
 }
 
+void finalizeAckCreation(void)
+{
+    otError      error;
+    otRadioFrame receiveFrame = {0};
+    rfc_dataEntryGeneral_t *curEntry, *startEntry;
+    startEntry = curEntry = (rfc_dataEntryGeneral_t *)sRxDataQueue.pCurrEntry;
+    /* loop through receive queue */
+    do
+    {
+        if (DATA_ENTRY_FINISHED == curEntry->status)
+        {
+            // entry is being used by the CM0, this is the current frame
+            otRadioFrame rxFrame = {0};
+            uint8_t *    data    = &(curEntry->data);
+            // data[0]          // rx element length
+            rxFrame.mLength  = data[1] & 0x7F; // rx frame length (phy hdr)
+            rxFrame.mPsdu    = &(data[2]);     // beginning of PSDU
+            rxFrame.mChannel = sReceiveCmd.channel;
+            if (!otMacFrameIsAckRequested(&rxFrame))
+            {
+                curEntry = (rfc_dataEntryGeneral_t *)curEntry->pNextEntry;
+                // we are not requesting an acknowledgment
+                continue;
+            }
+            error = populateReceiveFrame(&receiveFrame, &(curEntry->data));
+            if (OT_ERROR_NONE != error)
+            {
+                // Process error at task level
+                break;
+            }
+            /* Handle ACK Generation Completion */
+            // ack has not been sent
+            if (otMacFrameIsVersion2015(&receiveFrame))
+            {
+                if (sState == platformRadio_phyState_RxTxAck)
+                {
+                    // We have queued up an ack transmission, update the frame with LQI
+                    rfCoreGenerateEnhAck(&receiveFrame, &sAckFrame);
+#if OPENTHREAD_CONFIG_MAC_CSL_RECEIVER_ENABLE
+                    // Update IE data in the 802.15.4 header with the newest CSL period / phase
+                    if (sCslPeriod > 0)
+                    {
+                        otMacFrameSetCslIe(&sAckFrame, (uint16_t)sCslPeriod, getCslPhase(&sAckFrame));
+                    }
+#endif
+                    rfCoreProcessTransmitSecurity(&sAckFrame);
+                }
+                else
+                {
+                    // something failed in the setup of the TX command, drop the frame
+                    curEntry->status = DATA_ENTRY_PENDING;
+                }
+            }
+            else
+            {
+#if PLAT_RADIO_SOFTWARE_IMM_ACK
+                if (sState == platformRadio_phyState_RxTxAck)
+                {
+                    /* software is handling the imm-ack, update with the pend-bit
+                     * set correctly. We use the RF Core's source match idx.
+                     */
+                    otMacFrameGenerateImmAck(&receiveFrame, receiveFrame.mInfo.mRxInfo.mAckedWithFramePending, &sAckFrame);
+                }
+                else
+                {
+                    // something failed in the setup of the TX command, drop the frame
+                    curEntry->status = DATA_ENTRY_PENDING;
+                }
+#endif
+            }
+            break;
+        }
+        curEntry = (rfc_dataEntryGeneral_t *)curEntry->pNextEntry;
+    } while (curEntry != startEntry);
+}
 /**
  * Scan through the RX queue, looking for completed entries.
  */
@@ -2633,17 +2795,10 @@ void platformRadioProcess(otInstance *aInstance, uintptr_t arg)
                 sTransmitError = OT_ERROR_ABORT;
                 handleTxState(aInstance, RF_EVENT_TX_DONE);
             }
-
             /* Re-start the RX command since we are still in the state. */
             if (arg & RF_EVENT_RX_CMD_STOP)
             {
                 rfCoreSendReceiveCmd(sRfHandle);
-                sState = platformRadio_phyState_Receive;
-                if ((sTransmitCmd.pPayload != NULL) && (sTransmitCmd.pPayload[0] & IEEE802154_ACK_REQUEST))
-                {
-                   sTransmitError = OT_ERROR_NO_ACK;
-                }
-                handleTxState(aInstance, RF_EVENT_TX_DONE);
             }
         }
         break;
@@ -2732,3 +2887,4 @@ void platformRadioProcess(otInstance *aInstance, uintptr_t arg)
         break;
     }
 }
+

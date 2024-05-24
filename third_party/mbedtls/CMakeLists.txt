@@ -43,6 +43,11 @@ find_program(SED_EXE sed)
 string(REPLACE "-Wconversion" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 string(REPLACE "-Wconversion" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
+if(TI_SIMPLELINK_ISA STREQUAL "m4f")
+    string(REPLACE "-Os" "-Ofast" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+    string(REPLACE "-Os" "-Ofast" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+endif()
+
 add_library(ti-mbedtls-hardware-alt
     alt/aes_alt.c
     alt/ecdh_alt.c

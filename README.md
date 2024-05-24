@@ -7,9 +7,58 @@
 
 # OpenThread CC13XX_CC26XX Example
 
-This directory contains the platform drivers necssary to run OpenThread on the Texas Instruments CC13XX_CC26XX family of
-Connected MCUs. These drivers use the TI SimpleLink™ SDK for the RTOS enabled platform drivers. The example applications
-build with FreeRTOS to enable an environment for the standard device drivers to operate.
+This directory contains the platform drivers necessary to run OpenThread on the Texas Instruments CC13XX_CC26XX family of
+Connected MCUs. These drivers use the TI SimpleLink™ SDK for the RTOS enabled platform drivers. The example applications are
+built with FreeRTOS to enable an environment for the standard device drivers to operate.
+
+The following is the currently supported Thread roles for compatible TI devices. This list may be updated as the Thread stack is updated or new devices are added.
+
+| Device                   | RCP | MTD | FTD |
+| ------------------------ | --- | --- | --- |
+| [CC2652R][cc2652r]       | x   |     |     |
+| [CC2652RB][cc2652rb]     | x   |     |     |
+| [CC2652P][cc2652p]       | x   |     |     |
+| [CC2652RSIP][cc2652rsip] | x   |     |     |
+| [CC2652PSIP][cc2652psip] | x   |     |     |
+| [CC2652R7][cc2652r7]     | x   | x   | x   |
+| [CC2652P7][cc2652p7]     | x   | x   | x   |
+| [CC2674R10][cc2674r10]   | x   | x   | x   |
+| [CC2674P10][cc2674p10]   | x   | x   | x   |
+
+[cc2652r]: https://www.ti.com/product/CC2652R
+[cc2652rb]: https://www.ti.com/product/CC2652RB
+[cc2652p]: https://www.ti.com/product/CC2652P
+[cc2652rsip]: https://www.ti.com/product/CC2652RSIP
+[cc2652psip]: https://www.ti.com/product/CC2652PSIP
+[cc2652r7]: https://www.ti.com/product/CC2652R7
+[cc2652p7]: https://www.ti.com/product/CC2652P7
+[cc2674r10]: https://www.ti.com/product/CC2674R10
+[cc2674p10]: https://www.ti.com/product/CC2674P10
+
+## Navigating TI OpenThread Documentation
+
+The documentation hosted in the `docs` folder is sorted by alphabetical order. After reading the rest of the README document, it is recommended to read the documentation in the following order:
+
+Start with `ti-openthread-release-notes` for important information about versioning, known issues, and more.
+
+- ti-openthread-release-notes
+
+**Optional**, if migration is needed, locate the `thread-migration-guide` folder and reference:
+
+- thread-migration
+- thread-cc2674-migration
+
+Then navigate to the `thread-users-guide` folder and read in the following order:
+
+- ti-openthread-overview
+- ti-openthread-thread-protocol
+- ti-openthread-product-certification
+- ti-openthread-example-apps
+- ti-openthread-application-development
+- ti-openthread-ncp-interface
+- ti-openthread-borderrouter-setup-guide
+
+Conclude by opening the `thread-syscfg` folder and refer to the `getting-started` guide and `sysconfig-board` as needed.
 
 ## Toolchain
 
@@ -23,20 +72,22 @@ $ ./script/bootstrap
 
 ## Building
 
-In a Bash terminal, follow these instructions to build the cc13xx_cc26xx examples. Where the SimpleLink board is a
+In a Bash terminal, follow these instructions to build the cc13xx_cc26xx examples. The `<simplelink_board>` is a
 reference development kit available on ti.com.
 
 ```bash
 $ cd <path-to-ot-ti>
-$ ./script/build LP_CC2652R7
+$ ./script/build <simplelink_board>
 ```
+
+****Attention:**** The above statement is only true when you have already run the bootstrap script.
 
 ## Flash Binaries
 
 If the build completed successfully, the `elf` files may be found in `<path-to-ot-ti>/build/bin/`. These files do not
 have any file extension.
 
-Loading the built image onto a LaunchPad is supported through two methods; Uniflash and Code Composer Studio (CCS).
+Loading the built image onto a LaunchPad is supported through two methods; UniFlash and Code Composer Studio (CCS).
 UniFlash can be used to load the image. Code Composer Studio can be used to load the image and debug the source code.
 
 ### Code Composer Studio
@@ -44,7 +95,7 @@ UniFlash can be used to load the image. Code Composer Studio can be used to load
 Programming with CCS will allow for a full debug environment within the IDE. This is accomplished by creating a target
 connection to the XDS110 debugger and starting a project-less debug session. The CCS IDE will attempt to find the source
 files on the local machine based on the debug information embedded within the ELF. CCS may prompt you to find the source
-code if the image was built on another machine or the source code is located in a different location than is recorded
+code if the image was built on another machine or the source code is located in a different location than what is recorded
 within the ELF.
 
 Download and install [Code Composer Studio][ccs].
@@ -113,6 +164,22 @@ following options:
 
 [cli]: https://github.com/openthread/openthread/blob/main/src/cli/README.md
 
+## Power Consumption Measurement
+
+Low power mode can be enabled/disabled by going to examples/apps/cli/cli_uart.cpp and changing the defines listed below.
+
+- TIOP_POWER_MEASUREMENT: disable UART/peripherals and automatically start thread device upon boot up.
+- TIOP_POWER_SED: will enable features to make device a sleepy end device (SED) and enter deep sleep mode.
+- TIOP_POWER_SSED: will enable features to make device a synchronous sleepy end device (SSED).
+
+The Thread network data/features can be modified by changing the defined value/variables listed below:
+
+- TIOP_POWER_PANID
+- TIOP_POWER_CH
+- TIOP_POWER_POLL_PERIOD
+- TIOP_POWER_CSL_PERIOD
+- networkKeyVal
+
 ## TI Support
 
 For technical support, please consider creating a post on TI's [E2E forum][e2e]. Additionally, we welcome any feedback.
@@ -133,8 +200,7 @@ Thread Group.
 
 OpenThread support is available on GitHub:
 
-- Bugs and feature requests pertaining to the OpenThread on CC13x2/CC26x2 Examples — [submit to the
-  openthread/ot-cc13x2-cc26x2 Issue Tracker](https://github.com/openthread/ot-cc13x2-cc26x2/issues)
+- Bugs and feature requests pertaining to OpenThread on CC13x2/CC26x2 family — [submit a ticket to the E2E forum](https://e2e.ti.com/support/wireless-connectivity/)
 - OpenThread bugs and feature requests — [submit to the OpenThread Issue
   Tracker](https://github.com/openthread/openthread/issues)
 - Community Discussion - [ask questions, share ideas, and engage with other community

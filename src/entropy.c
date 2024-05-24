@@ -1,92 +1,152 @@
-/*
- *  Copyright (c) 2017, Texas Instruments Incorporated
- *  All rights reserved.
+/******************************************************************************
+
+ @file entropy.c
+
+ @brief Platform specific entropy functions for OpenThread
+
+ Group: CMCU, LPC
+ Target Device: cc13xx_cc26xx
+
+ ******************************************************************************
+ 
+ Copyright (c) 2017-2023, Texas Instruments Incorporated
+ All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions
+ are met:
+
+ *  Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
+
+ *  Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in the
+    documentation and/or other materials provided with the distribution.
+
+ *  Neither the name of Texas Instruments Incorporated nor the names of
+    its contributors may be used to endorse or promote products derived
+    from this software without specific prior written permission.
+
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+ ******************************************************************************
+ 
+ 
+ *****************************************************************************/
+
+/**
+ * @file
+ *   This file implements an entropy source based on TRNG.
  *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions are met:
- *  1. Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *  2. Redistributions in binary form must reproduce the above copyright
- *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution.
- *  3. Neither the name of the copyright holder nor the
- *     names of its contributors may be used to endorse or promote products
- *     derived from this software without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include <openthread/config.h>
 
 #include <utils/code_utils.h>
 
-#include <openthread/platform/entropy.h>
+#include <ti/devices/DeviceFamily.h>
+#include DeviceFamily_constructPath(driverlib/prcm.h)
+#include DeviceFamily_constructPath(driverlib/trng.h)
 
-#include "ti_drivers_config.h"
+#include <openthread/platform/entropy.h>
 #include <ti/drivers/TRNG.h>
 #include <ti/drivers/cryptoutils/cryptokey/CryptoKeyPlaintext.h>
+#include "ti_drivers_config.h"
 
 #include <assert.h>
 
-TRNG_Handle TRNG_handle;
+TRNG_Handle OT_TRNG_handle;
 
+/**
+ * @internal
+ * @brief Fill an arbitrary area with the random data.
+ *
+ * @param aOutput area to place the random data
+ * @param aLen size if the area to place random data
+ *
+ *
+ * @return returns 0 if no error occurred, -1 if error.
+ */
 static int getRandom(uint8_t *aOutput, size_t aLen)
 {
+    int_fast16_t rtn;
     CryptoKey entropyKey;
 
+    /*
+      * prepare the data buffer
+    */
     CryptoKeyPlaintext_initBlankKey(&entropyKey, aOutput, aLen);
 
-    if (TRNG_STATUS_SUCCESS == TRNG_generateEntropy(TRNG_handle, &entropyKey))
-    {
-        return OT_ERROR_NONE;
-    }
-    else
-    {
+    /* get entropy */
+    rtn = TRNG_generateEntropy(OT_TRNG_handle, &entropyKey);
+    if (rtn != TRNG_STATUS_SUCCESS)
         return OT_ERROR_FAILED;
-    }
+        
+    return OT_ERROR_NONE;
 }
 
+/**
+ * Function documented in system.h
+ */
 void platformRandomInit(void)
 {
-    otError     error = OT_ERROR_NONE;
+    otError error = OT_ERROR_NONE;
     TRNG_Params TRNGParams;
 
+    /* Init the TRNG HW */
     TRNG_init();
 
     TRNG_Params_init(&TRNGParams);
+    /* use the polling mode */
     TRNGParams.returnBehavior = TRNG_RETURN_BEHAVIOR_POLLING;
 
-    TRNG_handle = TRNG_open(CONFIG_TRNG_THREAD, &TRNGParams);
-    otEXPECT_ACTION(NULL != TRNG_handle, error = OT_ERROR_FAILED);
+#if defined(USE_DMM) || defined(MAC_RADIO_USE_CSF) || defined (TIOP_RADIO_USE_CSF)
+    OT_TRNG_handle = TRNG_open(CONFIG_TRNG_THREAD, &TRNGParams);
+#else
+    OT_TRNG_handle = TRNG_open(0, &TRNGParams);
+#endif
+    otEXPECT_ACTION(NULL != OT_TRNG_handle, error = OT_ERROR_FAILED);
 
 exit:
 
     assert(error == OT_ERROR_NONE);
 
     /* suppress the compiling warning */
-    (void)error;
+    (void) error;
 
     return;
 }
+/**
+ * Function documented in system.h
+ */
+void platformRandomProcess(void)
+{
+    /* place holder */
 
+}
+
+/**
+ * Function documented in platform/entropy.h
+ */
 otError otPlatEntropyGet(uint8_t *aOutput, uint16_t aOutputLength)
 {
     otError error = OT_ERROR_NONE;
 
     otEXPECT_ACTION(NULL != aOutput, error = OT_ERROR_INVALID_ARGS);
 
-    error = getRandom(aOutput, aOutputLength);
+    otEXPECT_ACTION(getRandom(aOutput, aOutputLength) == 0, error = OT_ERROR_FAILED);
 
 exit:
     return error;
 }
+

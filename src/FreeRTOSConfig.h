@@ -63,13 +63,14 @@
 #elif defined(DeviceFamily_CC13X2X7_CC26X2X7) \
     || defined(DeviceFamily_CC13X2X7) \
     || defined(DeviceFamily_CC26X2X7)
-#define configTOTAL_HEAP_SIZE ((size_t)(0x14000))
+#define configTOTAL_HEAP_SIZE ((size_t)(0x9000))
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION 1
 
 #elif defined(DeviceFamily_CC13X4_CC26X4) \
     || defined(DeviceFamily_CC13X4) \
-    || defined(DeviceFamily_CC26X4)
-#define configTOTAL_HEAP_SIZE ((size_t)(0x14000))
+    || defined(DeviceFamily_CC26X4) \
+    || defined(DeviceFamily_CC26X3)
+#define configTOTAL_HEAP_SIZE ((size_t)(0x9000))
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION 0
 /* TrustZone/PSA settings */
 /* We do not set ENABLE_TRUSTZONE, as this is only for Secure Side function call support */
@@ -111,7 +112,7 @@
     }
 
 /* Constants related to the behaviour or the scheduler. */
-#define configTICK_RATE_HZ ((TickType_t)100000)
+#define configTICK_RATE_HZ ((TickType_t)1000)
 #define configUSE_PREEMPTION 1
 #define configUSE_TIME_SLICING 0
 #define configMAX_PRIORITIES (10UL)

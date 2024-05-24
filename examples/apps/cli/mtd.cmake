@@ -54,3 +54,5 @@ set_target_properties(ot-cli-mtd
     PROPERTIES
         SUFFIX .out
 )
+
+target_compile_definitions(ot-cli-mtd PRIVATE -DOPENTHREAD_MTD)

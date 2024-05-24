@@ -32,7 +32,7 @@ set -euxo pipefail
 OT_CMAKE_NINJA_TARGET=${OT_CMAKE_NINJA_TARGET:-}
 TI_SYSCONFIG_ROOT=${TI_SYSCONFIG_ROOT:-}
 
-SYSCONFIG_VERSION=sysconfig_1.15.0
+SYSCONFIG_VERSION=sysconfig_1.18.1
 SYSCONFIG_USER=~/ti/${SYSCONFIG_VERSION}/
 SYSCONFIG_SYSTEM=/opt/ti/${SYSCONFIG_VERSION}/
 
@@ -63,6 +63,11 @@ readonly TI_LAUNCHPAD=(
     LP_CC2652RSIP
     LP_EM_CC1354P10_1
     LP_EM_CC1354P10_6
+    LP_CC2653P10
+    CC2674P10RGZ
+    CC2674P10RSK
+    CC2674R10RGZ
+    CC2674R10RSK
 )
 
 readonly OT_SRCDIR="$(pwd)"
@@ -158,7 +163,12 @@ main()
             options+=("-DCMAKE_TOOLCHAIN_FILE=src/arm-none-eabi-m4f.cmake")
             ;;
         LP_EM_CC1354P10_1 | \
-                LP_EM_CC1354P10_6)
+                LP_EM_CC1354P10_6 | \
+                    LP_CC2653P10 | \
+                    CC2674P10RGZ | \
+                    CC2674P10RSK | \
+                    CC2674R10RGZ | \
+                    CC2674R10RSK)
             options+=("-DCMAKE_TOOLCHAIN_FILE=src/arm-none-eabi-m33.cmake")
             ;;
     esac

@@ -41,21 +41,19 @@ set(COMMON_SOURCES
 if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
     list(APPEND COMMON_SOURCES freertos_main.c)
 
-elseif(TI_SIMPLELINK_KERNEL STREQUAL "tirtos7")
-    list(APPEND COMMON_SOURCES tirtos_main.c)
 
 else()
     message(FATAL_ERROR "Unsuported TI_SIMPLELINK_KERNEL: ${TI_SIMPLELINK_KERNEL}")
 endif()
 
-if(OT_FTD)
+if((OT_FTD) AND (NOT TI_SIMPLELINK_DEVICE STREQUAL "cc13x2_cc26x2"))
     include(ftd.cmake)
 endif()
 
-if(OT_MTD)
+if((OT_MTD) AND (NOT TI_SIMPLELINK_DEVICE STREQUAL "cc13x2_cc26x2"))
     include(mtd.cmake)
 endif()
 
-if(OT_RCP)
+if((OT_RCP) AND (NOT TI_SIMPLELINK_DEVICE STREQUAL "cc13x2_cc26x2"))
     include(radio.cmake)
 endif()

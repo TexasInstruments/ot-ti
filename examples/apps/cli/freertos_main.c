@@ -41,6 +41,7 @@
 #include <ti/drivers/AESECB.h>
 #include <ti/drivers/ECDH.h>
 #include <ti/drivers/ECDSA.h>
+#include <ti/drivers/ECJPAKE.h>
 #include <ti/drivers/SHA2.h>
 
 // The entry point for the application
@@ -50,13 +51,6 @@ extern int app_main(int argc, char *argv[]);
 StackType_t  appStack[APP_STACK_SIZE];
 StaticTask_t appTaskBuffer;
 
-void vApplicationStackOverflowHook(void)
-{
-    while (1)
-    {
-        ;
-    }
-}
 
 void vTaskCode(void *pvParameters)
 {
@@ -77,6 +71,8 @@ int main(void)
     ECDSA_init();
 
     AESECB_init();
+
+    ECJPAKE_init();
 
     SHA2_init();
 

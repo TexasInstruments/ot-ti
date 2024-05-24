@@ -214,13 +214,13 @@ void otSysProcessDrivers(otInstance *aInstance)
     {
         struct OtStack_procQueueMsg msg;
         ssize_t ret;
-
+#ifndef OT_TASKLET_SIGNALING
         if (otTaskletsArePending(aInstance))
         {
             // allow the caller to handle tasklets
             return;
         }
-
+#endif
         ret = mq_receive(OtStack_procQueueLoopDesc, (char *)&msg, sizeof(msg), NULL);
         /* priorities are ignored */
         if (ret < 0 || ret != sizeof(msg))
@@ -249,12 +249,13 @@ void otSysProcessDrivers(otInstance *aInstance)
                 break;
             }
 
+#if OPENTHREAD_CONFIG_NCP_HDLC_ENABLE || TIOP_ENABLE_UART
             case OtStack_procQueueCmd_uart:
             {
                 platformUartProcess(msg.arg);
                 break;
             }
-
+#endif
             case OtStack_procQueueCmd_alarmu:
             {
                 platformAlarmMicroProcess(aInstance);

@@ -25,16 +25,15 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-
 #include <openthread/config.h>
 
 /* Standard Library Header files */
 #include <stdbool.h>
 #include <stdint.h>
 
-/* POSIX Header files */
-#include <time.h>
-
+/* ClockP Header files */
+#include <ti/drivers/dpl/ClockP.h>
+#include <ti/drivers/dpl/HwiP.h>
 /* OpenThread public API Header files */
 #include <openthread/platform/alarm-milli.h>
 #include <openthread/platform/diag.h>
@@ -45,15 +44,172 @@
 #include <FreeRTOS.h>
 #endif
 
-static uint32_t Alarm_time0   = 0;
-static uint32_t Alarm_time    = 0;
-static timer_t  Alarm_timerid = 0;
-static bool     Alarm_running = false;
+#define SYSTICK64_ROLLOVER_DELAY      0x80000
+#define SET_SYSTICK64_UPDATE_STATUS   0
+#define CLEAR_SYSTICK64_UPDATE_STATUS 1
+
+static uint32_t         Alarm_time0   = 0;
+static uint32_t         Alarm_time    = 0;
+static ClockP_Handle    Alarm_handle  = 0;
+static ClockP_Struct    Alarm_Struct;
+static ClockP_Params    Alarm_Params;
+static bool             Alarm_running = false;
+
+/* Upper 32 bits of the 64-bit SysTickCount */
+static uint32_t upperSysTicks64    = 0;
+static bool updatedUpperSysTicks64 = true;
+
+/* Callback function to increment 64-bit counter on 32-bit counter overflow */
+static void systemTicks64Callback(uintptr_t arg);
 
 /**
- * Handler for the POSIX clock callback.
+ * Milliseconds converted to system clock ticks. Minimum value of 1.
  */
-void Alarm_handler(union sigval val)
+uint32_t milliToTicks(uint32_t milli)
+{
+    uint32_t ticks = milli;
+    uint32_t tickPeriodUs = ClockP_getSystemTickPeriod();
+
+    if(milli != 0U)
+    {
+        ticks = (milli * 1000)/tickPeriodUs;
+        if(ticks == 0U)
+        {
+            ticks = 1U;
+        }
+    }
+
+    return(ticks);
+}
+
+/**
+ * System clock ticks converted to milliseconds. Minumum value of 1.
+ */
+uint32_t ticksToMilli(uint64_t ticks)
+{
+    uint64_t milli = ticks;
+    uint32_t tickPeriodUs = ClockP_getSystemTickPeriod();
+
+    if(ticks != 0U)
+    {
+        milli = (ticks * tickPeriodUs) / 1000;
+        if(milli == 0U)
+        {
+            milli = 1U;
+        }
+    }
+
+    return((uint32_t)milli);
+}
+
+static void systemTicks64Callback(uintptr_t arg)
+{
+    uint32_t flag = (uint32_t)arg;
+
+    if (flag == SET_SYSTICK64_UPDATE_STATUS)
+    {
+        upperSysTicks64++;
+        updatedUpperSysTicks64 = true;
+    }
+    else if (flag == CLEAR_SYSTICK64_UPDATE_STATUS)
+    {
+        updatedUpperSysTicks64 = false;
+    }
+}
+
+/*
+ *  ======== ClockP_getSystemTicks64 ========
+ */
+uint64_t Alarm_getSystemTicks64(void)
+{
+    static ClockP_Struct sysTicks64SetFlag;
+    static ClockP_Struct sysTicks64ClearFlag;
+    static bool sysTicks64Initialised = false;
+    ClockP_Params params;
+    uint32_t lowerSysTicks64;
+    uintptr_t key;
+    uint64_t tickValue;
+
+    /* Initialise clocks needed to maintain 64-bit SystemTicks when function
+     * is called for the first time.
+     */
+    if (!sysTicks64Initialised)
+    {
+
+        ClockP_Params_init(&params);
+
+        /* Start clock immediately when created */
+        params.startFlag = true;
+        /* Both clocks must trigger with same frequency as 32-bit overflow */
+        params.period    = UINT32_MAX;
+
+        uint32_t currentTick = ClockP_getSystemTicks();
+
+        /* The clock which updates the upper 32-bit must not trigger before the
+         * lower 32 bits have overflowed. The same clock will also set a flag
+         * indicating that the upper 32 bits have been incremented.
+         */
+        uint32_t delayedStartSetFlag = UINT32_MAX - currentTick;
+
+        /* The second clock will trigger shortly before the lower 32 bits
+         * overflow, and clears the flag to indicate that the upper 32-bit
+         * counter has not been incremented yet
+         */
+        uint32_t delayedStartClearFlag = UINT32_MAX - currentTick;
+
+        if (delayedStartClearFlag <= SYSTICK64_ROLLOVER_DELAY)
+        {
+            /* If the current tick value is too close to the overflow, delay
+             * the start of the clock until the next cycle. Manually clear flag.
+             */
+            delayedStartClearFlag += (UINT32_MAX - SYSTICK64_ROLLOVER_DELAY);
+            updatedUpperSysTicks64 = false;
+        }
+        else
+        {
+            /* Make sure the flag is cleared well before the overflow occurs */
+            delayedStartClearFlag -= SYSTICK64_ROLLOVER_DELAY;
+        }
+
+        /* Start both clocks with the same callback function, but different
+         * flags. One clock will indicate that the upper 32 bits have
+         * incremented shortly after the lower 32 bits overflow, and the other
+         * clock will clear the flag shortly before the next overflow.
+         */
+        params.arg = SET_SYSTICK64_UPDATE_STATUS;
+        ClockP_construct(&sysTicks64SetFlag, systemTicks64Callback, delayedStartSetFlag, &params);
+
+        params.arg = CLEAR_SYSTICK64_UPDATE_STATUS;
+        ClockP_construct(&sysTicks64ClearFlag, systemTicks64Callback, delayedStartClearFlag, &params);
+
+        sysTicks64Initialised = true;
+    }
+
+    key = HwiP_disable();
+
+    lowerSysTicks64 = ClockP_getSystemTicks();
+
+    if ((lowerSysTicks64 < SYSTICK64_ROLLOVER_DELAY) && (updatedUpperSysTicks64 == false))
+    {
+        /* If the lower 32 bits have recently overflowed, but the upper 32 bits
+         * have not yet been incremented then artificially increment upper bits
+         */
+        tickValue = ((uint64_t)(upperSysTicks64 + 1) << 32) | lowerSysTicks64;
+    }
+    else
+    {
+        /* In all other cases return the upper 32 bits + lower 32 bits as is */
+        tickValue = ((uint64_t)upperSysTicks64 << 32) | lowerSysTicks64;
+    }
+
+    HwiP_restore(key);
+
+    return tickValue;
+}
+/**
+ * Handler for the ClockP clock callback.
+ */
+void Alarm_handler(uintptr_t val)
 {
     (void)val;
     platformAlarmSignal();
@@ -64,16 +220,13 @@ void Alarm_handler(union sigval val)
  */
 void platformAlarmInit(void)
 {
-    struct timespec zeroTime = {0};
-    struct sigevent event =
-    {
-        .sigev_notify_function = Alarm_handler,
-        .sigev_notify = SIGEV_SIGNAL,
-    };
+    ClockP_Params_init(&Alarm_Params);
+    Alarm_Params.startFlag = 0;
 
-    clock_settime(CLOCK_MONOTONIC, &zeroTime);
-
-    timer_create(CLOCK_MONOTONIC, &event, &Alarm_timerid);
+    Alarm_handle = ClockP_construct(&Alarm_Struct,
+                                    Alarm_handler,
+                                    0,
+                                    &Alarm_Params);
 
     Alarm_running = false;
 }
@@ -83,11 +236,9 @@ void platformAlarmInit(void)
  */
 uint32_t otPlatAlarmMilliGetNow(void)
 {
-    struct timespec now;
+    uint64_t ticks = Alarm_getSystemTicks64();
 
-    clock_gettime(CLOCK_MONOTONIC, &now);
-
-    return (now.tv_sec * 1000U) + ((now.tv_nsec / 1000000U) % 1000);
+    return (ticksToMilli(ticks));
 }
 
 /**
@@ -96,8 +247,7 @@ uint32_t otPlatAlarmMilliGetNow(void)
 void otPlatAlarmMilliStartAt(otInstance *aInstance, uint32_t aT0, uint32_t aDt)
 {
     (void)aInstance;
-    struct itimerspec timerspec = {0};
-    uint32_t          delta     = (otPlatAlarmMilliGetNow() - aT0);
+    uint32_t delta = (otPlatAlarmMilliGetNow() - aT0);
 
     Alarm_time0   = aT0;
     Alarm_time    = aDt;
@@ -111,27 +261,10 @@ void otPlatAlarmMilliStartAt(otInstance *aInstance, uint32_t aT0, uint32_t aDt)
     else
     {
         uint64_t timeout = aDt - delta;
-#ifdef OT_TI_KERNEL_freertos
-        /* The timer is based on the FreeRTOS Kernel tick. If the RTOS is
-         * ticking faster than 1ms a sufficiently large number will overflow the
-         * tick count for the timer's timeout. This happens when the uptime.cpp
-         * counter is registered. We'll let the processing function re-register
-         * the timer with the remaining time.
-         */
-        if (configTICK_RATE_HZ > 1000U)
-        {
-            // FreeRTOS is ticking faster than 1ms and may overflow the timer
-            if (timeout > UINT32_MAX / (configTICK_RATE_HZ / 1000U))
-            {
-                timeout = UINT32_MAX / (configTICK_RATE_HZ / 1000U);
-            }
-        }
-#endif
+        uint32_t ticksTimeout = milliToTicks(timeout);
 
-        timerspec.it_value.tv_sec  = (timeout / 1000U);
-        timerspec.it_value.tv_nsec = ((timeout % 1000U) * 1000000U);
-
-        timer_settime(Alarm_timerid, 0, &timerspec, NULL);
+        ClockP_setTimeout(Alarm_handle, ticksTimeout);
+        ClockP_start(Alarm_handle);
     }
 }
 
@@ -141,9 +274,8 @@ void otPlatAlarmMilliStartAt(otInstance *aInstance, uint32_t aT0, uint32_t aDt)
 void otPlatAlarmMilliStop(otInstance *aInstance)
 {
     (void)aInstance;
-    struct itimerspec zeroTime = {0};
 
-    timer_settime(Alarm_timerid, TIMER_ABSTIME, &zeroTime, NULL);
+    ClockP_stop(Alarm_handle);
     Alarm_running = false;
 }
 
@@ -174,6 +306,7 @@ void platformAlarmProcess(otInstance *aInstance)
         }
         else
         {
+
             // restart the timer, might have overflowed or fired early for some reason
             otPlatAlarmMilliStartAt(aInstance, nowTime, Alarm_time - offsetTime);
         }
