@@ -139,15 +139,13 @@ unsigned int PlatDiag_calculatePER(void)
  * @param[in]  aInstance        OpenThread instance structure.
  * @param[in]  argc             Count of command arguments.
  * @param[in]  argv             Array of command arguments.
- * @param[out] aOutput          Output buffer used for user interaction.
- * @param[in]  aOutputMaxLen    Size of the Output buffer.
  *
  * @return Error value from parsing or executing the command.
  */
-otError PlatDiag_processReceive(otInstance *aInstance, int argc, char *argv[], char *aOutput, size_t aOutputMaxLen)
+otError PlatDiag_processReceive(otInstance *aInstance, int argc, char *argv[])
 {
     otError retval = OT_ERROR_INVALID_ARGS;
-
+    char    cmd[OPENTHREAD_CONFIG_DIAG_CMD_LINE_BUFFER_SIZE] = {'\0'};
     if (argc >= 1)
     {
         if (strcmp(argv[0], "start") == 0)
@@ -175,7 +173,7 @@ otError PlatDiag_processReceive(otInstance *aInstance, int argc, char *argv[], c
             PlatDiag_rxLostFrames    = 0;
 
             retval = OT_ERROR_NONE;
-            snprintf(aOutput, aOutputMaxLen,
+            snprintf(cmd, OPENTHREAD_CONFIG_DIAG_CMD_LINE_BUFFER_SIZE,
                      "packet reception is started\r\n"
                      "status 0x%02x\r\n",
                      retval);
@@ -190,7 +188,7 @@ otError PlatDiag_processReceive(otInstance *aInstance, int argc, char *argv[], c
             retval          = OT_ERROR_NONE;
 
             PlatDiag_rxEnabled = false;
-            snprintf(aOutput, aOutputMaxLen,
+            snprintf(cmd, OPENTHREAD_CONFIG_DIAG_CMD_LINE_BUFFER_SIZE,
                      "packet reception is stopped\r\n"
                      "received frame: 0x%04x\r\n"
                      "received OK: 0x%04x\r\n"
@@ -213,15 +211,13 @@ exit:
  * @param[in]  aInstance        OpenThread instance structure.
  * @param[in]  argc             Count of command arguments.
  * @param[in]  argv             Array of command arguments.
- * @param[out] aOutput          Output buffer used for user interaction.
- * @param[in]  aOutputMaxLen    Size of the Output buffer.
  *
  * @return Error value from parsing or executing the command.
  */
-otError PlatDiag_processTransmit(otInstance *aInstance, int argc, char *argv[], char *aOutput, size_t aOutputMaxLen)
+otError PlatDiag_processTransmit(otInstance *aInstance, int argc, char *argv[])
 {
     otError retval = OT_ERROR_INVALID_ARGS;
-
+    char    cmd[OPENTHREAD_CONFIG_DIAG_CMD_LINE_BUFFER_SIZE] = {'\0'};
     if (argc >= 1)
     {
         if (strcmp(argv[0], "start") == 0)
@@ -272,7 +268,7 @@ otError PlatDiag_processTransmit(otInstance *aInstance, int argc, char *argv[], 
             otPlatAlarmMilliStartAt(aInstance, otPlatAlarmMilliGetNow(), PlatDiag_txPeriod);
 
             retval = OT_ERROR_NONE;
-            snprintf(aOutput, aOutputMaxLen,
+            snprintf(cmd, OPENTHREAD_CONFIG_DIAG_CMD_LINE_BUFFER_SIZE,
                      "packet transmission is started\r\n"
                      "status 0x%02x\r\n",
                      retval);
@@ -286,7 +282,7 @@ otError PlatDiag_processTransmit(otInstance *aInstance, int argc, char *argv[], 
             otPlatAlarmMilliStop(aInstance);
             retval = OT_ERROR_NONE;
 
-            snprintf(aOutput, aOutputMaxLen,
+            snprintf(cmd, OPENTHREAD_CONFIG_DIAG_CMD_LINE_BUFFER_SIZE,
                      "packet transmission is stopped\r\n"
                      "transmitted: 0x%04x\r\n"
                      "status 0x%02x\r\n",
@@ -304,15 +300,13 @@ exit:
  * @param[in]  aInstance        OpenThread instance structure.
  * @param[in]  argc             Count of command arguments.
  * @param[in]  argv             Array of command arguments.
- * @param[out] aOutput          Output buffer used for user interaction.
- * @param[in]  aOutputMaxLen    Size of the Output buffer.
  *
  * @return Error value from parsing or executing the command.
  */
-otError PlatDiag_processTone(otInstance *aInstance, int argc, char *argv[], char *aOutput, size_t aOutputMaxLen)
+otError PlatDiag_processTone(otInstance *aInstance, int argc, char *argv[])
 {
     otError retval = OT_ERROR_INVALID_ARGS;
-
+    char    cmd[OPENTHREAD_CONFIG_DIAG_CMD_LINE_BUFFER_SIZE] = {'\0'};
     otEXPECT(true == PlatDiag_diagEnabled);
     if (argc >= 1)
     {
@@ -327,14 +321,14 @@ otError PlatDiag_processTone(otInstance *aInstance, int argc, char *argv[], char
             retval = otPlatDiagRadioToneStart(aInstance, modulated);
             otEXPECT(OT_ERROR_NONE == retval);
 
-            snprintf(aOutput, aOutputMaxLen, "continuous %s tone started\r\n", modulated ? "modulated" : "unmodulated");
+            snprintf(cmd, OPENTHREAD_CONFIG_DIAG_CMD_LINE_BUFFER_SIZE, "continuous %s tone started\r\n", modulated ? "modulated" : "unmodulated");
         }
         else if (strcmp(argv[0], "stop") == 0)
         {
             retval = otPlatDiagRadioToneStop(aInstance);
             otEXPECT(OT_ERROR_NONE == retval);
 
-            snprintf(aOutput, aOutputMaxLen, "continuous tone stopped\r\n");
+            snprintf(cmd, OPENTHREAD_CONFIG_DIAG_CMD_LINE_BUFFER_SIZE, "continuous tone stopped\r\n");
         }
     }
 
@@ -348,14 +342,13 @@ exit:
  * @param[in]  aInstance        OpenThread instance structure.
  * @param[in]  argc             Count of command arguments.
  * @param[in]  argv             Array of command arguments.
- * @param[out] aOutput          Output buffer used for user interaction.
- * @param[in]  aOutputMaxLen    Size of the Output buffer.
  *
  * @return Error value from parsing or executing the command.
  */
-otError PlatDiag_processShield(otInstance *aInstance, int argc, char *argv[], char *aOutput, size_t aOutputMaxLen)
+otError PlatDiag_processShield(otInstance *aInstance, int argc, char *argv[])
 {
     otError retval = OT_ERROR_INVALID_ARGS;
+    char    cmd[OPENTHREAD_CONFIG_DIAG_CMD_LINE_BUFFER_SIZE] = {'\0'};
     if (argc == 2)
     {
         long channel;
@@ -366,12 +359,12 @@ otError PlatDiag_processShield(otInstance *aInstance, int argc, char *argv[], ch
         if (strcmp(argv[0], "start") == 0)
         {
             rfCoreDiagChannelDisable(channel);
-            snprintf(aOutput, aOutputMaxLen, "Shield started\r\n");
+            snprintf(cmd, OPENTHREAD_CONFIG_DIAG_CMD_LINE_BUFFER_SIZE, "Shield started\r\n");
         }
         else if (strcmp(argv[0], "stop") == 0)
         {
             rfCoreDiagChannelEnable(channel);
-            snprintf(aOutput, aOutputMaxLen, "Shield stopped\r\n");
+            snprintf(cmd, OPENTHREAD_CONFIG_DIAG_CMD_LINE_BUFFER_SIZE, "Shield stopped\r\n");
         }
         else
         {
@@ -386,41 +379,56 @@ exit:
 /**
  * Documented in <openthread/platform/diag.h>
  */
-otError otPlatDiagProcess(otInstance *aInstance, uint8_t argc, char *argv[], char *aOutput, size_t aOutputMaxLen)
+otError otPlatDiagProcess(otInstance *aInstance, uint8_t argc, char *argv[])
 {
     otError retval = OT_ERROR_NONE;
-
+    char    cmd[OPENTHREAD_CONFIG_DIAG_CMD_LINE_BUFFER_SIZE] = {'\0'};
     if (argc >= 1)
     {
         if (strcmp(argv[0], "tone") == 0)
         {
-            retval = PlatDiag_processTone(aInstance, argc - 1, (argc > 1) ? &argv[1] : NULL, aOutput, aOutputMaxLen);
+            retval = PlatDiag_processTone(aInstance, argc - 1, (argc > 1) ? &argv[1] : NULL);
         }
         else if (strcmp(argv[0], "receive") == 0)
         {
-            retval = PlatDiag_processReceive(aInstance, argc - 1, (argc > 1) ? &argv[1] : NULL, aOutput, aOutputMaxLen);
+            retval = PlatDiag_processReceive(aInstance, argc - 1, (argc > 1) ? &argv[1] : NULL);
         }
         else if (strcmp(argv[0], "transmit") == 0)
         {
             retval =
-                PlatDiag_processTransmit(aInstance, argc - 1, (argc > 1) ? &argv[1] : NULL, aOutput, aOutputMaxLen);
+                PlatDiag_processTransmit(aInstance, argc - 1, (argc > 1) ? &argv[1] : NULL);
         }
         else if (strcmp(argv[0], "shield") == 0)
         {
-            retval = PlatDiag_processShield(aInstance, argc - 1, (argc > 1) ? &argv[1] : NULL, aOutput, aOutputMaxLen);
+            retval = PlatDiag_processShield(aInstance, argc - 1, (argc > 1) ? &argv[1] : NULL);
         }
         else
         {
-            snprintf(aOutput, aOutputMaxLen, "diag feature '%s' is not supported\r\n", argv[0]);
+            snprintf(cmd, OPENTHREAD_CONFIG_DIAG_CMD_LINE_BUFFER_SIZE, "diag feature '%s' is not supported\r\n", argv[0]);
         }
     }
 
     if (retval != OT_ERROR_NONE)
     {
-        snprintf(aOutput, aOutputMaxLen, "failed\r\nstatus %#x\r\n", retval);
+        snprintf(cmd, OPENTHREAD_CONFIG_DIAG_CMD_LINE_BUFFER_SIZE, "failed\r\nstatus %#x\r\n", retval);
     }
 
     return retval;
+}
+
+void otPlatDiagSetOutputCallback(otInstance *aInstance, otPlatDiagOutputCallback aCallback, void *aContext)
+{
+/*
+    OT_UNUSED_VARIABLE(aInstance);
+
+    sDiagOutputCallback  = aCallback;
+    sDiagCallbackContext = aContext;
+
+    GetRadioSpinel().SetDiagOutputCallback(aCallback, aContext);
+#if OPENTHREAD_POSIX_CONFIG_RCP_CAPS_DIAG_ENABLE
+    GetRcpCapsDiag().SetDiagOutputCallback(aCallback, aContext);
+#endif
+*/
 }
 
 /**

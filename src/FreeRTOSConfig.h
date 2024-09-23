@@ -57,13 +57,13 @@
 #if defined(DeviceFamily_CC13X2_CC26X2) \
     || defined(DeviceFamily_CC13X2) \
     || defined(DeviceFamily_CC26X2)
-#define configTOTAL_HEAP_SIZE ((size_t)(0x4000))
+#define configTOTAL_HEAP_SIZE ((size_t)(0x2EE0))
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION 1
 
 #elif defined(DeviceFamily_CC13X2X7_CC26X2X7) \
     || defined(DeviceFamily_CC13X2X7) \
     || defined(DeviceFamily_CC26X2X7)
-#define configTOTAL_HEAP_SIZE ((size_t)(0x9000))
+#define configTOTAL_HEAP_SIZE ((size_t)(0x2EE0))
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION 1
 
 #elif defined(DeviceFamily_CC13X4_CC26X4) \

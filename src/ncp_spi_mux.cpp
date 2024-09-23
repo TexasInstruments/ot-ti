@@ -493,7 +493,7 @@ void NcpSpiMux::PrepareNextSpiSendFrame(void)
                 mNli2SentCallback(buffer, length, mNli2Context);
             }
         }
-        else if (nullptr != mNli2TxBuffer)
+        else if (nullptr != mNli3TxBuffer)
         {
             const uint8_t* buffer = mNli3TxBuffer;
             uint16_t       length = mNli3TxLen;

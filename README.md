@@ -80,7 +80,7 @@ $ cd <path-to-ot-ti>
 $ ./script/build <simplelink_board>
 ```
 
-****Attention:**** The above statement is only true when you have already run the bootstrap script.
+\***\*Attention:\*\*** The above statement is only true when you have already run the bootstrap script.
 
 ## Flash Binaries
 

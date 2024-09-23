@@ -73,7 +73,8 @@ SPI_Handle sSpiHandle;
 SPI_Transaction sSpiTransaction[PLATFORM_SPI_MAX_TRANSACTIONS];
 uint32_t spiTransactions = 0;
 uint32_t spiCallbacks = 0;
-uint32_t spiCrcErrors = 0;
+uint16_t spiCrcErrors = 0;
+uint16_t spiLengthErrors = 0;
 size_t spiTxSize = 0;
 size_t spiRxSize = 0;
 
@@ -123,11 +124,6 @@ static uint16_t otPlatSpiFcs(uint8_t *buffer)
     uint16_t fcs = 0xFFFF;
     uint32_t length = PLATFORM_SPI_GET_LEN(buffer) + SPINEL_HEADER_LENGTH;
     uint16_t i;
-
-    if (length > OPENTHREAD_CONFIG_NCP_SPI_BUFFER_SIZE - 2)
-    {
-        return 0xFFFF;
-    }
 
     for (i = 0; i < length; i++)
     {
@@ -194,23 +190,29 @@ void platSpiCallback(SPI_Handle handle, SPI_Transaction *transaction)
             }
         }
 
+    /* Incoming Packet Length Check */
+    if (aInputBuf != NULL)
+    {
+        uint32_t length = PLATFORM_SPI_GET_LEN(aInputBuf) + SPINEL_HEADER_LENGTH;
+        uint32_t max_allowed_length = PLATFORM_SPI_GET_CRC(aInputBuf)? (OPENTHREAD_CONFIG_NCP_SPI_BUFFER_SIZE - 2) :
+                                                                       OPENTHREAD_CONFIG_NCP_SPI_BUFFER_SIZE ;
+        if (length  > max_allowed_length )
+        {
+            /* Setting transaction length to zero to ensure that packet gets dropped by SPI Call back function */
+            aTransactionLength = 0;
+            spiLengthErrors++;
+        }
+    }
+
 #ifdef PLATFORM_SPI_CRC_SUPPORT
     /* check RX crc, if bad, aTransactionLength = 0 */
-    if ((aInputBuf != NULL) && (aInputBufLen > (PLATFORM_SPI_GET_LEN(aInputBuf) + SPINEL_HEADER_LENGTH)) &&
+    else if ((aInputBuf != NULL) && (aInputBufLen > (PLATFORM_SPI_GET_LEN(aInputBuf) + SPINEL_HEADER_LENGTH)) &&
         (transferComplete && PLATFORM_SPI_GET_CRC(aInputBuf)))
     {
         fcs = otPlatSpiFcs(aInputBuf);
-        if (fcs != 0xFFFF)
-        {
-            offset = PLATFORM_SPI_GET_LEN(aInputBuf) + SPINEL_HEADER_LENGTH;
-            fcsRx = aInputBuf[offset] | (aInputBuf[offset + 1] << 8);
-            if (fcs != fcsRx)
-            {
-                aTransactionLength = 0;
-                spiCrcErrors++;
-            }
-        }
-        else
+        offset = PLATFORM_SPI_GET_LEN(aInputBuf) + SPINEL_HEADER_LENGTH;
+        fcsRx = aInputBuf[offset] | (aInputBuf[offset + 1] << 8);
+        if (fcs != fcsRx)
         {
             aTransactionLength = 0;
             spiCrcErrors++;

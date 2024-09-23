@@ -253,10 +253,10 @@ static uint16_t getCslPhase(otRadioFrame *aFrame)
     {
         frameTime = aFrame->mInfo.mTxInfo.mTxDelayBaseTime + aFrame->mInfo.mTxInfo.mTxDelay;
     }
-    cslPeriodInUs = sCslPeriod * OT_US_PER_TEN_SYMBOLS;
+    cslPeriodInUs = sCslPeriod; // * OT_US_PER_TEN_SYMBOLS;
     delta = ((sCslSampleTime % cslPeriodInUs) - (frameTime % cslPeriodInUs) + cslPeriodInUs) % cslPeriodInUs;
 
-    return (uint16_t)(delta / OT_US_PER_TEN_SYMBOLS);
+    return (uint16_t)(delta); // / OT_US_PER_TEN_SYMBOLS);
 }
 #endif /* OPENTHREAD_CONFIG_MAC_CSL_RECEIVER_ENABLE */
 
@@ -698,6 +698,7 @@ static RF_CmdHandle rfCoreSendTransmitCmd(otInstance *aInstance, RF_Handle aRfHa
 {
     RF_ScheduleCmdParams rfScheduleCmdParams;
     RF_Op *op;
+    uint8_t seq_no;
 
     RF_ScheduleCmdParams_init(&rfScheduleCmdParams);
     sCsmaCmd = RF_cmdIeeeCsma;
@@ -764,9 +765,8 @@ static RF_CmdHandle rfCoreSendTransmitCmd(otInstance *aInstance, RF_Handle aRfHa
     {
         sTransmitCmd.pNextOp        = (RF_Op *)&sRxAckCmd;
         sTransmitCmd.condition.rule = COND_STOP_ON_FALSE;
-
         sRxAckCmd.startTrigger.pastTrig     = 1; // XXX: workaround for RF scheduler
-        sRxAckCmd.seqNo                     = otMacFrameGetSequence(aFrame);
+        otMacFrameGetSequence(aFrame, (uint8_t *)&sRxAckCmd.seqNo);
         sRxAckCmd.endTrigger.triggerType    = TRIG_REL_PREVEND;
         sRxAckCmd.condition.rule            = COND_NEVER;
 
@@ -923,6 +923,7 @@ static otError rfCoreSetTransmitPower(int8_t aPower)
 {
     otError               retval = OT_ERROR_NONE;
     RF_TxPowerTable_Value newValue;
+    RF_TxPowerTable_Value oldValue;
     unsigned int          i;
 
     /* search for a matching backoff if there is one */
@@ -2063,6 +2064,15 @@ otError otPlatRadioEnableCsl(otInstance *        aInstance,
     return OT_ERROR_NONE;
 }
 
+otError otPlatRadioResetCsl(otInstance *aInstance)
+{
+    OT_UNUSED_VARIABLE(aInstance);
+
+    sCslPeriod = 0;
+
+    return OT_ERROR_NONE;
+}
+
 uint8_t otPlatRadioGetCslAccuracy(otInstance *aInstance)
 {
     OT_UNUSED_VARIABLE(aInstance);
@@ -2156,6 +2166,13 @@ const char *otPlatRadioGetVersionString(otInstance *aInstance)
 }
 
 uint32_t otPlatRadioGetBusSpeed(otInstance *aInstance)
+{
+    OT_UNUSED_VARIABLE(aInstance);
+
+    return 0;
+}
+
+uint32_t otPlatRadioGetBusLatency(otInstance *aInstance)
 {
     OT_UNUSED_VARIABLE(aInstance);
 
@@ -2444,6 +2461,8 @@ static void handleRxDataFinish(otInstance *aInstance, unsigned int aEvents, rfc_
 {
     otError      error;
     otRadioFrame receiveFrame = {0};
+    uint8_t      rx_sequence;
+    uint8_t      tx_sequence;
 
     error = populateReceiveFrame(&receiveFrame, &(curEntry->data));
     if (OT_ERROR_NONE != error)
@@ -2463,8 +2482,10 @@ static void handleRxDataFinish(otInstance *aInstance, unsigned int aEvents, rfc_
     /* Is this an ACK frame? */
     if (otMacFrameIsAck(&receiveFrame))
     {
+        otMacFrameGetSequence(&receiveFrame, &rx_sequence);
+        otMacFrameGetSequence(&sTransmitFrame, &tx_sequence);
         if (platformRadio_phyState_Transmit == sState && otMacFrameIsAckRequested(&sTransmitFrame) &&
-            otMacFrameGetSequence(&receiveFrame) == otMacFrameGetSequence(&sTransmitFrame))
+            rx_sequence == tx_sequence)
         {
             sState = platformRadio_phyState_Receive;
 

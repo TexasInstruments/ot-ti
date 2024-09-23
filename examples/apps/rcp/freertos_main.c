@@ -46,7 +46,7 @@
 
 // The entry point for the application
 extern int app_main(int argc, char *argv[]);
-#define APP_STACK_SIZE (2048)
+#define APP_STACK_SIZE (1500)
 
 StackType_t  appStack[APP_STACK_SIZE];
 StaticTask_t appTaskBuffer;
