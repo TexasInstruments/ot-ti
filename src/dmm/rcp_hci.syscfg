@@ -1,0 +1,348 @@
+/*
+ * Copyright (c) 2018, Texas Instruments Incorporated
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * *  Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ * *  Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * *  Neither the name of Texas Instruments Incorporated nor the names of
+ *    its contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/*
+ *  RCP HCI syscfg
+ */
+
+/* Modules */
+var AESECB    = scripting.addModule("/ti/drivers/AESECB");
+var DMA       = scripting.addModule("/ti/drivers/DMA");
+var Device    = scripting.addModule("/ti/devices/CCFG");
+var ECDH      = scripting.addModule("/ti/drivers/ECDH");
+var ECDSA     = scripting.addModule("/ti/drivers/ECDSA");
+var ECJPAKE   = scripting.addModule("/ti/drivers/ECJPAKE");
+var GPIO      = scripting.addModule("/ti/drivers/GPIO");
+var NVS       = scripting.addModule("/ti/drivers/NVS");
+var Power     = scripting.addModule("/ti/drivers/Power");
+var RF        = scripting.addModule("/ti/drivers/RF");
+var RFCustom  = scripting.addModule("/ti/devices/radioconfig/custom");
+var RFDesign  = scripting.addModule("ti/devices/radioconfig/rfdesign");
+var SHA2      = scripting.addModule("/ti/drivers/SHA2");
+var SPI       = scripting.addModule("/ti/drivers/SPI");
+var TRNG      = scripting.addModule("/ti/drivers/TRNG");
+var UART2     = scripting.addModule("/ti/drivers/UART2");
+var Watchdog  = scripting.addModule("/ti/drivers/Watchdog");
+var dmm       = scripting.addModule("/ti/dmm/dmm");
+
+
+// Thread RF Configuration 
+
+/* CCFG */
+const deviceId = system.deviceData.deviceId;
+
+const ccfgSettings = system.getScript("/ti/common/lprf_ccfg_settings.js").ccfgSettings;
+for(var setting in ccfgSettings)
+{
+    Device[setting] = ccfgSettings[setting];
+}
+
+
+
+/* RF */
+
+/* if an antenna component exists, assign it to the rf instance */
+if (system.deviceData.board && system.deviceData.board.components.RF) {
+    RF.$hardware = system.deviceData.board.components.RF;
+}
+
+const rfDesignSettings = system.getScript("/ti/common/lprf_rf_design_settings.js").rfDesignSettings;
+for(var setting in rfDesignSettings)
+{
+    RFDesign[setting] = rfDesignSettings[setting];
+}
+
+/* Handling for RF frontend characterization */
+if(RFDesign.rfDesign.match(/LP_CC2652PSIP/))
+{
+    RFCustom.ieee = ["ieee154p10"];
+    var rfCodeExportConfig = RFCustom.radioConfigieee154p10.codeExportConfig
+}
+else
+{
+    RFCustom.ieee = ["ieee154"];
+    var rfCodeExportConfig = RFCustom.radioConfigieee154.codeExportConfig
+}
+
+var cmdList = [
+    "cmdIeeeTx",
+    "cmdIeeeRx",
+    "cmdIeeeCsma",
+    "cmdIeeeEdScan",
+    "cmdIeeeRxAck",
+    "cmdTxTest"
+];
+
+rfCodeExportConfig.useConst     = true;
+rfCodeExportConfig.useMulti     = true;
+rfCodeExportConfig.symGenMethod = "Custom";
+
+// Add high PA options if present
+if(deviceId.match(/CC(265[12]R|2674R|1352R1|1354R)/))
+{
+    cmdList.push("cmdRadioSetup");
+    rfCodeExportConfig.cmdRadioSetup = "RF_cmdIeeeRadioSetup";
+}
+else if(deviceId.match(/CC(265[12]P|2674P|1352P)/))
+{
+    cmdList.push("cmdRadioSetupPa");
+    rfCodeExportConfig.cmdRadioSetupPa = "RF_cmdIeeeRadioSetup";
+    rfCodeExportConfig.paExport = "combined";
+}
+else if(deviceId.match(/CC(265[34]|1354)P/))
+{
+    cmdList.push("cmdRadioSetupPa");
+    rfCodeExportConfig.cmdRadioSetupPa = "RF_cmdIeeeRadioSetup";
+    // currently not characterized for high PA
+}
+else
+{
+    throw new Error("Could not set RF settings for deviceId: " + deviceId);
+}
+
+rfCodeExportConfig.cmdList_ieee_15_4 = cmdList;
+
+
+
+
+
+
+// BLE Configuration
+
+var thorPg = 2;
+
+/* ======== AESCCM ======== */
+var AESCCM = scripting.addModule("/ti/drivers/AESCCM");
+var aesccm = AESCCM.addInstance();
+aesccm.$name = "CONFIG_AESCCM0";
+
+/* ======== AESECB ======== */
+var aesecb = AESECB.addInstance();
+aesecb.$name = "CONFIG_AESECB0";
+
+/* ======== ECDH ======== */
+var ecdh = ECDH.addInstance();
+ecdh.$name = "CONFIG_ECDH0"
+
+/* ======== AESCTRDRBG ======== */
+var AESCTRDRBG = scripting.addModule("/ti/drivers/AESCTRDRBG");
+var aesctrdrbg = AESCTRDRBG.addInstance();
+
+
+/* ======== SPI ======== */
+var spi0 = SPI.addInstance();
+spi0.$name = "CONFIG_SPI_0";
+spi0.$hardware = system.deviceData.board.components.LP_SPI;
+
+/* ======== TRNG ======== */
+var trng = TRNG.addInstance();
+
+/* ======== Device ======== */
+var device = scripting.addModule("ti/devices/CCFG");
+/* UART */
+const UART2_BLE      = UART2.addInstance();
+UART2_BLE.$hardware                   = system.deviceData.board.components.XDS110UART;
+UART2_BLE.$name                       = "CONFIG_DISPLAY_UART";
+//UART2_BLE.$name                       = "CONFIG_UART2_0";
+
+
+/* ======== RF Design ======== */
+var rfDesign = scripting.addModule("ti/devices/radioconfig/rfdesign");
+const radioSettings = system.getScript("/ti/ble5stack/ble_common.js").getRadioScript(rfDesign.rfDesign,system.deviceData.deviceId);
+const bleRfDesignSettings = radioSettings.rfDesignParams;
+for(var setting in bleRfDesignSettings)
+{
+    rfDesign[setting] = bleRfDesignSettings[setting];
+}
+
+/* ======== Radio ======== */
+var custom = scripting.addModule("/ti/devices/radioconfig/custom");
+var bleRadioSetModule;
+
+if(rfDesignSettings.rfDesign == "LAUNCHXL-CC1352P-4" || rfDesignSettings.rfDesign == "LP_CC2652PSIP" || rfDesignSettings.rfDesign == "LP_CC1352P7-4" || rfDesignSettings.rfDesign == "LP_EM_CC1354P10_6")
+{
+    custom.ble = ["bt5le2mp10"];
+    bleRadioSetModule = custom.radioConfigbt5le2mp10;
+}
+else
+{
+    custom.ble = ["bt5le2m"];
+    bleRadioSetModule = custom.radioConfigbt5le2m;
+}
+
+if(rfDesignSettings.rfDesign == "LP_EM_CC1354P10_6" && thorPg == 1)
+{
+    custom.ble = ["bt5le2mp10_pg10"];
+}
+else if (rfDesignSettings.rfDesign == "LP_EM_CC1354P10_6" && thorPg == 1)
+{
+    custom.ble = ["bt5le2m_pg10"];
+}
+
+bleRadioSetModule.paramVisibility = false;
+const bleRadioSettings = radioSettings.radioConfigParams;
+for(var setting in bleRadioSettings)
+{
+    bleRadioSetModule.codeExportConfig[setting] = bleRadioSettings[setting];
+}
+
+if(rfDesignSettings.rfDesign == "LAUNCHXL-CC1352P-2" || rfDesignSettings.rfDesign == "LAUNCHXL-CC1352P-4" || rfDesignSettings.rfDesign == "LP_CC2652PSIP" || rfDesignSettings.rfDesign == "LP_CC1352P7-4" || rfDesignSettings.rfDesign == "LP_CC2651P3"
+   || rfDesignSettings.rfDesign == "LP_EM_CC1354P10_6")
+{
+    bleRadioSetModule.highPA = true;
+    if(rfDesignSettings.rfDesign == "LAUNCHXL-CC1352P-4" || rfDesignSettings.rfDesign == "LP_CC2652PSIP" || rfDesignSettings.rfDesign == "LP_CC1352P7-4" || rfDesignSettings.rfDesign == "LP_EM_CC1354P10_6")
+    {
+        bleRadioSetModule.txPowerHi = "10";
+    }
+}
+// END BLE Configuration
+
+/* DMM */
+dmm.project                                        = "ti_rcp_hci";
+dmm.stackRoles                                     = ["blePeripheral","threadFTD"];
+dmm.lockStackRoles                                 = true;
+dmm.applicationState0                              = "ANY";
+dmm.applicationState1                              = "DMMPOLICY_BLE_IDLE";
+dmm.applicationState4                              = "DMMPOLICY_BLE_HIGH_BANDWIDTH";
+dmm.applicationState8                              = "DMMPOLICY_THREAD_LINK_EST";
+dmm.applicationState9                              = "DMMPOLICY_THREAD_DATA";
+dmm.genLibs                                        = false;
+dmm.applicationState11                             = "";
+dmm.applicationState2                              = "DMMPOLICY_BLE_ADVERTISING";
+dmm.applicationState3                              = "DMMPOLICY_BLE_CONNECTED";
+dmm.applicationState5                              = "DMMPOLICY_MATTER_IDLE";
+dmm.applicationState7                              = "";
+dmm.applicationState6                              = "DMMPOLICY_MATTER_HIGH_BANDWIDTH";
+dmm.numApplicationStates                           = 7;
+dmm.policyArray.create(2);
+dmm.policyArray[0].$name                           = "ti_dmm_policy_dmm_policy0";
+dmm.policyArray[0].buildDefine                     = "Define_Name_";
+dmm.policyArray[0].blePeripheral.$name             = "ti_dmm_policy_stack_dmm_stack_ble0";
+dmm.policyArray[0].blePeripheral.applicationStates = ["applicationState4"];
+dmm.policyArray[0].blePeripheral.appliedActivity   = ["DMMPOLICY_APPLIED_ACTIVITY_BLE_CONNECTION"];
+dmm.policyArray[0].blePeripheral.weight            = 25;
+dmm.policyArray[0].threadFTD.$name                 = "ti_dmm_policy_stack_dmm_stack_thread0";
+dmm.policyArray[1].$name                           = "ti_dmm_policy_dmm_policy1";
+dmm.policyArray[1].blePeripheral.$name             = "ti_dmm_policy_stack_dmm_stack_ble1";
+dmm.policyArray[1].blePeripheral.weight            = 1;
+dmm.policyArray[1].threadFTD.$name                 = "ti_dmm_policy_stack_dmm_stack_tiop0";
+
+/* Thread Instances */
+var AESECB     = AESECB.addInstance();
+var ECDH       = ECDH.addInstance();
+var ECDSA      = ECDSA.addInstance();
+var ECJPAKE    = ECJPAKE.addInstance();
+var GPIO1      = GPIO.addInstance();
+var GPIO2      = GPIO.addInstance();
+var GPIO3      = GPIO.addInstance();
+var GPIO4      = GPIO.addInstance();
+var GPIO5      = GPIO.addInstance();
+var NVS1       = NVS.addInstance();
+var SHA21      = SHA2.addInstance();
+var SPI2       = SPI.addInstance();
+var TRNG1      = TRNG.addInstance();
+var UART2_Thread = UART2.addInstance();
+var Watchdog1  = Watchdog.addInstance();
+
+//UART2_Thread.$name = "CONFIG_DISPLAY_UART";
+UART2_Thread.$name = "CONFIG_UART2_0";
+UART2_Thread.uart.txPin.$assign = "boosterpack.39";
+UART2_Thread.uart.rxPin.$assign = "boosterpack.40";
+
+/* GPIO */
+GPIO1.$hardware                   = system.deviceData.board.components["BTN-1"];
+GPIO1.$name                       = "CONFIG_GPIO_BTN1";
+
+GPIO2.$hardware                   = system.deviceData.board.components["BTN-2"];
+GPIO2.$name                       = "CONFIG_GPIO_BTN2";
+
+GPIO3.$hardware                   = system.deviceData.board.components.LED_GREEN;
+GPIO3.$name                       = "CONFIG_GPIO_GLED";
+
+GPIO4.$hardware                   = system.deviceData.board.components.LED_RED;
+GPIO4.$name                       = "CONFIG_GPIO_RLED";
+
+
+/* SPI for NCP */
+SPI2.$name                   = "CONFIG_SPI_1";
+SPI2.mode                    = "Four Pin SS Active Low";
+SPI2.spi.pociPin.$assign     = "DIO24"
+SPI2.spi.picoPin.$assign     = "DIO25"
+SPI2.spi.sclkPin.$assign     = "DIO26"
+SPI2.spi.csnPin.$assign      = "DIO27"
+
+GPIO5.$name                  = "CONFIG_SPINEL_INT";
+GPIO5.mode                   = "Output";
+GPIO5.outputStrength         = "High";
+GPIO5.initialOutputState     = "High";
+GPIO5.gpioPin.$assign        = "DIO16";
+
+
+/* NVS */
+NVS1.$name = "CONFIG_NVSINTERNAL";
+
+/* place at the end of Flash */
+if(deviceId.match(/CC((13|26).2(R|RB|P)7)/))
+{
+    NVS1.internalFlash.regionBase = 0xAA000;
+    NVS1.internalFlash.regionSize = 0x4000;
+}
+else if(deviceId.match(/CC((13|26).2(R|RB|P)1)/))
+{
+    NVS1.internalFlash.regionBase = 0x52000;
+    NVS1.internalFlash.regionSize = 0x4000;
+}
+else if(deviceId.match(/CC((13|26).4P10)/))
+{
+    NVS1.internalFlash.regionBase = 0xFC000;
+    NVS1.internalFlash.regionSize = 0x4000;
+}
+else if(deviceId.match(/CC((13|26).3P10)/))
+{
+    NVS1.internalFlash.regionBase = 0xFC000;
+    NVS1.internalFlash.regionSize = 0x4000;
+}
+else
+{
+    throw new Error("Could not set NVS location for deviceId: " + deviceId);
+}
+
+/* Watchdog */
+Watchdog1.$name             = "CONFIG_WATCHDOG0";
+Watchdog1.period            = 1000;
+Watchdog1.watchdog.$assign  = "WDT0";
+
+/* TRNG */
+TRNG1.$name  = "CONFIG_TRNG_THREAD";
+
+/* AES */
+AESECB.$name = "CONFIG_AESECB_MBEDTLS";

@@ -49,6 +49,8 @@ if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
         ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/SwiP_freertos.c
         ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/SystemP_freertos.c
         ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/TimerPCC26XX_freertos.c
+        ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/EventP_freertos.c
+
     )
     set(CC13XX_CC26XX_POSIX_SRCS
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/posix/freertos/aeabi_portable.c
@@ -170,3 +172,5 @@ target_link_libraries(cc13xx-cc26xx-sdk
         -Wl,--undefined=__ccfg
         -T${CC13XX_CC26XX_LDS}
 )
+
+add_dependencies(cc13xx-cc26xx-sdk freertos)

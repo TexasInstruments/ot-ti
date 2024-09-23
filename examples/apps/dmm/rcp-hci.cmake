@@ -1,5 +1,5 @@
 #
-#  Copyright (c) 2019, The OpenThread Authors.
+#  Copyright (c) 2020, The OpenThread Authors.
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -25,13 +25,35 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #  POSSIBILITY OF SUCH DAMAGE.
 #
-if (NOT BLE_HCI)
-if(OT_APP_CLI)
-    add_subdirectory(cli)
+
+include(ble.cmake)
+
+add_executable(ot-rcp-hci
+    ${COMMON_SOURCES}
+)
+
+target_include_directories(ot-rcp-hci PUBLIC ${COMMON_INCLUDES})
+
+if(NOT DEFINED OT_PLATFORM_LIB_RCP)
+    set(OT_PLATFORM_LIB_RCP ${OT_PLATFORM_LIB})
 endif()
 
-add_subdirectory(rcp)
+target_link_libraries(ot-rcp-hci PUBLIC
+    openthread-rcp
+    ${OT_PLATFORM_LIB_RCP}
+    openthread-radio
+    ${OT_PLATFORM_LIB_RCP}
+    openthread-rcp
+    ot-config-radio
+    ot-config
+    ble-stack-lib
+)
 
-elseif(BLE_HCI)
-    add_subdirectory(dmm)
-endif()
+install(TARGETS ot-rcp-hci
+    DESTINATION bin
+)
+set_target_properties(ot-rcp-hci
+    PROPERTIES
+        SUFFIX .out
+)
+add_dependencies(ot-rcp-hci ble-stack-lib)

@@ -25,13 +25,31 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #  POSSIBILITY OF SUCH DAMAGE.
 #
-if (NOT BLE_HCI)
-if(OT_APP_CLI)
-    add_subdirectory(cli)
+
+set(COMMON_INCLUDES
+    ${OT_PUBLIC_INCLUDES}
+    ${PROJECT_SOURCE_DIR}/openthread/examples/platforms
+    ${PROJECT_SOURCE_DIR}/openthread/src/core
+)
+
+set(COMMON_SOURCES
+    main.c
+    rcp.c
+    rom_init.c # Must be placed at application level and not in BLE CMAKE Lib. BLE Onelib depends on symbols from this file
+)
+
+if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
+    list(APPEND COMMON_SOURCES freertos_main.c)
+else()
+    message(FATAL_ERROR "Unsuported TI_SIMPLELINK_KERNEL: ${TI_SIMPLELINK_KERNEL}")
 endif()
 
-add_subdirectory(rcp)
+if(OT_APP_RCP)
+    if(OT_RCP)
+        include(rcp-hci.cmake)
+        message( "Building DMM RCP")
 
-elseif(BLE_HCI)
-    add_subdirectory(dmm)
+    else()
+        message(FATAL_ERROR "OT_RCP is not enabled")
+    endif()
 endif()

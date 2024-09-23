@@ -923,6 +923,7 @@ static otError rfCoreSetTransmitPower(int8_t aPower)
 {
     otError               retval = OT_ERROR_NONE;
     RF_TxPowerTable_Value newValue;
+    RF_TxPowerTable_Value oldValue;
     unsigned int          i;
 
     /* search for a matching backoff if there is one */

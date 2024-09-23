@@ -1,10 +1,34 @@
-# TI-OpenThread Release Notes
-
 ## Introduction
 
-This is the first iteration of the ot-ti release notes on GitHub. To find older versions of TI OpenThread documentation please refer [CC13xx_CCC26xx SDK](https://dev.ti.com/tirex/explore/node?node=A__AEIJm0rwIeU.2P1OBWwlaA__com.ti.SIMPLELINK_CC13XX_CC26XX_SDK__BSEc4rl__LATEST) version 7.20 and earlier. For more background information about the topics covered here please visit the [Thread standard](https://www.threadgroup.org/support#specifications).
+ To find older versions of TI OpenThread documentation please refer [CC13xx_CCC26xx SDK](https://dev.ti.com/tirex/explore/node?node=A__AEIJm0rwIeU.2P1OBWwlaA__com.ti.SIMPLELINK_CC13XX_CC26XX_SDK__BSEc4rl__LATEST) version 7.20 and earlier. For more background information about the topics covered here please visit the [Thread standard](https://www.threadgroup.org/support#specifications).
+
+
+# TI-OpenThread thread-v1.3-ti-1.0-eng-1.0 Engineering Release
+
+## What's New
+<!-- new features labelled with thread_nf_cc13xx_cc26xx_gh_1_00_00) -->
+
+- TIOP-1387: Add support for Thread RCP + BLE-HCI project
+
+## Fixed Issues
+<!-- fixed issues labelled with thread_fi_cc13xx_cc26xx_gh_1_00_00) -->
+- N/A
+## Known Issues
+<!-- known issues labelled with thread_ki_cc13xx_cc26xx_gh_1_00_00) -->
+
+- N/A
+
+## Versioning 
+
+* Version eng-1.0 
+
+# Previous Release
+
+
+# TI-OpenThread v1.3.-1.0 Release
 
 - Thread 1.3 networking stack based on [OpenThread](https://github.com/TexasInstruments/ot-ti)
+
 
 ## What's New
 <!-- new features labelled with thread_nf_cc13xx_cc26xx_gh_1_00_00) -->

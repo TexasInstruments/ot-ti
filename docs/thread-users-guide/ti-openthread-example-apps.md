@@ -37,10 +37,15 @@ with the Thread Group test harness.
 
 -   [CLI README](https://github.com/TexasInstruments/ot-ti/blob/main/examples/apps/cli/README.md)
 
-### Network Co-Processor (NCP) and Radio Co-Processor (RCP)
+### Radio Co-Processor (RCP)
 
 The project is used to connect the to a host processor; for more information about the interface
 between the NCP/RCP and host processor: 
 
--   [NCP README](https://github.com/TexasInstruments/ot-ti/blob/main/examples/apps/ncp/README.md)
 -   [RCP README](https://github.com/TexasInstruments/ot-ti/blob/main/examples/apps/rcp/README.md)
+
+### Radio Co-Processor + BLE Host Controller Interface (RCP-HCI)
+
+The project is used to connect the to a host processor for Thread along with a BLE controller host; for more information about the interface RCP and host controller interface: 
+
+-   [RCP-HCI README](https://github.com/TexasInstruments/ot-ti/blob/main/examples/apps/dmm/README.md)

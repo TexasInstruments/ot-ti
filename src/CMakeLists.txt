@@ -38,6 +38,7 @@ else()
     set(TI_SYSCONFIG_CMD ${TI_SYSCONFIG_INSTALL_DIR}/sysconfig_cli.sh CACHE PATH "")
 endif()
 
+
 # NOTE: posix source only needed for NVOCMP middleware
 if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
     set(SYSCONFIG_OUTPUT_C
@@ -70,6 +71,10 @@ else()
     message(FATAL_ERROR "Unsuported TI_SIMPLELINK_KERNEL: ${TI_SIMPLELINK_KERNEL}")
 endif()
 
+if (BLE_HCI)
+    list(APPEND SYSCONFIG_OUTPUT_C ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_dmm_application_policy.c)
+endif()
+
 #if statement used for 2674 migration
 if(${TI_SIMPLELINK_BOARD} MATCHES "CC2674*")
     set(syscfg_cmd ${TI_SYSCONFIG_CMD}
@@ -80,6 +85,17 @@ if(${TI_SIMPLELINK_BOARD} MATCHES "CC2674*")
                     ${CMAKE_CURRENT_SOURCE_DIR}/CC2674.syscfg)
 
     set(sysconfig_file CC2674.syscfg)
+
+elseif(BLE_HCI)
+    set(syscfg_cmd ${TI_SYSCONFIG_CMD}
+                    -s ${TI_SIMPLELINK_SDK_DIR}/.metadata/product.json
+                    -o ${CMAKE_CURRENT_BINARY_DIR}/syscfg
+                    --board /ti/boards/${TI_SIMPLELINK_BOARD}
+                    --compiler gcc
+                    --rtos ${TI_SIMPLELINK_KERNEL}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/dmm/rcp_hci.syscfg)
+
+    set(sysconfig_file dmm/rcp_hci.syscfg)
 else()
     set(syscfg_cmd ${TI_SYSCONFIG_CMD}
                     -s ${TI_SIMPLELINK_SDK_DIR}/.metadata/product.json
@@ -103,8 +119,9 @@ add_custom_command(
     VERBATIM
 )
 
-add_library(openthread-cc13xx_cc26xx
-    ${SYSCONFIG_OUTPUT_C}
+add_custom_target(build_syscfg DEPENDS ${SYSCONFIG_OUTPUT_C})
+
+set(THREAD_PLATFORM_SRC
     alarm.c
     alarm_micro.c
     diag.c
@@ -119,14 +136,41 @@ add_library(openthread-cc13xx_cc26xx
     uart.c
     #cfs.c
     #cfs.h
-    $<TARGET_OBJECTS:openthread-platform-utils>
+)
+
+set(DMM_SRC
+    dmm/dmm_thread_activity.c
+)
+
+set(BLE_LIBS
+    ble-stack-lib
+    ${CMAKE_CURRENT_SOURCE_DIR}/dmm/ble/lib/OneLib.a
+    ${CMAKE_CURRENT_SOURCE_DIR}/dmm/ble/lib/libdmmlib_freertos.a
+    ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_utils_build_linker.cmd.genlibs
 )
 
 list(APPEND TI_PLATFORM_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
 
+set(THREAD_LIBS
+    cc13xx-cc26xx-sdk
+)
+
+if (BLE_HCI)
+    list(APPEND OT_PLATFORM_DEFINES USE_DMM)
+    list(APPEND THREAD_PLATFORM_SRC ${DMM_SRC})
+    list(APPEND THREAD_LIBS ${BLE_LIBS})
+endif()
+
+
+add_library(openthread-cc13xx_cc26xx
+    ${SYSCONFIG_OUTPUT_C}
+    ${THREAD_PLATFORM_SRC}
+    $<TARGET_OBJECTS:openthread-platform-utils>
+)
+
 target_link_libraries(openthread-cc13xx_cc26xx
     PUBLIC
-        cc13xx-cc26xx-sdk
+        ${THREAD_LIBS}
         -Wl,--gc-sections
         -Wl,-Map=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<TARGET_PROPERTY:NAME>.map
         ${GENLIBS_INCLUDES}
@@ -152,6 +196,8 @@ target_compile_options(openthread-cc13xx_cc26xx
 target_include_directories(openthread-cc13xx_cc26xx
     PUBLIC
         ${CMAKE_CURRENT_BINARY_DIR}/syscfg
+        ${CMAKE_CURRENT_SOURCE_DIR}/otsupport
+        ${PROJECT_SOURCE_DIR}/openthread/include
     PRIVATE
         ${OT_PLATFORM_INCLUDES}
         ${OT_PUBLIC_INCLUDES}
@@ -159,3 +205,4 @@ target_include_directories(openthread-cc13xx_cc26xx
         ${PROJECT_SOURCE_DIR}/openthread/examples/platforms
 )
 
+add_dependencies(openthread-cc13xx_cc26xx build_syscfg)

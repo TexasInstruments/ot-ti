@@ -41,3 +41,26 @@ if [ ! -d "$SYSCONFIG_USER" ] && [ ! -d "$SYSCONFIG_SYSTEM" ]; then
 fi
 
 "$(dirname "$0")"/../openthread/script/bootstrap
+
+#overwrite Openthread GCC Version
+install_ti_packages_apt()
+{
+    # apt-get update and install dependencies
+
+    PLATFORM=$(lsb_release -is)
+    ARCH=$(arch)
+
+    if [ "$PLATFORM" = "Raspbian" ]; then
+        sudo apt-get --no-install-recommends install -y binutils-arm-none-eabi gcc-arm-none-eabi gdb-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
+    elif [ "$PLATFORM" = "Ubuntu" ]; then
+        sudo apt-get --no-install-recommends install -y bzip2 ca-certificates wget
+        (cd /tmp \
+            && wget --tries 4 --no-check-certificate -c https://developer.arm.com/-/media/Files/downloads/gnu/12.2.rel1/binrel/arm-gnu-toolchain-12.2.rel1-"$ARCH"-arm-none-eabi.tar.xz \
+            && sudo tar xvf arm-gnu-toolchain-12.2.rel1-"$ARCH"-arm-none-eabi.tar.xz -C /opt \
+            && rm arm-gnu-toolchain-12.2.rel1-"$ARCH"-arm-none-eabi.tar.xz \
+            && sudo ln -s -f /opt/arm-gnu-toolchain-12.2.rel1-"$ARCH"-arm-none-eabi/bin/* /usr/local/bin/.)
+    fi
+}
+
+echo 'Installing TI toolchain dependencies...'
+install_ti_packages_apt

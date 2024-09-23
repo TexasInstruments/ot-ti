@@ -39,6 +39,8 @@ set(FREERTOS_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/repo/stream_buffer.c
     ${CMAKE_CURRENT_SOURCE_DIR}/repo/tasks.c
     ${CMAKE_CURRENT_SOURCE_DIR}/repo/timers.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/repo/event_groups.c 
+
 )
 
 if(TI_SIMPLELINK_ISA STREQUAL "m4f")
