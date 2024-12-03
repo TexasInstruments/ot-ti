@@ -1,0 +1,67 @@
+diff --git a/source/ti/devices/.meta/templates/ti_devices_CC26XX_config.c.xdt b/source/ti/devices/.meta/templates/ti_devices_CC26XX_config.c.xdt
+index 9e1defe4e..852635663 100644
+--- a/source/ti/devices/.meta/templates/ti_devices_CC26XX_config.c.xdt
++++ b/source/ti/devices/.meta/templates/ti_devices_CC26XX_config.c.xdt
+@@ -155,11 +155,11 @@
+ 
+         % var diohex = inst.dioBootloaderBackdoor.toString(16);
+ // DIO number for boot loader backdoor
+-#define SET_CCFG_BL_CONFIG_BL_PIN_NUMBER                0x`diohex`
++#define SET_CCFG_BL_CONFIG_BL_PIN_NUMBER                0x0E
+ 
+         % if(inst.levelBootloaderBackdoor === 'Active high') {
+ // Active high to open boot loader backdoor
+-#define SET_CCFG_BL_CONFIG_BL_LEVEL                     0x1
++#define SET_CCFG_BL_CONFIG_BL_LEVEL                     0x0
+ 
+         % } else {
+ // Active low to open boot loader backdoor
+@@ -168,12 +168,12 @@
+         % }
+     % } else {
+ // Disabled boot loader backdoor
+-#define SET_CCFG_BL_CONFIG_BL_ENABLE                    0xFF
++#define SET_CCFG_BL_CONFIG_BL_ENABLE                    0xC5
+ 
+     % }
+ % } else {
+ // Disable ROM boot loader
+-#define SET_CCFG_BL_CONFIG_BOOTLOADER_ENABLE            0x00
++#define SET_CCFG_BL_CONFIG_BOOTLOADER_ENABLE            0xC5
+ % }
+ 
+ % if(inst.setFlashVectorTable) {
+diff --git a/source/ti/devices/cc13x2x7_cc26x2x7/startup_files/ccfg.c b/source/ti/devices/cc13x2x7_cc26x2x7/startup_files/ccfg.c
+index c1174db37..367e94848 100644
+--- a/source/ti/devices/cc13x2x7_cc26x2x7/startup_files/ccfg.c
++++ b/source/ti/devices/cc13x2x7_cc26x2x7/startup_files/ccfg.c
+@@ -213,22 +213,22 @@
+ //#####################################
+ 
+ #ifndef SET_CCFG_BL_CONFIG_BOOTLOADER_ENABLE
+-#define SET_CCFG_BL_CONFIG_BOOTLOADER_ENABLE            0x00       // Disable ROM boot loader
+-// #define SET_CCFG_BL_CONFIG_BOOTLOADER_ENABLE         0xC5       // Enable ROM boot loader
++// #define SET_CCFG_BL_CONFIG_BOOTLOADER_ENABLE        0x00       // Disable ROM boot loader
++#define SET_CCFG_BL_CONFIG_BOOTLOADER_ENABLE           0xC5       // Enable ROM boot loader
+ #endif
+ 
+ #ifndef SET_CCFG_BL_CONFIG_BL_LEVEL
+-// #define SET_CCFG_BL_CONFIG_BL_LEVEL                  0x0        // Active low to open boot loader backdoor
+-#define SET_CCFG_BL_CONFIG_BL_LEVEL                     0x1        // Active high to open boot loader backdoor
++#define SET_CCFG_BL_CONFIG_BL_LEVEL                    0x0        // Active low to open boot loader backdoor
++// #define SET_CCFG_BL_CONFIG_BL_LEVEL                 0x1        // Active high to open boot loader backdoor
+ #endif
+ 
+ #ifndef SET_CCFG_BL_CONFIG_BL_PIN_NUMBER
+-#define SET_CCFG_BL_CONFIG_BL_PIN_NUMBER                0xFF       // DIO number for boot loader backdoor
++#define SET_CCFG_BL_CONFIG_BL_PIN_NUMBER               0x0E       // DIO number for boot loader backdoor
+ #endif
+ 
+ #ifndef SET_CCFG_BL_CONFIG_BL_ENABLE
+-// #define SET_CCFG_BL_CONFIG_BL_ENABLE                 0xC5       // Enabled boot loader backdoor
+-#define SET_CCFG_BL_CONFIG_BL_ENABLE                    0xFF       // Disabled boot loader backdoor
++#define SET_CCFG_BL_CONFIG_BL_ENABLE                   0xC5       // Enabled boot loader backdoor
++// #define SET_CCFG_BL_CONFIG_BL_ENABLE                0xFF       // Disabled boot loader backdoor
+ #endif
+ 
+ //#####################################

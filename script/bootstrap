@@ -64,3 +64,10 @@ install_ti_packages_apt()
 
 echo 'Installing TI toolchain dependencies...'
 install_ti_packages_apt
+
+# Apply patch for bootloader backdoor
+SCRIPT_PATH=$(pwd)/$(dirname $0)
+cd $SCRIPT_PATH/../third_party/ti_simplelink_sdk/repo_cc13xx_cc26xx/
+git apply ../../../patch/bootloader-backdoor-custom.patch
+cd $SCRIPT_PATH/..
+
