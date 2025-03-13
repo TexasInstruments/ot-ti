@@ -40,6 +40,13 @@
 #include "common/code_utils.hpp"
 
 #include "lib/platform/reset_util.h"
+#include <ti/log/Log.h>
+#ifdef ti_log_Log_ENABLE
+#include "ti_drivers_config.h"
+#include "ti_log_config.h"
+#endif
+
+static otInstance *instance;
 
 /**
  * This function initializes the CLI app.
@@ -96,9 +103,10 @@ static const otCliCommand kCommands[] = {
 
 int app_main(int argc, char *argv[])
 {
-    otInstance *instance;
 
     OT_SETUP_RESET_JUMP(argv);
+ 
+    Log_printf(LogModule_Thread, Log_DEBUG, "CLI Initialized");
 
 #if OPENTHREAD_CONFIG_MULTIPLE_INSTANCE_ENABLE
     size_t   otInstanceBufferLength = 0;
@@ -145,12 +153,10 @@ pseudo_reset:
 
     return 0;
 }
-
 #if OPENTHREAD_CONFIG_LOG_OUTPUT == OPENTHREAD_CONFIG_LOG_OUTPUT_APP
 void otPlatLog(otLogLevel aLogLevel, otLogRegion aLogRegion, const char *aFormat, ...)
 {
     va_list ap;
-
     va_start(ap, aFormat);
     otCliPlatLogv(aLogLevel, aLogRegion, aFormat, ap);
     va_end(ap);

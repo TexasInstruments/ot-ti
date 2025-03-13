@@ -37,12 +37,18 @@
 #include <openthread/platform/alarm-milli.h>
 #include <openthread/platform/diag.h>
 #include <openthread/platform/radio.h>
+#include <ti/devices/DeviceFamily.h>
 
 #include <common/logging.hpp>
 #include <utils/code_utils.h>
 
+#if (DeviceFamily_PARENT <= DeviceFamily_PARENT_CC13X4_CC26X3_CC26X4)
 #include "radio.h"
-
+#elif ((DeviceFamily_PARENT == DeviceFamily_PARENT_CC23X0) || (DeviceFamily_PARENT == DeviceFamily_PARENT_CC27XX))
+#include <cc23xx_cc27xx/radio.h>
+#else
+#error "Invalid Device family for radio configuration"
+#endif
 /**
  * Window for rx frame to be counted as lost instead of RX nOK.
  *
@@ -299,50 +305,6 @@ exit:
 }
 
 /**
- * Process the `diag tone` command.
- *
- * @param[in]  aInstance        OpenThread instance structure.
- * @param[in]  argc             Count of command arguments.
- * @param[in]  argv             Array of command arguments.
- * @param[out] aOutput          Output buffer used for user interaction.
- * @param[in]  aOutputMaxLen    Size of the Output buffer.
- *
- * @return Error value from parsing or executing the command.
- */
-otError PlatDiag_processTone(otInstance *aInstance, int argc, char *argv[], char *aOutput, size_t aOutputMaxLen)
-{
-    otError retval = OT_ERROR_INVALID_ARGS;
-
-    otEXPECT(true == PlatDiag_diagEnabled);
-    if (argc >= 1)
-    {
-        if (strcmp(argv[0], "start") == 0)
-        {
-            bool modulated = false;
-
-            if (argc == 2)
-            {
-                modulated = (strcmp(argv[1], "mod") == 0);
-            }
-            retval = otPlatDiagRadioToneStart(aInstance, modulated);
-            otEXPECT(OT_ERROR_NONE == retval);
-
-            snprintf(aOutput, aOutputMaxLen, "continuous %s tone started\r\n", modulated ? "modulated" : "unmodulated");
-        }
-        else if (strcmp(argv[0], "stop") == 0)
-        {
-            retval = otPlatDiagRadioToneStop(aInstance);
-            otEXPECT(OT_ERROR_NONE == retval);
-
-            snprintf(aOutput, aOutputMaxLen, "continuous tone stopped\r\n");
-        }
-    }
-
-exit:
-    return retval;
-}
-
-/**
  * Process the `diag shield` command.
  *
  * @param[in]  aInstance        OpenThread instance structure.
@@ -392,11 +354,7 @@ otError otPlatDiagProcess(otInstance *aInstance, uint8_t argc, char *argv[], cha
 
     if (argc >= 1)
     {
-        if (strcmp(argv[0], "tone") == 0)
-        {
-            retval = PlatDiag_processTone(aInstance, argc - 1, (argc > 1) ? &argv[1] : NULL, aOutput, aOutputMaxLen);
-        }
-        else if (strcmp(argv[0], "receive") == 0)
+        if (strcmp(argv[0], "receive") == 0)
         {
             retval = PlatDiag_processReceive(aInstance, argc - 1, (argc > 1) ? &argv[1] : NULL, aOutput, aOutputMaxLen);
         }
@@ -455,6 +413,40 @@ void otPlatDiagTxPowerSet(int8_t aTxPower)
     /* factory diag handles the necessary calls */
 }
 
+
+otError otPlatDiagRadioTransmitCarrier(otInstance *aInstance, bool aEnable)
+{
+    OT_UNUSED_VARIABLE(aInstance);
+    otError retval = OT_ERROR_NONE;
+
+    if (aEnable)
+    {
+        retval = otPlatDiagRadioToneStart(aInstance, false);
+    }
+    else
+    {
+        retval = otPlatDiagRadioToneStop(aInstance);
+    }
+
+    return retval;
+}
+
+otError otPlatDiagRadioTransmitStream(otInstance *aInstance, bool aEnable)
+{
+    OT_UNUSED_VARIABLE(aInstance);
+    otError retval = OT_ERROR_NONE;
+
+    if (aEnable)
+    {
+        retval = otPlatDiagRadioToneStart(aInstance, true);
+    }
+    else
+    {
+        retval = otPlatDiagRadioToneStop(aInstance);
+    }
+
+    return retval;
+}
 /**
  * Documented in <openthread/platform/diag.h>
  */

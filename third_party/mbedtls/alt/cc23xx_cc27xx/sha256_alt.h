@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016, Texas Instruments Incorporated
+ *  Copyright (c) 2017, Texas Instruments Incorporated
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -26,74 +26,35 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdbool.h>
-#include <stdint.h>
+#ifndef MBEDTLS_SHA256_ALT_H
+#define MBEDTLS_SHA256_ALT_H
 
-#include <FreeRTOS.h>
-#include <task.h>
+#if !defined(MBEDTLS_CONFIG_FILE)
+#include "mbedtls-config.h"
+#else
+#include MBEDTLS_CONFIG_FILE
+#endif
 
-/* Driver Header files */
-#include <ti/drivers/Board.h>
-#include <ti/drivers/GPIO.h>
-#include <ti/drivers/NVS.h>
-#include <ti/drivers/UART2.h>
-#include <ti/drivers/AESECB.h>
-#if !defined(DeviceFamily_CC23X0R5)
+#if defined(MBEDTLS_SHA256_ALT)
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <ti/drivers/SHA2.h>
-#include <ti/drivers/ECDSA.h>
-#endif
-
-#if !defined(DeviceFamily_CC23X0R5) && !defined (DeviceFamily_CC27XX)
-#include <ti/drivers/ECJPAKE.h>
-#include <ti/drivers/ECDH.h>
-#endif
-
-// The entry point for the application
-extern int app_main(int argc, char *argv[]);
-#define APP_STACK_SIZE (2048)
-
-StackType_t  appStack[APP_STACK_SIZE];
-StaticTask_t appTaskBuffer;
-
-
-void vTaskCode(void *pvParameters)
+#include <ti/drivers/sha2/SHA2LPF3HSM.h>
+/**
+ * \brief          SHA-256 context structure
+ */
+typedef struct
 {
-    (void)pvParameters;
-    app_main(0, NULL);
+    SHA2_Handle       hndl;   /*!< A handle that is returned by the SHA driver  */
+    SHA2_Config       config; /*!< structure containing SHA2 driver specific implementation  */
+    SHA2LPF3HSM_Object object; /*!< Pointer to a driver specific data object */
+} mbedtls_sha256_context;
+
+#ifdef __cplusplus
 }
-
-int main(void)
-{
-    Board_init();
-
-    GPIO_init();
-
-    NVS_init();
-    
-    AESECB_init();
-
-#if !defined(DeviceFamily_CC23X0R5)
-    ECDSA_init();
-
-    SHA2_init();
 #endif
-#if !defined(DeviceFamily_CC23X0R5) && !defined (DeviceFamily_CC27XX)
-    ECDH_init();
+#endif /* MBEDTLS_SHA256_ALT */
 
-    ECJPAKE_init();
-
-    SHA2_init();
-#endif
-    if (NULL ==
-        xTaskCreateStatic(vTaskCode, "APP", APP_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, appStack, &appTaskBuffer))
-    {
-        while (1)
-            ;
-    }
-
-    vTaskStartScheduler();
-
-    // Should never get here.
-    while (1)
-        ;
-}
+#endif /* MBEDTLS_SHA256_ALT_H */

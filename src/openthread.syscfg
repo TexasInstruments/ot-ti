@@ -220,3 +220,14 @@ else
 }
 
 rfCodeExportConfig.cmdList_ieee_15_4 = cmdList;
+
+/* IEEE Coex configuration */
+// Disabled by default.
+/*
+RF.coexEnable                               = true;
+RF.coexPhy                                  = ["ieee_15_4"];
+RF.rfCoexRequestPin.$assign                 = "DIO_5";
+RF.rfCoexPriorityPin.$assign                = "DIO_17";
+RF.rfCoexGrantPin.$assign                   = "DIO_18";
+RF.rfCoexGrantPinInstance.pull              = "Pull Up";
+*/

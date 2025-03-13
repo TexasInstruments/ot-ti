@@ -1,4 +1,3 @@
-#!/bin/bash
 #
 #  Copyright (c) 2020, The OpenThread Authors.
 #  All rights reserved.
@@ -27,17 +26,17 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 #
 
-set -euxo pipefail
+set(CMAKE_SYSTEM_NAME              Generic)
+set(CMAKE_SYSTEM_PROCESSOR         ARM)
 
-SYSCONFIG_VERSION=sysconfig_1.22.0
-SYSCONFIG_USER=~/ti/${SYSCONFIG_VERSION}/
-SYSCONFIG_SYSTEM=/opt/ti/${SYSCONFIG_VERSION}/
-SYSCONFIG_DL=https://dr-download.ti.com/software-development/ide-configuration-compiler-or-debugger/MD-nsUM6f7Vvb/1.22.0.3893/sysconfig-1.22.0_3893-setup.run
+set(CMAKE_C_COMPILER               arm-none-eabi-gcc)
+set(CMAKE_CXX_COMPILER             arm-none-eabi-g++)
+set(CMAKE_ASM_COMPILER             arm-none-eabi-as)
+set(CMAKE_RANLIB                   arm-none-eabi-ranlib)
 
-if [ ! -d "$SYSCONFIG_USER" ] && [ ! -d "$SYSCONFIG_SYSTEM" ]; then
-    wget "$SYSCONFIG_DL" --tries 4 --no-check-certificate --quiet -c -O /tmp/sysconfig-1.22.0_3893-setup.run
-    chmod +x /tmp/sysconfig-1.22.0_3893-setup.run
-    /tmp/sysconfig-1.22.0_3893-setup.run --mode unattended
-fi
+set(COMMON_C_FLAGS                 "-mcpu=cortex-m0plus -march=armv6-m -mthumb -mfloat-abi=soft -Os -fdata-sections -ffunction-sections -g -gdwarf-3 -gstrict-dwarf")
 
-"$(dirname "$0")"/../openthread/script/bootstrap
+set(CMAKE_C_FLAGS_INIT             "${COMMON_C_FLAGS} -std=c99")
+set(CMAKE_CXX_FLAGS_INIT           "${COMMON_C_FLAGS} -std=c++17 -fno-exceptions -fno-rtti")
+set(CMAKE_ASM_FLAGS_INIT           "${COMMON_C_FLAGS}")
+set(CMAKE_EXE_LINKER_FLAGS_INIT    "${COMMON_C_FLAGS} -nostartfiles -specs=nano.specs -specs=nosys.specs")

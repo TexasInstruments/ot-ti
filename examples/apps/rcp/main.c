@@ -37,6 +37,13 @@
 #include "openthread-system.h"
 
 #include "lib/platform/reset_util.h"
+#include <ti/log/Log.h>
+#ifdef ti_log_Log_ENABLE
+#include "ti_drivers_config.h"
+#endif
+
+static otInstance *instance;
+
 /**
  * This function initializes the RCP app.
  *
@@ -57,16 +64,9 @@ OT_TOOL_WEAK void otPlatFree(void *aPtr)
 }
 #endif
 
-#if 0
-void otTaskletsSignalPending(otInstance *aInstance)
-{
-    OT_UNUSED_VARIABLE(aInstance);
-}
-#endif
-
 int app_main(int argc, char *argv[])
 {
-    otInstance *instance;
+    Log_printf(LogModule_Thread, Log_DEBUG, "RCP Initialized");
 
     OT_SETUP_RESET_JUMP(argv);
 

@@ -63,8 +63,8 @@ static OT_DEFINE_ALIGNED_VAR(sNcpRaw, sizeof(NcpSpiMux), uint64_t);
 
 extern "C" void otAppNcpInit(otInstance *aInstance)
 {
-    NcpSpiMux * ncpSpiMux = nullptr;
-    Instance *instance   = static_cast<Instance *>(aInstance);
+    NcpSpiMux *ncpSpiMux = nullptr;
+    Instance  *instance  = static_cast<Instance *>(aInstance);
 
     ncpSpiMux = new (&sNcpRaw) NcpSpiMux(instance);
 
@@ -132,12 +132,21 @@ NcpSpiMux::NcpSpiMux(Instance *aInstance)
                                                  /* aRequestTransactionFlag */ true));
 }
 
-extern "C" void SetNliCallback(uint8_t aNli, NcpSpiMuxRecvCallback aRecvCallback, NcpSpiMuxSentCallback aSentCallback, void *aContext, bool aIsSpinel)
+extern "C" void SetNliCallback(uint8_t               aNli,
+                               NcpSpiMuxRecvCallback aRecvCallback,
+                               NcpSpiMuxSentCallback aSentCallback,
+                               void                 *aContext,
+                               bool                  aIsSpinel)
 {
-    static_cast<NcpSpiMux *>(NcpBase::GetNcpInstance())->SetNliCallback(aNli, aRecvCallback, aSentCallback, aContext, aIsSpinel);
+    static_cast<NcpSpiMux *>(NcpBase::GetNcpInstance())
+        ->SetNliCallback(aNli, aRecvCallback, aSentCallback, aContext, aIsSpinel);
 }
 
-void NcpSpiMux::SetNliCallback(uint8_t aNli, NcpSpiMuxRecvCallback aRecvCallback, NcpSpiMuxSentCallback aSentCallback, void *aContext, bool aIsSpinel)
+void NcpSpiMux::SetNliCallback(uint8_t               aNli,
+                               NcpSpiMuxRecvCallback aRecvCallback,
+                               NcpSpiMuxSentCallback aSentCallback,
+                               void                 *aContext,
+                               bool                  aIsSpinel)
 {
     if (0 == aNli)
     {
@@ -201,12 +210,12 @@ void NcpSpiMux::SendNli(uint8_t aNli, const uint8_t *aBuf, uint16_t aBufLength)
     }
 }
 
-bool NcpSpiMux::SpiTransactionComplete(void *   aContext,
-                                    uint8_t *aOutputBuf,
-                                    uint16_t aOutputLen,
-                                    uint8_t *aInputBuf,
-                                    uint16_t aInputLen,
-                                    uint16_t aTransLen)
+bool NcpSpiMux::SpiTransactionComplete(void    *aContext,
+                                       uint8_t *aOutputBuf,
+                                       uint16_t aOutputLen,
+                                       uint8_t *aInputBuf,
+                                       uint16_t aInputLen,
+                                       uint16_t aTransLen)
 {
     NcpSpiMux *ncp = reinterpret_cast<NcpSpiMux *>(aContext);
 
@@ -214,10 +223,10 @@ bool NcpSpiMux::SpiTransactionComplete(void *   aContext,
 }
 
 bool NcpSpiMux::SpiTransactionComplete(uint8_t *aOutputBuf,
-                                    uint16_t aOutputLen,
-                                    uint8_t *aInputBuf,
-                                    uint16_t aInputLen,
-                                    uint16_t aTransLen)
+                                       uint16_t aOutputLen,
+                                       uint8_t *aInputBuf,
+                                       uint16_t aInputLen,
+                                       uint16_t aTransLen)
 {
     // This can be executed from an interrupt context, therefore we cannot
     // use any of OpenThread APIs here. If further processing is needed,
@@ -232,10 +241,12 @@ bool NcpSpiMux::SpiTransactionComplete(uint8_t *aOutputBuf,
     SpiFrame inputFrame(aInputBuf);
     SpiFrame sendFrame(mSendFrame);
 
+#ifndef OT_TI_SPI_NO_RETRY_TX_ON_RX_ERR
     VerifyOrExit((aTransLen >= kSpiHeaderSize) && (aInputLen >= kSpiHeaderSize) && (aOutputLen >= kSpiHeaderSize));
+#endif
     VerifyOrExit(inputFrame.IsValid() && outputFrame.IsValid());
 
-    transDataLen = aTransLen - kSpiHeaderSize;
+    transDataLen = (aTransLen > kSpiHeaderSize) ? (aTransLen - kSpiHeaderSize) : 0;
 
     if (!mHandlingRxFrame)
     {
@@ -263,11 +274,8 @@ bool NcpSpiMux::SpiTransactionComplete(uint8_t *aOutputBuf,
         // the output frame is smaller than or equal to "accept
         // len" in the received input frame from master.
 
-#ifdef SPI_NO_RETRY_TX_ON_RX_ERR
-        if ((txDataLen > 0) && (txDataLen <= inputFrame.GetHeaderAcceptLen()))
-#else
-        if ((txDataLen > 0) && (txDataLen <= transDataLen) && (txDataLen <= inputFrame.GetHeaderAcceptLen()))
-#endif
+        if ((txDataLen > 0) && ((txDataLen <= transDataLen) || (0U == aTransLen)) &&
+            (txDataLen <= inputFrame.GetHeaderAcceptLen()))
         {
             mTxState      = kTxStateHandlingSendDone;
             shouldProcess = true;
@@ -333,10 +341,10 @@ void NcpSpiMux::SpiTransactionProcess(void)
     }
 }
 
-void NcpSpiMux::HandleFrameAddedToTxBuffer(void *                   aContext,
-                                        Spinel::Buffer::FrameTag aTag,
-                                        Spinel::Buffer::Priority aPriority,
-                                        Spinel::Buffer *         aBuffer)
+void NcpSpiMux::HandleFrameAddedToTxBuffer(void                    *aContext,
+                                           Spinel::Buffer::FrameTag aTag,
+                                           Spinel::Buffer::Priority aPriority,
+                                           Spinel::Buffer          *aBuffer)
 {
     OT_UNUSED_VARIABLE(aBuffer);
     OT_UNUSED_VARIABLE(aTag);
@@ -344,7 +352,6 @@ void NcpSpiMux::HandleFrameAddedToTxBuffer(void *                   aContext,
 
     static_cast<NcpSpiMux *>(aContext)->mPrepareTxFrameTask.Post();
 }
-
 
 void NcpSpiMux::PrepareNextSpiSendFrameOpenThread(void)
 {
@@ -421,9 +428,9 @@ void NcpSpiMux::PrepareNextSpiSendFrameNli(uint8_t aNli, bool aIsSpinel, const u
     }
     else
     {
-        uint8_t* data = sendFrame.GetData();
-        frameLength = aBufLength + 1;
-        data[0] = (aNli << 4); // set nli
+        uint8_t *data = sendFrame.GetData();
+        frameLength   = aBufLength + 1;
+        data[0]       = (aNli << 4); // set nli
         memcpy(&(data[1]), aBuf, aBufLength);
     }
 
@@ -465,7 +472,7 @@ void NcpSpiMux::PrepareNextSpiSendFrame(void)
         }
         else if (nullptr != mNli1TxBuffer)
         {
-            const uint8_t* buffer = mNli1TxBuffer;
+            const uint8_t *buffer = mNli1TxBuffer;
             uint16_t       length = mNli1TxLen;
 
             PrepareNextSpiSendFrameNli(1, mNli1IsSpinel, mNli1TxBuffer, mNli1TxLen);
@@ -480,7 +487,7 @@ void NcpSpiMux::PrepareNextSpiSendFrame(void)
         }
         else if (nullptr != mNli2TxBuffer)
         {
-            const uint8_t* buffer = mNli2TxBuffer;
+            const uint8_t *buffer = mNli2TxBuffer;
             uint16_t       length = mNli2TxLen;
 
             PrepareNextSpiSendFrameNli(2, mNli2IsSpinel, mNli2TxBuffer, mNli2TxLen);
@@ -493,9 +500,9 @@ void NcpSpiMux::PrepareNextSpiSendFrame(void)
                 mNli2SentCallback(buffer, length, mNli2Context);
             }
         }
-        else if (nullptr != mNli2TxBuffer)
+        else if (nullptr != mNli3TxBuffer)
         {
-            const uint8_t* buffer = mNli3TxBuffer;
+            const uint8_t *buffer = mNli3TxBuffer;
             uint16_t       length = mNli3TxLen;
 
             PrepareNextSpiSendFrameNli(3, mNli3IsSpinel, mNli3TxBuffer, mNli3TxLen);
@@ -545,7 +552,7 @@ void NcpSpiMux::HandleRxFrame(void)
     SpiFrame sendFrame(mSendFrame);
 
     uint8_t *data = recvFrame.GetData();
-    uint16_t len = recvFrame.GetHeaderDataLen();
+    uint16_t len  = recvFrame.GetHeaderDataLen();
 
     uint8_t frame_nli = (((data[0]) >> 4) & 0x03);
 

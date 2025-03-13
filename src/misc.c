@@ -36,8 +36,14 @@
 
 // clang-format off
 #include <ti/devices/DeviceFamily.h>
+#if !defined(DeviceFamily_CC23X0R5) && !defined (DeviceFamily_CC27XX)
 #include DeviceFamily_constructPath(driverlib/sys_ctrl.h)
+#else
+#include DeviceFamily_constructPath(driverlib/pmctl.h)
+#endif
 // clang-format on
+
+#if !defined(DeviceFamily_CC23X0R5) && !defined (DeviceFamily_CC27XX)
 
 void otPlatReset(otInstance *aInstance)
 {
@@ -81,7 +87,50 @@ otPlatResetReason otPlatGetResetReason(otInstance *aInstance)
     }
     }
 }
+#else
 
+void otPlatReset(otInstance *aInstance)
+{
+    (void)aInstance;
+    PMCTLResetSystem();
+}
+
+otPlatResetReason otPlatGetResetReason(otInstance *aInstance)
+{
+    (void)aInstance;
+
+    switch (PMCTLGetResetReason())
+    {
+    case PMCTL_RESET_POR:
+    {
+        return OT_PLAT_RESET_REASON_POWER_ON;
+    }
+
+    case PMCTL_RESET_PIN:
+    {
+        return OT_PLAT_RESET_REASON_EXTERNAL;
+    }
+
+    case PMCTL_RESET_VDDS:
+    case PMCTL_RESET_VDDR:
+    case PMCTL_RESET_LFXT:
+    {
+        return OT_PLAT_RESET_REASON_CRASH;
+    }
+
+    case PMCTL_RESET_SYSTEM:
+    case PMCTL_RESET_SHUTDOWN_SWD:
+    {
+        return OT_PLAT_RESET_REASON_SOFTWARE;
+    }
+
+    default:
+    {
+        return OT_PLAT_RESET_REASON_UNKNOWN;
+    }
+    }
+}
+#endif
 void otPlatWakeHost(void)
 {
 }

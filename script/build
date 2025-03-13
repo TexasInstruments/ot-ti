@@ -32,7 +32,7 @@ set -euxo pipefail
 OT_CMAKE_NINJA_TARGET=${OT_CMAKE_NINJA_TARGET:-}
 TI_SYSCONFIG_ROOT=${TI_SYSCONFIG_ROOT:-}
 
-SYSCONFIG_VERSION=sysconfig_1.18.1
+SYSCONFIG_VERSION=sysconfig_1.22.0
 SYSCONFIG_USER=~/ti/${SYSCONFIG_VERSION}/
 SYSCONFIG_SYSTEM=/opt/ti/${SYSCONFIG_VERSION}/
 
@@ -68,6 +68,9 @@ readonly TI_LAUNCHPAD=(
     CC2674P10RSK
     CC2674R10RGZ
     CC2674R10RSK
+    LP_EM_CC2340R5
+    LP_EM_CC2340R53
+    LP_EM_CC2745R10_Q1
 )
 
 readonly OT_SRCDIR="$(pwd)"
@@ -77,11 +80,21 @@ readonly OT_OPTIONS=(
 
 build()
 {
-    local builddir="${OT_CMAKE_BUILD_DIR:-build}"
+    OT_SDK_DIR=third_party/ti_simplelink_sdk/repo_cc13xx_cc26xx
+    OT_SDK_DIR_CC23XX_CC27XX=third_party/ti_simplelink_sdk/repo_cc23xx_cc27xx
 
+    local builddir="${OT_CMAKE_BUILD_DIR:-build}"
     # the SimpleLink SDK uses normal 'make' to re-build it's libraries
     make \
-        -C third_party/ti_simplelink_sdk/repo_cc13xx_cc26xx \
+        -C ${OT_SDK_DIR} \
+        CMAKE=${CMAKE} \
+        GCC_ARMCOMPILER=${GCC_ARMCOMPILER} \
+        IAR_ARMCOMPILER=${IAR_ARMCOMPILER} \
+        TICLANG_ARMCOMPILER=${TICLANG_ARMCOMPILER} \
+        GENERATOR=Ninja
+
+    make \
+        -C ${OT_SDK_DIR_CC23XX_CC27XX} \
         CMAKE=${CMAKE} \
         GCC_ARMCOMPILER=${GCC_ARMCOMPILER} \
         IAR_ARMCOMPILER=${IAR_ARMCOMPILER} \
@@ -170,6 +183,15 @@ main()
                     CC2674R10RGZ | \
                     CC2674R10RSK)
             options+=("-DCMAKE_TOOLCHAIN_FILE=src/arm-none-eabi-m33.cmake")
+            ;;
+       LP_EM_CC2340R5)
+            options+=("-DCMAKE_TOOLCHAIN_FILE=src/arm-none-eabi-m0p.cmake")
+            ;;
+       LP_EM_CC2340R53)
+            options+=("-DCMAKE_TOOLCHAIN_FILE=src/arm-none-eabi-m0p.cmake")
+            ;;
+       LP_EM_CC2745R10_Q1 | LP_EM_CC2745P10_Q1)
+            options+=("-DCMAKE_TOOLCHAIN_FILE=src/arm-none-eabi-m33-cc27xx.cmake")
             ;;
     esac
 

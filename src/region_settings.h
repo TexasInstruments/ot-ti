@@ -32,6 +32,7 @@
  */
 #ifndef _REGION_SETTINGS_H_
 #define _REGION_SETTINGS_H_
+#include <stdint.h>
 #define CC_UINT16(b0, b1) ((b0 << 8) | b1)
 
 // TX power disabled

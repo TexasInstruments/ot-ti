@@ -56,7 +56,7 @@ main()
 {
     export CPPFLAGS="${CPPFLAGS:-} -DNDEBUG"
 
-    rm $OT_OUTPUTDIR
+    rm -rf $OT_OUTPUTDIR
 
     build CC1352P1_LAUNCHXL "${OT_OPTIONS[@]}"
 
@@ -79,6 +79,16 @@ main()
     build LP_CC2652RB "${OT_OPTIONS[@]}"
 
     build LP_CC2652RSIP "${OT_OPTIONS[@]}"
+
+    build LP_EM_CC1354P10_1 "${OT_OPTIONS[@]}"
+
+    build LP_EM_CC1354P10_6 "${OT_OPTIONS[@]}"
+
+    build LP_EM_CC2340R5 "${OT_OPTIONS[@]}"
+    
+    build LP_EM_CC2340R53 "${OT_OPTIONS[@]}"
+    
+    build LP_EM_CC2745R10_Q1 "${OT_OPTIONS[@]}"
 }
 
 main "$@"

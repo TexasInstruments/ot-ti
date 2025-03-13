@@ -25,30 +25,30 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #  POSSIBILITY OF SUCH DAMAGE.
 #
-
 if(NOT $ENV{TI_SIMPLELINK_SDK_DIR} STREQUAL "")
     set(TI_SIMPLELINK_SDK_DIR $ENV{TI_SIMPLELINK_SDK_DIR} CACHE PATH "")
-else()
+elseif ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR  ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2745*")
+    set(TI_SIMPLELINK_SDK_DIR ${PROJECT_SOURCE_DIR}/third_party/ti_simplelink_sdk/repo_cc23xx_cc27xx CACHE PATH "")
+else()  
     set(TI_SIMPLELINK_SDK_DIR ${PROJECT_SOURCE_DIR}/third_party/ti_simplelink_sdk/repo_cc13xx_cc26xx CACHE PATH "")
 endif()
+
+
+
+
 
 # NOTE: posix source only needed for NVOCMP middleware
 if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
     set(CC13XX_CC26XX_DPL_SRCS
         ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/startup/startup_${TI_SIMPLELINK_FAMILY}_gcc.c
         ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/AppHooks_freertos.c
-        ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/ClockPCC26X2_freertos.c
-        ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/ClockP_freertos.c
         ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/DebugP_freertos.c
-        ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/HwiPCC26X2_freertos.c
         ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/MutexP_freertos.c
-        ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/PowerCC26X2_freertos.c
         ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/QueueP_freertos.c
         ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/SemaphoreP_freertos.c
         ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/StaticAllocs_freertos.c
         ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/SwiP_freertos.c
         ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/SystemP_freertos.c
-        ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/TimerPCC26XX_freertos.c
     )
     set(CC13XX_CC26XX_POSIX_SRCS
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/posix/freertos/aeabi_portable.c
@@ -66,10 +66,60 @@ if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/posix/freertos/timer.c
     )
 
+    if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*")
+        list(APPEND CC13XX_CC26XX_DPL_SRCS
+            ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/ClockPLPF3_freertos.c
+            ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/HwiPCC23X0_freertos.c
+            ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/PowerCC23X0_freertos.c
+            ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/TimestampPLPF3_freertos.c
+            ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/exception/ExceptionArmV6M.c
+        )
+
+        if (EXISTS ${TI_SIMPLELINK_SDK_DIR}/source/ti/log/LogSinkTraceLPF3.c)
+        list(APPEND CC13XX_CC26XX_DPL_SRCS
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/log/LogSinkTraceLPF3.c
+        )
+        endif()
+
+    elseif ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2745*")
+        list(APPEND CC13XX_CC26XX_DPL_SRCS
+            ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/ClockPLPF3_freertos.c
+            ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/HwiPCC27XX_freertos.c
+            ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/PowerCC27XX_freertos.c
+            ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/TimestampPLPF3_freertos.c
+            ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/exception/ExceptionArmV8M.c
+        )
+
+        if (EXISTS ${TI_SIMPLELINK_SDK_DIR}/source/ti/log/LogSinkTraceLPF3.c)
+        list(APPEND CC13XX_CC26XX_DPL_SRCS
+                ${TI_SIMPLELINK_SDK_DIR}/source/ti/log/LogSinkTraceLPF3.c
+            )
+        endif()
+
+    else()
+        list(APPEND CC13XX_CC26XX_DPL_SRCS
+            ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/ClockPCC26X2_freertos.c
+            ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/HwiPCC26X2_freertos.c
+            ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/PowerCC26X2_freertos.c
+            ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/TimerPCC26XX_freertos.c
+            ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/TimestampPCC26XX_freertos.c
+        )
+    endif()
+
     if(TI_SIMPLELINK_BOARD STREQUAL "LP_CC2653P10")
         set(CC13XX_CC26XX_LDS
             ${TI_SIMPLELINK_SDK_DIR}/source/ti/boards/cc26x3/cc26x3_freertos.lds
         )
+    elseif(TI_SIMPLELINK_BOARD STREQUAL "LP_EM_CC2340R53")
+        set(CC13XX_CC26XX_LDS
+            ${TI_SIMPLELINK_SDK_DIR}/source/ti/boards/lpf3/lpf3_cc23xx_freertos.lds
+        )
+
+    elseif(TI_SIMPLELINK_BOARD MATCHES "LP_EM_CC2745*")
+            set(CC13XX_CC26XX_LDS
+                ${TI_SIMPLELINK_SDK_DIR}/source/ti/boards/lpf3/lpf3_cc27xx_freertos.lds
+            )
+
     else()
         set(CC13XX_CC26XX_LDS
             ${TI_SIMPLELINK_SDK_DIR}/source/ti/boards/${TI_SIMPLELINK_DEVICE}/${TI_SIMPLELINK_DEVICE}_freertos.lds
@@ -103,10 +153,15 @@ ${TI_SIMPLELINK_SDK_DIR}/source/ti/common/nv
 )
 
 add_library(cc13xx-cc26xx-sdk)
-
+target_compile_options(cc13xx-cc26xx-sdk
+    PUBLIC
+        ${OT_CFLAGS}
+)
 target_sources(cc13xx-cc26xx-sdk
-    PRIVATE
+    PUBLIC
         ${CC13XX_CC26XX_DPL_SRCS}
+
+    PRIVATE
         ${CC13XX_CC26XX_POSIX_SRCS}
         ${CC13XX_CC26XX_NVOCMP_SRCS}
 )
@@ -134,9 +189,27 @@ elseif(TI_SIMPLELINK_DEVICE STREQUAL "cc13x4_cc26x4")
     else()
         target_compile_definitions(cc13xx-cc26xx-sdk PUBLIC DeviceFamily_CC26X4)
     endif()
+elseif(${TI_SIMPLELINK_BOARD} STREQUAL "LP_EM_CC2340R5")
+    target_compile_definitions(cc13xx-cc26xx-sdk PUBLIC DeviceFamily_CC23X0R5)
+    target_compile_definitions(ot-config INTERFACE DeviceFamily_CC23X0R5)
 
+elseif(${TI_SIMPLELINK_BOARD} STREQUAL "LP_EM_CC2340R53")
+    target_compile_definitions(cc13xx-cc26xx-sdk PUBLIC DeviceFamily_CC23X0R5)
+    target_compile_definitions(ot-config INTERFACE DeviceFamily_CC23X0R5)
+    target_compile_definitions(cc13xx-cc26xx-sdk PUBLIC DeviceFamily_CC23X0R53)
+    target_compile_definitions(ot-config INTERFACE DeviceFamily_CC23X0R53)
+
+elseif(${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2745*")
+    target_compile_definitions(cc13xx-cc26xx-sdk PUBLIC DeviceFamily_CC27XX)
+    target_compile_definitions(ot-config INTERFACE DeviceFamily_CC27XX)
 else()
     message(FATAL_ERROR "Unsuported TI_SIMPLELINK_DEVICE: ${TI_SIMPLELINK_DEVICE}")
+endif()
+
+if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR  ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2745*")
+list(APPEND TI_PLATFORM_INCLUDES
+    ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/
+    ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/exception)
 endif()
 
 target_include_directories(cc13xx-cc26xx-sdk
@@ -153,20 +226,38 @@ target_include_directories(ot-config INTERFACE
     ${TI_SIMPLELINK_SDK_DIR}/source
 )
 
-add_library(cc13xx-cc26xx-driverlib INTERFACE)
 
-target_link_libraries(cc13xx-cc26xx-driverlib
-    INTERFACE
+
+if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR  ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2745*")
+    # Loki CC23x* Platforms
+    add_library(cc23xx-driverlib INTERFACE)
+    target_link_libraries(cc23xx-driverlib
+        INTERFACE
+        ${TI_SIMPLELINK_SDK_DIR}/source/ti/devices/${TI_SIMPLELINK_DEVICE}/driverlib/lib/gcc/driverlib.a
+    )
+
+    target_link_libraries(cc13xx-cc26xx-sdk
+        PUBLIC
+            freertos
+            cc23xx-driverlib
+            -Wl,--undefined=ccfg
+            -T${CC13XX_CC26XX_LDS}
+    )
+else()
+    # Agama/Thor Platforms
+    add_library(cc13xx-cc26xx-driverlib INTERFACE)
+    target_link_libraries(cc13xx-cc26xx-driverlib
+        INTERFACE
         ${TI_SIMPLELINK_SDK_DIR}/source/ti/devices/${TI_SIMPLELINK_DEVICE}/driverlib/bin/gcc/driverlib.lib
-)
+    )
 
-if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
-    target_link_libraries(cc13xx-cc26xx-sdk PUBLIC freertos)
+    target_link_libraries(cc13xx-cc26xx-sdk
+        PUBLIC
+            freertos
+            cc13xx-cc26xx-driverlib
+            -Wl,--undefined=__ccfg
+            -T${CC13XX_CC26XX_LDS}
+    )
+
+
 endif()
-
-target_link_libraries(cc13xx-cc26xx-sdk
-    PUBLIC
-        cc13xx-cc26xx-driverlib
-        -Wl,--undefined=__ccfg
-        -T${CC13XX_CC26XX_LDS}
-)

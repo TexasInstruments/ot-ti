@@ -37,10 +37,9 @@ with the Thread Group test harness.
 
 -   [CLI README](https://github.com/TexasInstruments/ot-ti/blob/main/examples/apps/cli/README.md)
 
-### Network Co-Processor (NCP) and Radio Co-Processor (RCP)
+### Radio Co-Processor (RCP)
 
-The project is used to connect the to a host processor; for more information about the interface
-between the NCP/RCP and host processor: 
+The project is used to connect to a host processor; for more information about the interface
+between the RCP and host processor: 
 
--   [NCP README](https://github.com/TexasInstruments/ot-ti/blob/main/examples/apps/ncp/README.md)
 -   [RCP README](https://github.com/TexasInstruments/ot-ti/blob/main/examples/apps/rcp/README.md)

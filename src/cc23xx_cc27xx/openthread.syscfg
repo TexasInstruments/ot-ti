@@ -1,0 +1,291 @@
+/*
+ * Copyright (c) 2018, Texas Instruments Incorporated
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * *  Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *
+ * *  Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * *  Neither the name of Texas Instruments Incorporated nor the names of
+ *    its contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/*
+ *  cli_ftd.syscfg
+ */
+
+/* Modules */
+var AESECB     = scripting.addModule("/ti/drivers/AESECB");
+var DMA        = scripting.addModule("/ti/drivers/DMA");
+var Device     = scripting.addModule("/ti/devices/CCFG");
+var ECDH       = scripting.addModule("/ti/drivers/ECDH");
+var ECDSA      = scripting.addModule("/ti/drivers/ECDSA");
+var GPIO       = scripting.addModule("/ti/drivers/GPIO");
+var NVS        = scripting.addModule("/ti/drivers/NVS");
+var Power      = scripting.addModule("/ti/drivers/Power");
+var RCL        = scripting.addModule("/ti/drivers/RCL");
+var RFCustom   = scripting.addModule("/ti/devices/radioconfig/custom");
+var RFDesign   = scripting.addModule("ti/devices/radioconfig/rfdesign");
+var SHA2       = scripting.addModule("/ti/drivers/SHA2");
+var UART2      = scripting.addModule("/ti/drivers/UART2");
+var Watchdog   = scripting.addModule("/ti/drivers/Watchdog");
+var board      = system.deviceData.board.name;
+var RNG        = scripting.addModule("/ti/drivers/RNG");
+
+
+/* Instances */
+var AESECB     = AESECB.addInstance();
+var ECDH       = ECDH.addInstance();
+var ECDSA      = ECDSA.addInstance();
+var GPIO1      = GPIO.addInstance();
+var GPIO2      = GPIO.addInstance();
+var GPIO3      = GPIO.addInstance();
+var GPIO4      = GPIO.addInstance();
+var GPIO5      = GPIO.addInstance();
+var NVS1       = NVS.addInstance();
+var SHA21      = SHA2.addInstance();
+var UART      = UART2.addInstance();
+var Watchdog1  = Watchdog.addInstance();
+var RNG1        = RNG.addInstance();
+
+const deviceId = system.deviceData.deviceId;
+
+
+/* CCFG */
+const ccfgSettings = system.getScript("/ti/common/lprf_ccfg_settings.js").ccfgSettings;
+for(var setting in ccfgSettings)
+{
+    Device[setting] = ccfgSettings[setting];
+}
+
+/* UART */
+UART.$hardware                   = system.deviceData.board.components.XDS110UART;
+UART.$name                       = "CONFIG_UART2_0";
+
+
+/* GPIO */
+GPIO1.$hardware                   = system.deviceData.board.components["BTN-1"];
+GPIO1.$name                       = "CONFIG_GPIO_BTN1";
+
+GPIO2.$hardware                   = system.deviceData.board.components["BTN-2"];
+GPIO2.$name                       = "CONFIG_GPIO_BTN2";
+
+GPIO3.$hardware                   = system.deviceData.board.components.LED_GREEN;
+GPIO3.$name                       = "CONFIG_GPIO_GLED";
+
+GPIO4.$hardware                   = system.deviceData.board.components.LED_RED;
+GPIO4.$name                       = "CONFIG_GPIO_RLED";
+
+
+/* NVS */
+NVS1.$name = "CONFIG_NVSINTERNAL";
+
+/* place at the end of Flash */
+if(deviceId.match(/CC(23.*)/))
+{
+    NVS1.internalFlash.regionBase = 0x10000;
+    NVS1.internalFlash.regionSize = 0x4000;
+}
+else if(deviceId.match(/CC(274.*)/))
+{
+    NVS1.internalFlash.regionBase = 0x7C000;
+    NVS1.internalFlash.regionSize = 0x4000;
+}
+else
+{
+    throw new Error("Could not set NVS location for deviceId: " + deviceId);
+}
+
+
+/* Watchdog */
+Watchdog1.$name             = "CONFIG_WATCHDOG0";
+Watchdog1.period            = 1000;
+//Watchdog1.watchdog.$assign  = "WDT0";
+
+/* AES */
+AESECB.$name = "CONFIG_AESECB_MBEDTLS";
+
+/* RF */
+RFCustom.ieee                                            = ["ieee_802_15_4"];
+RFCustom.radioConfigieee_802_15_4.$name                  = "ti_devices_radioconfig_phy_groups_ieee_15_40";
+RFCustom.radioConfigieee_802_15_4.codeExportConfig.$name = "ti_devices_radioconfig_code_export_param0";
+RFCustom.radioConfigieee_802_15_4.codeExportConfig.symGenMethod = "Automatic";
+
+
+if(deviceId.match(/CC(23.*)/))
+{
+    /* CC23xx ADC Noise configuration */
+    var RFCustom2   = scripting.addModule("/ti/devices/radioconfig/custom");
+    RFCustom2.ble                                         = ["adc_noise"];
+    RFCustom2.radioConfigadc_noise.$name                  = "ti_devices_radioconfig_phy_groups_ble0";
+    RFCustom2.radioConfigadc_noise.codeExportConfig.$name = "ti_devices_radioconfig_code_export_param1";
+    RFCustom2.radioConfigadc_noise.codeExportConfig.phyAbbr = true;
+}
+/* Crypto */
+RNG1.$name        = "CONFIG_RNG_THREAD";
+
+
+/* Logging Configuration */
+
+/* Which Thread Stack logs to enabled */
+var enableThreadSecondaryDebugUART = false;
+
+/* Which Radio logs to enabled */
+
+/* Enables Logging for RCL module */
+var enableRclLogging = false;
+
+/* Enables Logging in Radio.c for Thread, the Application may use this log module for further logging enablement */
+var enableThreadRadioLogging = false;
+
+
+/* Which Log Sink to output to */
+
+/* Enables Memory ROV based log sink */
+var enableLogSinkBuf = false;
+
+/* Enables UART based log sink via external wireshark parser, TBD */
+var enableLogSinkUART = false;
+
+/* Unsupported trace tooling */
+var enableLogSinkTracer = false;
+
+/* The below sections should not normally be modified */
+if (enableLogSinkUART || enableLogSinkBuf || enableLogSinkTracer)
+{
+    var LogModule  = scripting.addModule("/ti/log/LogModule", {}, false);
+}
+
+if (enableThreadRadioLogging)
+{
+    const LogModule  = scripting.addModule("/ti/log/LogModule", {}, false);
+    var LogModuleThread = LogModule.addInstance();
+    LogModuleThread.$name = "LogModule_Thread";
+
+    LogModuleThread.enable_INFO      = false;
+    LogModuleThread.enable_DEBUG     = true;
+    LogModuleThread.enable_VERBOSE   = true;
+    LogModuleThread.enable_ERROR     = false;
+    LogModuleThread.enable_WARNING   = false;
+}
+
+if (enableRclLogging)
+{
+    /* Enable RCL Logmodule and adjust the log levels.
+    * The log levels "WARNING" and "ERROR" are enabled by default */
+    RCL.loggingEnabled             = true;
+    RCL.LogModule.enable_INFO      = true;
+    RCL.LogModule.enable_DEBUG     = true;
+    RCL.LogModule.enable_VERBOSE   = true;
+}
+
+if (enableLogSinkBuf)
+{
+    const LogSinkBuf  = scripting.addModule("/ti/log/LogSinkBuf", {}, false);
+    const LogSinkBuf1 = LogSinkBuf.addInstance({}, false);
+    LogSinkBuf1.$name = "CONFIG_ti_log_LogSinkBuf_0";
+
+    if(deviceId.match(/CC(23.*)/))
+    {
+        LogSinkBuf1.numEntries = 50;
+    }
+    else if(deviceId.match(/CC(274.*)/))
+    {
+        LogSinkBuf1.numEntries = 1700;
+    }
+
+    if (enableThreadRadioLogging)
+    {
+        LogModuleThread.loggerSink  = "/ti/log/LogSinkBuf";
+        LogModuleThread.logger      = LogSinkBuf1;
+    }
+
+    if (enableRclLogging)
+    {
+        RCL.LogModule.loggerSink       = "/ti/log/LogSinkBuf";
+        RCL.LogModule.logger           = LogSinkBuf1;
+    }
+}
+
+/* Thread Stack logs directly to secondary UART */
+if ((deviceId.match(/CC(274.*)/)) && (enableThreadSecondaryDebugUART))
+{
+    var UART22      = UART2.addInstance();
+
+    /* Debug UART */
+    UART22.$name              = "CONFIG_DEBUG_UART";
+    UART22.uart.$suggestSolution                     = "UART1";
+    UART22.uart.dmaTxChannel.$suggestSolution        = "DMA_CH1";
+    UART22.uart.dmaRxChannel.$suggestSolution        = "DMA_CH0";
+    UART22.uart.txPin.$suggestSolution               = "boosterpack.2";
+    UART22.uart.rxPin.$suggestSolution               = "boosterpack.6";
+}
+
+if (enableLogSinkTracer)
+{
+    /* Add RCL module and board. Board is used to differentiate between the different devices when setting the tracer pin. */
+
+    /* Import the tracer as a logsink */
+    const LogSinkTraceLPF3  = scripting.addModule("/ti/log/LogSinkTraceLPF3", {}, false);
+    const LogSinkTraceLPF31 = LogSinkTraceLPF3.addInstance();
+    LogSinkTraceLPF31.$name = "CONFIG_ti_log_LogSinkTraceLPF3_0";
+    
+
+    /* Connect the RCL LogModule to the tracer sink imported above */
+    RCL.LogModule.loggerSink       = "/ti/log/LogSinkTraceLPF3";
+    RCL.LogModule.logger           = LogSinkTraceLPF31;
+    
+    /* This variable is used to set the tracer pin. This variable will vary depending on the device that is being used */
+    var tracerPin;
+    
+    /* All these devices are pin compatible and use the same pin configuration for the tracer */
+    if (board.match(/CC2340R53/) || board.match(/CC2340R5/) || board.match(/CC2340R22/))
+    {
+        /* Assign tracer to DIO5 on  CC2340R5, CC2340R53 and CC2340R22 */
+        /* This line can be modified to change the tracer pin for CC2340R5, CC2340R53 and CC2340R22 */
+        tracerPin =  "boosterpack.27";
+    }
+    else if (board.match(/CC2340R2/))
+    {
+        /* Assign tracer to DIO6 on  CC2340R2 */
+        /* This line can be modified to change the tracer pin for CC2340R2 */
+        tracerPin = "boosterpack.9";
+    }
+    else if (board.match(/CC27/))
+    {
+        /* Assign tracer to DIO20 on all CC27 (loki-high) variations */
+        /* This line can be modified to change the tracer pin for all CC27 (loki-high) variations */
+        tracerPin = "boosterpack.2";
+    }
+    
+    /* Assign the tracer to the LRF peripheral and the chosen pin */
+    LogSinkTraceLPF31.lrfGpio.$suggestSolution = "LRF";
+    LogSinkTraceLPF31.lrfGpio.tracePin.$assign = tracerPin
+
+    if (enableThreadRadioLogging)
+    {
+        LogModuleThread.loggerSink  = "/ti/log/LogSinkTraceLPF3";
+        LogModuleThread.logger      = LogSinkTraceLPF31;
+    }
+
+}
