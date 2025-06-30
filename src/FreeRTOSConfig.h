@@ -46,30 +46,51 @@
  *----------------------------------------------------------*/
 
 /* General options */
+#if !defined(DeviceFamily_CC27XX)
 #define configCPU_CLOCK_HZ ((unsigned long)(48000000))
+#else
+#define configCPU_CLOCK_HZ ((unsigned long)(96000000))
+#endif
 
+#if defined(DeviceFamily_CC23X0R5) || defined(DeviceFamily_CC23X0R53)
+/* Stack sizes, all in words */
+#define configMINIMAL_STACK_SIZE ((unsigned short)(128))
+#define configIDLE_TASK_STACK_DEPTH ((unsigned short)(128))
+#define configPOSIX_STACK_SIZE ((unsigned short)(configMINIMAL_STACK_SIZE * 2))
+#else
 /* Stack sizes, all in words */
 #define configMINIMAL_STACK_SIZE ((unsigned short)(512))
 #define configIDLE_TASK_STACK_DEPTH ((unsigned short)(512))
 #define configPOSIX_STACK_SIZE ((unsigned short)(configMINIMAL_STACK_SIZE * 2))
-
+#endif
 /* Device specific options options */
-#if defined(DeviceFamily_CC13X2_CC26X2) \
-    || defined(DeviceFamily_CC13X2) \
-    || defined(DeviceFamily_CC26X2)
-#define configTOTAL_HEAP_SIZE ((size_t)(0x2EE0))
+#if defined(DeviceFamily_CC13X2_CC26X2) || defined(DeviceFamily_CC13X2) || defined(DeviceFamily_CC26X2)
+#define configTOTAL_HEAP_SIZE ((size_t)(0x4000))
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION 1
 
-#elif defined(DeviceFamily_CC13X2X7_CC26X2X7) \
-    || defined(DeviceFamily_CC13X2X7) \
-    || defined(DeviceFamily_CC26X2X7)
-#define configTOTAL_HEAP_SIZE ((size_t)(0x2EE0))
+#elif defined(DeviceFamily_CC13X2X7_CC26X2X7) || defined(DeviceFamily_CC13X2X7) || defined(DeviceFamily_CC26X2X7)
+#define configTOTAL_HEAP_SIZE ((size_t)(0x9000))
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION 1
 
-#elif defined(DeviceFamily_CC13X4_CC26X4) \
-    || defined(DeviceFamily_CC13X4) \
-    || defined(DeviceFamily_CC26X4) \
-    || defined(DeviceFamily_CC26X3)
+#elif defined(DeviceFamily_CC13X4_CC26X4) || defined(DeviceFamily_CC13X4) || defined(DeviceFamily_CC26X4) || \
+    defined(DeviceFamily_CC26X3)
+#define configTOTAL_HEAP_SIZE ((size_t)(0x9000))
+#define configUSE_PORT_OPTIMISED_TASK_SELECTION 0
+/* TrustZone/PSA settings */
+/* We do not set ENABLE_TRUSTZONE, as this is only for Secure Side function call support */
+#define configENABLE_TRUSTZONE 0
+#define configRUN_FREERTOS_SECURE_ONLY 1
+/* ARM-v8m specific settings: floating point unit is enabled, memory protection unit is disabled */
+#define configENABLE_FPU 1
+#define configENABLE_MPU 0
+/* The CM33 port requires an additional stack size definition */
+#define configMINIMAL_SECURE_STACK_SIZE configMINIMAL_STACK_SIZE
+
+#elif defined(DeviceFamily_CC23X0R5) || defined(DeviceFamily_CC23X0R53)
+#define configTOTAL_HEAP_SIZE ((size_t)(3400))
+#define configUSE_PORT_OPTIMISED_TASK_SELECTION 0
+
+#elif defined(DeviceFamily_CC27XX)
 #define configTOTAL_HEAP_SIZE ((size_t)(0x9000))
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION 0
 /* TrustZone/PSA settings */
@@ -83,6 +104,7 @@
 #define configMINIMAL_SECURE_STACK_SIZE configMINIMAL_STACK_SIZE
 
 #else
+
 #error "unknown SimpleLink DeviceFamily, consult SDK configuration"
 
 #endif
@@ -112,7 +134,7 @@
     }
 
 /* Constants related to the behaviour or the scheduler. */
-#define configTICK_RATE_HZ ((TickType_t)1000)
+#define configTICK_RATE_HZ (1000)
 #define configUSE_PREEMPTION 1
 #define configUSE_TIME_SLICING 0
 #define configMAX_PRIORITIES (10UL)
@@ -209,21 +231,34 @@
 #define INCLUDE_xSemaphoreGetMutexHolder 0
 #define INCLUDE_xTimerPendFunctionCall 0
 
+#if defined(DeviceFamily_CC27XX)
+#define configPRIO_BITS 4 /* 16 priority levels */
+/*
+ * The lowest interrupt priority that can be used in a call to a "set priority"
+ * function.
+ */
+#define configLIBRARY_LOWEST_INTERRUPT_PRIORITY 15
+#elif defined(DeviceFamily_CC23X0R5) || defined(DeviceFamily_CC23X0R53)
+#define configPRIO_BITS 2 /* 4 priority levels */
+/*
+ * The lowest interrupt priority that can be used in a call to a "set priority"
+ * function.
+ */
+#define configLIBRARY_LOWEST_INTERRUPT_PRIORITY 3
+#else
 /* Cortex-M3/4 interrupt priority configuration follows...................... */
-
 /* Use the system definition, if there is one. */
 #ifdef __NVIC_PRIO_BITS
 #define configPRIO_BITS __NVIC_PRIO_BITS
 #else
 #define configPRIO_BITS 3 /* 8 priority levels */
 #endif
-
 /*
  * The lowest interrupt priority that can be used in a call to a "set priority"
- * function.
+ * function. (2^NVICPRIOBITS) - 1
  */
-#define configLIBRARY_LOWEST_INTERRUPT_PRIORITY 0x07
-
+#define configLIBRARY_LOWEST_INTERRUPT_PRIORITY 7
+#endif
 /*
  * The highest interrupt priority that can be used by any interrupt service
  * routine that makes calls to interrupt safe FreeRTOS API functions.  DO NOT

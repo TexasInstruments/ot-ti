@@ -29,7 +29,7 @@
 if(NOT $ENV{TI_SYSCONFIG_ROOT} STREQUAL "")
     set(TI_SYSCONFIG_INSTALL_DIR $ENV{TI_SYSCONFIG_ROOT} CACHE PATH "")
 else()
-    set(TI_SYSCONFIG_INSTALL_DIR $ENV{HOME}/ti/sysconfig_1.18.1 CACHE PATH "")
+    set(TI_SYSCONFIG_INSTALL_DIR $ENV{HOME}/ti/sysconfig_1.22.0 CACHE PATH "")
 endif()
 
 if(WIN32)
@@ -37,6 +37,7 @@ if(WIN32)
 else()
     set(TI_SYSCONFIG_CMD ${TI_SYSCONFIG_INSTALL_DIR}/sysconfig_cli.sh CACHE PATH "")
 endif()
+
 
 # NOTE: posix source only needed for NVOCMP middleware
 if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
@@ -57,12 +58,15 @@ if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
     set(SYSCONFIG_OUTPUT_OTHER
         ${CMAKE_CURRENT_BINARY_DIR}/syscfg/syscfg_c.rov.xs
         ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_build_config.opt
+        
         ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_utils_build_linker.cmd.genlibs
+        ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_utils_build_linker.cmd.genmap
         ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_utils_runtime_Makefile
         ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_utils_runtime_model.gv
     )
     set(GENLIBS_INCLUDES
-        -L${TI_SIMPLELINK_SDK_DIR}/source
+    -L${TI_SIMPLELINK_SDK_DIR}/source
+    -L${CMAKE_CURRENT_BINARY_DIR}/syscfg
     )
 
 
@@ -80,6 +84,19 @@ if(${TI_SIMPLELINK_BOARD} MATCHES "CC2674*")
                     ${CMAKE_CURRENT_SOURCE_DIR}/CC2674.syscfg)
 
     set(sysconfig_file CC2674.syscfg)
+
+
+elseif ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR  ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2745*")
+    set(syscfg_cmd ${TI_SYSCONFIG_CMD}
+                    -s ${TI_SIMPLELINK_SDK_DIR}/.metadata/product.json
+                    -o ${CMAKE_CURRENT_BINARY_DIR}/syscfg
+                    --board /ti/boards/${TI_SIMPLELINK_BOARD}
+                    --compiler gcc
+                    --rtos ${TI_SIMPLELINK_KERNEL}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/cc23xx_cc27xx/openthread.syscfg)
+
+    set(sysconfig_file openthread.syscfg)
+
 else()
     set(syscfg_cmd ${TI_SYSCONFIG_CMD}
                     -s ${TI_SIMPLELINK_SDK_DIR}/.metadata/product.json
@@ -92,6 +109,14 @@ else()
     set(sysconfig_file openthread.syscfg)
 endif()
 
+# Create empty logging file in case user has completely disabled logging
+file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_log_config.c )
+
+list(APPEND SYSCONFIG_OUTPUT_C
+        # SILK Log required dependencies
+	${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_log_config.c
+)
+
 add_custom_command(
     OUTPUT
         ${SYSCONFIG_OUTPUT_C}
@@ -103,35 +128,82 @@ add_custom_command(
     VERBATIM
 )
 
-add_library(openthread-cc13xx_cc26xx
+set(PLATFORM_SRCS
     ${SYSCONFIG_OUTPUT_C}
     alarm.c
     alarm_micro.c
-    diag.c
-    entropy.c
     misc.c
-    radio.c
-    radio.h
     settings.c
-    spi_periph.c
     system.c
     system.h
     uart.c
-    #cfs.c
-    #cfs.h
-    $<TARGET_OBJECTS:openthread-platform-utils>
+    diag.c
 )
 
-list(APPEND TI_PLATFORM_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
+if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*")
+    list(APPEND PLATFORM_SRCS
+        cc23xx_cc27xx/startup_cc23xx.c
+        cc23xx_cc27xx/radio.c
+        cc23xx_cc27xx/radio.h
+        cc23xx_cc27xx/entropy.c
+        $<TARGET_OBJECTS:openthread-platform-utils>
+    )
+    list(APPEND TI_PLATFORM_INCLUDES  ${CMAKE_CURRENT_SOURCE_DIR}/cc23xx_cc27xx  ${CMAKE_CURRENT_SOURCE_DIR})
+elseif ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2745*")
+    list(APPEND PLATFORM_SRCS
+        cc23xx_cc27xx/startup_cc27xx.c
+        cc23xx_cc27xx/radio.c
+        cc23xx_cc27xx/radio.h
+        cc23xx_cc27xx/entropy.c
+        $<TARGET_OBJECTS:openthread-platform-utils>
+    )
+    list(APPEND TI_PLATFORM_INCLUDES  ${CMAKE_CURRENT_SOURCE_DIR}/cc23xx_cc27xx  ${CMAKE_CURRENT_SOURCE_DIR})
+
+else()
+        list(APPEND PLATFORM_SRCS
+        spi_periph.c
+        radio.c
+        radio.h
+        entropy.c
+        #cfs.c
+        #cfs.h
+        $<TARGET_OBJECTS:openthread-platform-utils>
+
+    )
+    list(APPEND TI_PLATFORM_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
+
+    endif()
+
+add_library(openthread-cc13xx_cc26xx
+    ${PLATFORM_SRCS}
+)
+
+
+set(PLATFORM_LIBRARIES
+    cc13xx-cc26xx-sdk
+    -Wl,--gc-sections
+    -Wl,-Map=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<TARGET_PROPERTY:NAME>.map
+    ${GENLIBS_INCLUDES}
+    ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_utils_build_linker.cmd.genlibs
+)
+
+if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR  ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2745*")
+        list(APPEND PLATFORM_LIBRARIES
+            cc23xx-driverlib
+        )
+        list(APPEND PLATFORM_LIBRARIES
+            ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_utils_build_linker.cmd.genmap
+        )
+else()
+    list(APPEND PLATFORM_LIBRARIES
+    cc13xx-cc26xx-driverlib
+    )
+endif()
+
 
 target_link_libraries(openthread-cc13xx_cc26xx
     PUBLIC
-        cc13xx-cc26xx-sdk
-        -Wl,--gc-sections
-        -Wl,-Map=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<TARGET_PROPERTY:NAME>.map
-        ${GENLIBS_INCLUDES}
-        ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_utils_build_linker.cmd.genlibs
-        cc13xx-cc26xx-driverlib
+        ${PLATFORM_LIBRARIES}
     PRIVATE
         ot-config
 )
@@ -139,11 +211,15 @@ target_link_libraries(openthread-cc13xx_cc26xx
 target_compile_definitions(openthread-cc13xx_cc26xx
     PUBLIC
         ${OT_PLATFORM_DEFINES}
-	#TIOP_RADIO_USE_CFS
-	#PLAT_RADIO_SOFTWARE_IMM_ACK=1
+	    #TIOP_RADIO_USE_CFS
+	    #PLAT_RADIO_SOFTWARE_IMM_ACK=1
         OT_TI_KERNEL_${TI_SIMPLELINK_KERNEL}
 )
 
+target_compile_options(openthread-cc13xx_cc26xx
+PUBLIC
+    @${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_utils_build_compiler.opt
+)
 target_compile_options(openthread-cc13xx_cc26xx
     PRIVATE
         ${OT_CFLAGS}
@@ -151,11 +227,10 @@ target_compile_options(openthread-cc13xx_cc26xx
 
 target_include_directories(openthread-cc13xx_cc26xx
     PUBLIC
-        ${CMAKE_CURRENT_BINARY_DIR}/syscfg
+    ${CMAKE_CURRENT_BINARY_DIR}/syscfg
     PRIVATE
         ${OT_PLATFORM_INCLUDES}
         ${OT_PUBLIC_INCLUDES}
         ${SYSCONFIG_INCLUDES}
         ${PROJECT_SOURCE_DIR}/openthread/examples/platforms
 )
-

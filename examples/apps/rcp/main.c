@@ -33,10 +33,19 @@
 #include <openthread/diag.h>
 #include <openthread/ncp.h>
 #include <openthread/tasklet.h>
+#include <openthread/platform/misc.h>
 
 #include "openthread-system.h"
+#include "common/code_utils.hpp"
 
 #include "lib/platform/reset_util.h"
+#include <ti/log/Log.h>
+#ifdef ti_log_Log_ENABLE
+#include "ti_drivers_config.h"
+#endif
+
+static otInstance *instance;
+
 /**
  * This function initializes the RCP app.
  *
@@ -57,16 +66,9 @@ OT_TOOL_WEAK void otPlatFree(void *aPtr)
 }
 #endif
 
-#if 0
-void otTaskletsSignalPending(otInstance *aInstance)
-{
-    OT_UNUSED_VARIABLE(aInstance);
-}
-#endif
-
 int app_main(int argc, char *argv[])
 {
-    otInstance *instance;
+    Log_printf(LogModule_Thread, Log_DEBUG, "RCP Initialized");
 
     OT_SETUP_RESET_JUMP(argv);
 
@@ -95,6 +97,10 @@ pseudo_reset:
     assert(instance);
 
     otAppRcpInit(instance);
+
+    #if OPENTHREAD_CONFIG_PLATFORM_LOG_CRASH_DUMP_ENABLE
+    IgnoreError(otPlatLogCrashDump());
+    #endif
 
     while (!otSysPseudoResetWasRequested())
     {

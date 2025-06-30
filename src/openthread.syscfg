@@ -65,6 +65,7 @@ var GPIO3      = GPIO.addInstance();
 var GPIO4      = GPIO.addInstance();
 var GPIO5      = GPIO.addInstance();
 var NVS1       = NVS.addInstance();
+var NVSDGB     = NVS.addInstance();
 var SHA21      = SHA2.addInstance();
 var SPI2       = SPI.addInstance();
 var TRNG1      = TRNG.addInstance();
@@ -119,27 +120,38 @@ GPIO5.gpioPin.$assign        = "DIO16";
 
 /* NVS */
 NVS1.$name = "CONFIG_NVSINTERNAL";
+NVSDGB.$name = "CONFIG_NVS_DBG_INTERNAL";
+
 
 /* place at the end of Flash */
 if(deviceId.match(/CC((13|26).2(R|RB|P)7)/))
 {
-    NVS1.internalFlash.regionBase = 0xAA000;
+    NVS1.internalFlash.regionBase = 0xAD800;
     NVS1.internalFlash.regionSize = 0x4000;
+    NVSDGB.internalFlash.regionBase = 0xA9800;
+    NVSDGB.internalFlash.regionSize = 0x800;   
 }
 else if(deviceId.match(/CC((13|26).2(R|RB|P)1)/))
 {
-    NVS1.internalFlash.regionBase = 0x52000;
+    NVS1.internalFlash.regionBase = 0x55800;
     NVS1.internalFlash.regionSize = 0x4000;
+    NVSDGB.internalFlash.regionBase = 0x51800;
+    NVSDGB.internalFlash.regionSize = 0x800;
 }
 else if(deviceId.match(/CC((13|26).4P10)/))
 {
     NVS1.internalFlash.regionBase = 0xFC000;
     NVS1.internalFlash.regionSize = 0x4000;
+    NVSDGB.internalFlash.regionBase = 0xFB800;
+    NVSDGB.internalFlash.regionSize = 0x800;
+    
 }
 else if(deviceId.match(/CC((13|26).3P10)/))
 {
     NVS1.internalFlash.regionBase = 0xFC000;
     NVS1.internalFlash.regionSize = 0x4000;
+    NVSDGB.internalFlash.regionBase = 0xFB800;
+    NVSDGB.internalFlash.regionSize = 0x800;
 }
 else
 {
@@ -220,3 +232,14 @@ else
 }
 
 rfCodeExportConfig.cmdList_ieee_15_4 = cmdList;
+
+/* IEEE Coex configuration */
+// Disabled by default.
+/*
+RF.coexEnable                               = true;
+RF.coexPhy                                  = ["ieee_15_4"];
+RF.rfCoexRequestPin.$assign                 = "DIO_5";
+RF.rfCoexPriorityPin.$assign                = "DIO_17";
+RF.rfCoexGrantPin.$assign                   = "DIO_18";
+RF.rfCoexGrantPinInstance.pull              = "Pull Up";
+*/

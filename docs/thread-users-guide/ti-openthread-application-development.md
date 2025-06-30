@@ -1,6 +1,6 @@
 # Application Development
 
-The [SimpleLink CC13xx/CC26xx](https://www.ti.com/tool/download/SIMPLELINK-LOWPOWER-F2-SDK) SDK for TI-OpenThread is intended to be developed with one of the following development boards:
+TI-OpenThread is intended to be developed with one of the following development boards:
 
 - [CC1352R LaunchPad](https://www.ti.com/tool/LAUNCHXL-CC1352R1)
 - [CC1352P-2 LaunchPad](https://www.ti.com/tool/LAUNCHXL-CC1352P)
@@ -8,6 +8,8 @@ The [SimpleLink CC13xx/CC26xx](https://www.ti.com/tool/download/SIMPLELINK-LOWPO
 - [CC2652R7 LaunchPad](https://www.ti.com/tool/LP-CC2652R7)
 - [CC2674x10 LaunchPad](https://www.ti.com/product/CC2674P10)
 - [CC1354x10 LaunchPad](https://www.ti.com/tool/LP-EM-CC1354P10)
+- [CC2745R10-Q1 LaunchPad](https://www.ti.com/tool/LP-EM-CC2745R10-Q1)
+- [CC2340R52 LaunchPad](https://www.ti.com/tool/LP-EM-CC2340R5)
 
 
 The SDK provides the source code of the OpenThread stack, found in the `source/third_party/openthread/` folder under the SDK installation directory. The SDK does not provide any pre-compiled libraries for OpenThread.

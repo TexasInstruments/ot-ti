@@ -5,7 +5,7 @@
 
 ---
 
-# OpenThread CC13XX_CC26XX Example
+# OpenThread Simplelink Example
 
 This directory contains the platform drivers necessary to run OpenThread on the Texas Instruments CC13XX_CC26XX family of
 Connected MCUs. These drivers use the TI SimpleLink™ SDK for the RTOS enabled platform drivers. The example applications are
@@ -15,6 +15,7 @@ The following is the currently supported Thread roles for compatible TI devices.
 
 | Device                   | RCP | MTD | FTD |
 | ------------------------ | --- | --- | --- |
+| [CC2340R5][cc2340r5]     | x   |     |     |
 | [CC2652R][cc2652r]       | x   |     |     |
 | [CC2652RB][cc2652rb]     | x   |     |     |
 | [CC2652P][cc2652p]       | x   |     |     |
@@ -24,6 +25,9 @@ The following is the currently supported Thread roles for compatible TI devices.
 | [CC2652P7][cc2652p7]     | x   | x   | x   |
 | [CC2674R10][cc2674r10]   | x   | x   | x   |
 | [CC2674P10][cc2674p10]   | x   | x   | x   |
+| [CC2340R53 ][cc2340r53]  | x   | x   | x   |
+| [CC2755R10 ][cc2755r10]  | x   | x   | x   |
+
 
 [cc2652r]: https://www.ti.com/product/CC2652R
 [cc2652rb]: https://www.ti.com/product/CC2652RB
@@ -34,6 +38,9 @@ The following is the currently supported Thread roles for compatible TI devices.
 [cc2652p7]: https://www.ti.com/product/CC2652P7
 [cc2674r10]: https://www.ti.com/product/CC2674R10
 [cc2674p10]: https://www.ti.com/product/CC2674P10
+[cc2340r5]: https://www.ti.com/product/CC2340R5
+[cc2340r53]: https://www.ti.com/product/CC2340R5
+[cc2755r10]: https://www.ti.com/product/CC2755R10
 
 ## Navigating TI OpenThread Documentation
 
@@ -152,7 +159,7 @@ following options:
 
 | Parameter    | Value    |
 | ------------ | -------- |
-| Speed (baud) | `115200` |
+| Speed (baud) | `921600` |
 | Data bits    | `8`      |
 | Stop bits    | `1`      |
 | Parity       | `None`   |

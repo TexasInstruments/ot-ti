@@ -42,6 +42,15 @@
 #include "system.h"
 #include <string.h>
 #include <mqueue.h>
+#if (OPENTHREAD_CONFIG_LOG_OUTPUT == OPENTHREAD_CONFIG_LOG_OUTPUT_DEBUG_UART)
+#include <openthread/platform/debug_uart.h>
+#include <stdio.h>
+#endif
+
+#include <ti/log/Log.h>
+#ifdef ti_log_Log_ENABLE
+#include "ti_log_config.h"
+#endif
 
 /* Ensure all bytes are written in blocking mode before notifying the stack it
  * can send more data. Less efficient than callback mode. Necessary for certain
@@ -58,6 +67,12 @@
 static uint8_t PlatformUart_receiveBuffer[PLATFORM_UART_RECV_BUF_LEN];
 
 static UART2_Handle PlatformUart_uartHandle;
+
+#if (OPENTHREAD_CONFIG_LOG_OUTPUT == OPENTHREAD_CONFIG_LOG_OUTPUT_DEBUG_UART)
+static UART2_Handle PlatformDebugUart_uartHandle;
+static char sDebugUartBuffer[500];
+void uartDebugWriteCallback(UART2_Handle aHandle, void *aBuf, size_t aLen, void *userArg, int_fast16_t status);
+#endif
 
 #if !TI_PLAT_UART_BLOCKING
 static SemaphoreP_Struct PlatformUart_writeSem;
@@ -118,7 +133,7 @@ otError otPlatUartEnable(void)
     params.readCallback   = uartReadCallback;
     params.readReturnMode = UART2_ReadReturnMode_PARTIAL;
     params.eventMask      = UART2_EVENT_TX_FINISHED;
-    params.baudRate       = 115200;
+    params.baudRate       = 921600;
     params.dataLength     = UART2_DataLen_8;
     params.stopBits       = UART2_StopBits_1;
     params.parityType     = UART2_Parity_NONE;
@@ -129,6 +144,21 @@ otError otPlatUartEnable(void)
 #else
     params.writeMode     = UART2_Mode_CALLBACK;
     params.writeCallback = uartWriteCallback;
+#endif
+
+#if (OPENTHREAD_CONFIG_LOG_OUTPUT == OPENTHREAD_CONFIG_LOG_OUTPUT_DEBUG_UART)
+    UART2_Params debugParams;
+
+    UART2_Params_init(&debugParams);
+
+    debugParams.eventMask      = UART2_EVENT_TX_FINISHED;
+    debugParams.baudRate       = 921600;
+    debugParams.dataLength     = UART2_DataLen_8;
+    debugParams.stopBits       = UART2_StopBits_1;
+    debugParams.parityType     = UART2_Parity_NONE;
+    debugParams.writeMode      = UART2_Mode_BLOCKING;
+
+    PlatformDebugUart_uartHandle = UART2_open(CONFIG_DEBUG_UART, &debugParams);
 #endif
 
     attr.mq_curmsgs = 0;
@@ -171,6 +201,22 @@ otError otPlatUartSend(const uint8_t *aBuf, uint16_t aBufLength)
 
 void platformUartProcess(uintptr_t arg)
 {
+
+#ifdef ti_log_Log_ENABLE
+    struct mq_attr mqstat;
+    static int maxQSize = 0;
+
+    mq_getattr(UART_procQueueDesc, &mqstat);
+    if (mqstat.mq_curmsgs > maxQSize)
+    {
+        maxQSize = mqstat.mq_curmsgs;
+    }
+    if (mqstat.mq_curmsgs >= mqstat.mq_maxmsg)
+    {
+        Log_printf(LogModule_Thread, Log_VERBOSE, "platformUartProcess: Current Queue size: %d, Max Messages: %d High Watermark: %d", mqstat.mq_curmsgs, mqstat.mq_maxmsg, maxQSize);
+    }
+#endif
+
     if (arg & PLATFORM_UART_EVENT_TX_DONE)
     {
         otPlatUartSendDone();
@@ -189,3 +235,36 @@ otError otPlatUartFlush(void)
 {
     return OT_ERROR_NOT_IMPLEMENTED;
 }
+
+#if (OPENTHREAD_CONFIG_LOG_OUTPUT == OPENTHREAD_CONFIG_LOG_OUTPUT_DEBUG_UART)
+otError otSysDebugUart_write_bytes(const uint8_t *aBuf, uint16_t aBufLength)
+{
+    /* Unsupported */
+}
+
+void otPlatDebugUart_putchar_raw(int c)
+{
+    /* Unsupported */
+}
+
+void otPlatDebugUart_vprintf(const char *fmt, va_list ap)
+{
+    int ret;
+
+    ret = vsnprintf(sDebugUartBuffer, sizeof(sDebugUartBuffer), fmt, ap);
+    if (0 < ret)
+    {
+        // PuTTY likes \r\n
+        size_t len                = (ret + 2U) < sizeof(sDebugUartBuffer) ? (ret + 2) : sizeof(sDebugUartBuffer);
+        sDebugUartBuffer[len - 2] = '\r';
+        sDebugUartBuffer[len - 1] = '\n';
+
+        UART2_write(PlatformDebugUart_uartHandle, sDebugUartBuffer, len, NULL);
+    }
+}
+
+void otPlatDebugUart_putchar(int c)
+{
+
+}
+#endif

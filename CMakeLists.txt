@@ -28,8 +28,8 @@
 
 cmake_minimum_required(VERSION 3.10.2)
 
-project(ot-cc13x2-cc26x2 VERSION 1.3.0.0)
-set(OT_PACKAGE_VERSION "1.3.0.1" CACHE STRING "ot-ti version" FORCE)
+project(ot-cc13x2-cc26x2 VERSION 1.4.0.0)
+set(OT_PACKAGE_VERSION "1.4.0.0" CACHE STRING "ot-ti version" FORCE)
 
 if(NOT DEFINED TI_SIMPLELINK_KERNEL)
     set(TI_SIMPLELINK_KERNEL "freertos" CACHE STRING "")

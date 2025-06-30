@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2017, Texas Instruments Incorporated
+ *  Copyright (c) 2024, Texas Instruments Incorporated
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -32,59 +32,10 @@
 
 // clang-format off
 #include <ti/devices/DeviceFamily.h>
-#include DeviceFamily_constructPath(driverlib/rf_ieee_cmd.h)
 // clang-format on
 
 #include <openthread/instance.h>
 
-#define VERSION_2015           (2 << 12)
-#define FCF_PANID_COMPRESSION  (1 << 6)
-#define FCF_DST_ADDR_NONE      (0 << 10)
-#define FCF_DST_ADDR_SHORT     (2 << 10)
-#define FCF_DST_ADDR_EXT       (3 << 10)
-#define FCF_DST_ADDR_MASK      (3 << 10)
-#define FCF_FRAME_VERSION_MASK (3 << 12)
-#define FCF_SRC_ADDR_NONE      (0 << 14)
-#define FCF_SRC_ADDR_SHORT     (2 << 14)
-#define FCF_SRC_ADDR_EXT       (3 << 14)
-#define FCF_SRC_ADDR_MASK      (3 << 14)
-#define FCF_SEQUENCE_SUPRESSION (1 << 8)
-/**
- * Size of the receive buffers in the receive queue.
- */
-#define RX_BUF_SIZE 148
-
-/**
- * Value to pass to `RF_cancelCmd` to signify aborting the command.
- *
- * documented in `source/ti/drivers/rf/RF.h`
- */
-#define RF_DRIVER_ABORT 0
-
-/**
- * Return value used when searching the source match array.
- *
- * Returned if an address could not be found or if an empty element could not
- * be found.
- */
-#define PLATFORM_RADIO_SRC_MATCH_NONE 0xFF
-
-/**
- * Number of extended addresses in @ref ext_src_match_data_t.
- */
-#define PLATFORM_RADIO_EXTADD_SRC_MATCH_NUM 10
-
-/**
- * Number of short addresses in @ref short_src_match_data_t.
- */
-#define PLATFORM_RADIO_SHORTADD_SRC_MATCH_NUM 10
-
-/**
- * size of length field in receive struct.
- *
- * defined in Table 23-10 of the cc13xx and cc26xx TRM.
- */
-#define DATA_ENTRY_LENSZ_BYTE 1
 
 /**
  * Event flags for the radio process function
@@ -96,9 +47,10 @@
 #define RF_EVENT_SLEEP_YIELD (1U << 4)
 #define RF_EVENT_BUF_FULL (1U << 5)
 #define RF_EVENT_RX_CMD_STOP (1U << 6)
-#define RF_EVENT_TX_CMD_PREEMPTED (1U << 7)
-#define RF_EVENT_RX_FRAME_FILT (1U << 8)
-#define RF_EVENT_RX_FRM_FILT (1U << 9)
+#define RF_EVENT_RX_CMD_ERROR (1U << 7)
+#define RF_EVENT_TX_CMD_PREEMPTED (1U << 8)
+#define RF_EVENT_RX_FRAME_FILT (1U << 9)
+#define RF_EVENT_RX_FRM_FILT (1U << 10)
 
 /**
  * (IEEE 802.15.4-2006) PSDU.FCF.framePending.
@@ -116,74 +68,33 @@
 #define IEEE802154_ACK_REQUEST (1 << 5)
 
 /**
+ * Return value used when searching the source match array.
+ *
+ * Returned if an address could not be found or if an empty element could not
+ * be found.
+ */
+#define PLATFORM_RADIO_SRC_MATCH_NONE 0xFF
+
+/**
+ * Number of short addresses supported.
+ */
+#define PLATFORM_RADIO_SHORTADD_SRC_MATCH_NUM 20
+
+#define PLATFORM_RADIO_SHORTADD_SRC_MATCH_NUM_WORDS \
+(((PLATFORM_RADIO_SHORTADD_SRC_MATCH_NUM) + ((8 * sizeof(uint16_t)) - 1)) / (8 * sizeof(uint16_t)))
+
+/**
  * Invalid RSSI value returned from an ED scan.
  */
 #define PLATFORM_RADIO_INVALID_RSSI (127)
-
-/**
- * Structure for source matching extended addresses.
- *
- * Defined in Table 23-73 of the cc13xx and cc26xx TRM.
- */
-typedef struct __RFC_STRUCT ext_src_match_data_s ext_src_match_data_t;
-struct __RFC_STRUCT                              ext_src_match_data_s
-{
-    uint32_t srcMatchEn[((PLATFORM_RADIO_EXTADD_SRC_MATCH_NUM + 31) / 32)];
-    uint32_t srcPendEn[((PLATFORM_RADIO_EXTADD_SRC_MATCH_NUM + 31) / 32)];
-    uint64_t extAddrEnt[PLATFORM_RADIO_EXTADD_SRC_MATCH_NUM];
-} __RFC_STRUCT_ATTR;
-
-/**
- * Structure for source matching short addresses.
- *
- * Defined in Table 23-74 of the cc13xx and cc26xx TRM.
- */
-typedef struct __RFC_STRUCT short_src_match_data_s short_src_match_data_t;
-struct __RFC_STRUCT                                short_src_match_data_s
-{
-    uint32_t             srcMatchEn[((PLATFORM_RADIO_SHORTADD_SRC_MATCH_NUM + 31) / 32)];
-    uint32_t             srcPendEn[((PLATFORM_RADIO_SHORTADD_SRC_MATCH_NUM + 31) / 32)];
-    rfc_shortAddrEntry_t shortAddrEnt[PLATFORM_RADIO_SHORTADD_SRC_MATCH_NUM];
-} __RFC_STRUCT_ATTR;
-
-/**
- * Enum for specifying short/ext address type
- */
-typedef enum platformRadio_address
-{
-    platformRadio_address_short = 0,
-    platformRadio_address_ext   = 1,
-} platformRadio_address;
-
-/* Proprietary thread pta statistics struct, this tracks additional elements currently exposed by the
-standardized diag variables */
-typedef struct {
-    /* Total number of low priority PTA request */
-    uint16_t pta_lo_pri_req;
-    /* Total number of high priority PTA request */
-    uint16_t pta_hi_pri_req;
-    /* Total number of low priority PTA request denied by Controller */
-    uint16_t pta_lo_pri_denied;
-    /* Total number of high priority PTA request denied by Controller */
-    uint16_t pta_hi_pri_denied;
-    /* Total number of CCA retries */
-    uint16_t cca_retries;
-    /* Total number of CCA failure */
-    uint16_t cca_failures;
-    /* Total number of Unicast retries at MAC layer */
-    uint16_t mac_tx_ucast_retry;
-    /* Total number of Unicast failures at MAC layer */
-    uint16_t mac_tx_ucast_fail;
-    /* PTA deny rate */
-    uint16_t pta_denied_rate;
-} threadMacStatisticsStruct_t;
 
 /**
  * This enum represents the state of a radio.
  *
  * Initially, a radio is in the Disabled state.
  *
- * The following are valid radio state transitions for the platform
+ * The following are valid radio state transitions for the platform encompasing
+ * an existing receive in the Transmit RxTxAck and EDScan states.
  *
  * ```
  *                                                 +---------+
@@ -200,24 +111,41 @@ typedef struct {
  *    ^                     |       |                    | ^   Transmit complete
  *    |                     |       |       EnergyScan() | |
  *    |                     |       |                    V | Scan Complete
- *    |                     |       | EnergyScan()  +--------+
- *  Init()                  |       |-------------->| EdScan |
+ *    |                     |       |               +--------+
+ *  Init()                  |       |               | EdScan |
  *                          +-------+               +--------+
  * ```
-
+ * he following are valid radio state transitions for the platform
+ * in which the device can Transmit or perform an EDSCan directly from sleep.
+ * ```
+ *                               
+ *  +----------+  Enable()  +-------+  Transmit()  +-------------------+  
+ *  |          |----------->|       |------------->|                   |
+ *  | Disabled |            | Sleep |              | TransmitStandlone |
+ *  |          |<-----------|       |<-------------|                   |
+ *  +----------+  Disable() |       |   Sleep()    +-------------------+ 
+ *    ^                     |       | 
+ *    |                     |       |   Scan Complete
+ *    |                     |       |<-----------
+ *    |                     |       | EnergyScan()  +------------------+
+ *  Init()                  |       |-------------->| EdScanStandalone |
+ *                          +-------+               +------------------+
+ * ```
  *
  * These states slightly differ from the states in include/openthread/platform/radio.h
  * from OpenThread. The additional states the phy can be in are due to the asynchronous
- * nature of the CM0 radio core.
+ * nature of the radio core.
  *
- * | state            | description                                        |
- * |------------------|----------------------------------------------------|
- * | Disabled         | The rfcore powerdomain is off and the RFCPE is off |
- * | Sleep            | The RFCORE PD is on, and the RFCPE is in IEEE mode |
- * | Receive          | The RFCPE is running a CMD_IEEE_RX                 |
- * | RxTXAck          | A frame has been filtered and an Ack frame queued  |
- * | EdScan           | The RFCPE is running a CMD_IEEE_ED_SCAN            |
- * | Transmit         | The RFCPE is running a transmit command string     |
+ * | state              | description                                                                |
+ * |------------------  |--------------------------------------------------------------------------- |
+ * | Disabled           | The modem powerdomain is off                                               |
+ * | Sleep              | The modem is powered and ready to run scheduled commands                   |
+ * | Receive            | The modem is running a a continuous receive                                |
+ * | RxTXAck            | A frame has been filtered and an Ack frame queued                          |
+ * | EdScan             | The modem is running a energy detect operation and will return to receive  |
+ * | EdScanStandalone   | The modem is running a energy detect operation and will return to sleep    |
+ * | Transmit           | The modem is running a transmit command and will return to receive         |
+ * | TransmitStandalone | The modem is running a transmit command and will return to sleep           |
  *
  */
 typedef enum platformRadio_phyState
@@ -226,9 +154,22 @@ typedef enum platformRadio_phyState
     platformRadio_phyState_Sleep,
     platformRadio_phyState_Receive,
     platformRadio_phyState_RxTxAck,
+    platformRadio_phyState_EdScanStandalone,
     platformRadio_phyState_EdScan,
+    platformRadio_phyState_TransmitStandalone,
     platformRadio_phyState_Transmit,
 } platformRadio_phyState;
+
+typedef enum platformRadio_txState
+{
+    /* Radio is not transmitting */
+    platformRadio_txState_Inactive = 0, 
+    /* Radio has issued a standalone Tx without CCA/RxAck capability */
+    platformRadio_txState_StandaloneActive, 
+    /* Radio has issued a combined Rx & Tx */
+    platformRadio_txState_CombinedActive, 
+} platformRadio_txState;
+#endif /* PLATFORM_RADIO_H_ */
 
 /**
  * The diagnostic module calls this function to begin transmitting a continuous tone. The tone will be transmitted on
@@ -274,29 +215,3 @@ void rfCoreDiagChannelDisable(uint8_t aChannel);
  *
  */
 void rfCoreDiagChannelEnable(uint8_t aChannel);
-
-/**
- * Set the priority value used for CoEx operation.
- *
- * Enable or Disable the priority signal for RF operations in the coexistence
- * module. This will set the global option for all RF commands to assert the
- * priority line. Assertion polarity is defined by the RF Library module. These
- * options are only used in 3-wire and greater configuration.
- *
- * @param[in]  aEnable sets the Priority signal; true is asserted, false is de-asserted.
- */
-void rfCorePriorityCoex(bool aEnable);
-
-/**
- * Set the request value used for CoEx operation.
- *
- * Receive operations do not normally assert the request line for CoEx
- * operations. This API sets the global enable/disable of the request during
- * RX. Assertion polarity is defined by the RF Library module. These options
- * are only used in 2-wire and greater configuration.
- *
- * @param[in]  aEnable sets the behavior of the Request signal
- */
-void rfCoreRequestCoex(bool aEnable);
-
-#endif /* PLATFORM_RADIO_H_ */

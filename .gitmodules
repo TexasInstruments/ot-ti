@@ -1,13 +1,20 @@
 [submodule "openthread"]
 	path = openthread
 	url = https://github.com/openthread/openthread.git
+	ignore = all
 [submodule "third_party/freertos/repo"]
 	path = third_party/freertos/repo
 	url = https://github.com/FreeRTOS/FreeRTOS-Kernel.git
+	ignore = all
 [submodule "third_party/ti_simplelink_sdk/repo_cc13xx_cc26xx"]
 	path = third_party/ti_simplelink_sdk/repo_cc13xx_cc26xx
 	url = https://github.com/TexasInstruments/simplelink-lowpower-f2-sdk.git
-	ignore = dirty
+	ignore = all
 [submodule "mbedtls"]
 	path = third_party/mbedtls/repo
 	url = https://github.com/Mbed-TLS/mbedtls.git
+	ignore = all
+[submodule "third_party/ti_simplelink_sdk/repo_cc23xx_cc27xx"]
+	path = third_party/ti_simplelink_sdk/repo_cc23xx_cc27xx
+	url = https://github.com/TexasInstruments/simplelink-lowpower-f3-sdk.git
+	ignore = all

@@ -30,6 +30,8 @@ Before doing so, you should add the following line:
 // @cliArgs --product <path to SDK>/.metadata/product.json --board /ti/boards/LP_EM_CC1354P10_6 --rtos freertos
 ```
 
+(The board in this case is "LP_EM_CC1354P10_6", and should be adjusted based on the target device.)
+
 As an example, after adding the necessary `<path to SDK>`, it would look like:
 
 ```

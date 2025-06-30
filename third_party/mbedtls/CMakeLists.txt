@@ -48,13 +48,26 @@ if(TI_SIMPLELINK_ISA STREQUAL "m4f")
     string(REPLACE "-Os" "-Ofast" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
 
-add_library(ti-mbedtls-hardware-alt
-    alt/aes_alt.c
-    alt/ecdh_alt.c
-    alt/ecdsa_alt.c
-    alt/ecjpake_alt.c
-    alt/sha256_alt.c
-)
+
+if(TI_SIMPLELINK_BOARD MATCHES "LP_EM_CC2745*")
+    add_library(ti-mbedtls-hardware-alt
+        alt/cc23xx_cc27xx/ecdsa_alt.c
+        alt/cc23xx_cc27xx/sha256_alt.c
+        alt/cc23xx_cc27xx/aes_alt.c
+    )
+elseif(${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*")
+    add_library(ti-mbedtls-hardware-alt
+        alt/cc23xx_cc27xx/aes_alt.c
+    )
+else()
+    add_library(ti-mbedtls-hardware-alt
+        alt/aes_alt.c
+        alt/ecdh_alt.c
+        alt/ecdsa_alt.c
+        alt/ecjpake_alt.c
+        alt/sha256_alt.c
+    )
+endif()
 
 target_link_libraries(ti-mbedtls-hardware-alt
     PRIVATE
@@ -82,6 +95,20 @@ target_compile_definitions(ti-mbedtls-hardware-alt
     PRIVATE
         $<TARGET_PROPERTY:ot-config,INTERFACE_COMPILE_DEFINITIONS>
 )
+
+
+if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR  ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2745*")
+target_include_directories(ti-mbedtls-hardware-alt
+    PUBLIC
+        ${CMAKE_CURRENT_BINARY_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/alt/cc23xx_cc27xx
+        ${CMAKE_CURRENT_SOURCE_DIR}/repo/include
+    PRIVATE
+        ${OT_PUBLIC_INCLUDES}
+        $<TARGET_PROPERTY:ot-config,INTERFACE_INCLUDE_DIRECTORIES>
+)
+else()
 target_include_directories(ti-mbedtls-hardware-alt
     PUBLIC
         ${CMAKE_CURRENT_BINARY_DIR}
@@ -92,13 +119,26 @@ target_include_directories(ti-mbedtls-hardware-alt
         ${OT_PUBLIC_INCLUDES}
         $<TARGET_PROPERTY:ot-config,INTERFACE_INCLUDE_DIRECTORIES>
 )
-
+endif()
 target_compile_definitions(ti-mbedtls
     PUBLIC
         "MBEDTLS_CONFIG_FILE=\"mbedtls-config-${TI_SIMPLELINK_FAMILY}.h\""
     PRIVATE
         $<TARGET_PROPERTY:ot-config,INTERFACE_COMPILE_DEFINITIONS>
 )
+
+if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR  ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2745*")
+target_include_directories(ti-mbedtls
+    PUBLIC
+        ${CMAKE_CURRENT_BINARY_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/alt/cc23xx_cc27xx
+        ${CMAKE_CURRENT_SOURCE_DIR}/repo/include
+    PRIVATE
+        ${OT_PUBLIC_INCLUDES}
+        $<TARGET_PROPERTY:ot-config,INTERFACE_INCLUDE_DIRECTORIES>
+)
+else()
 target_include_directories(ti-mbedtls
     PUBLIC
         ${CMAKE_CURRENT_BINARY_DIR}
@@ -109,6 +149,8 @@ target_include_directories(ti-mbedtls
         ${OT_PUBLIC_INCLUDES}
         $<TARGET_PROPERTY:ot-config,INTERFACE_INCLUDE_DIRECTORIES>
 )
+endif()
+
 
 target_compile_definitions(ti-mbedx509
     PUBLIC
@@ -116,16 +158,31 @@ target_compile_definitions(ti-mbedx509
     PRIVATE
         $<TARGET_PROPERTY:ot-config,INTERFACE_COMPILE_DEFINITIONS>
 )
-target_include_directories(ti-mbedx509
-    PUBLIC
-        ${CMAKE_CURRENT_BINARY_DIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}/alt
-        ${CMAKE_CURRENT_SOURCE_DIR}/repo/include
-    PRIVATE
-        ${OT_PUBLIC_INCLUDES}
-        $<TARGET_PROPERTY:ot-config,INTERFACE_INCLUDE_DIRECTORIES>
-)
+
+
+if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR  ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2745*")
+    target_include_directories(ti-mbedx509
+        PUBLIC
+            ${CMAKE_CURRENT_BINARY_DIR}
+            ${CMAKE_CURRENT_SOURCE_DIR}
+            ${CMAKE_CURRENT_SOURCE_DIR}/alt/cc23xx_cc27xx
+            ${CMAKE_CURRENT_SOURCE_DIR}/repo/include
+        PRIVATE
+            ${OT_PUBLIC_INCLUDES}
+            $<TARGET_PROPERTY:ot-config,INTERFACE_INCLUDE_DIRECTORIES>
+    )
+else()
+    target_include_directories(ti-mbedx509
+        PUBLIC
+            ${CMAKE_CURRENT_BINARY_DIR}
+            ${CMAKE_CURRENT_SOURCE_DIR}
+            ${CMAKE_CURRENT_SOURCE_DIR}/alt
+            ${CMAKE_CURRENT_SOURCE_DIR}/repo/include
+        PRIVATE
+            ${OT_PUBLIC_INCLUDES}
+            $<TARGET_PROPERTY:ot-config,INTERFACE_INCLUDE_DIRECTORIES>
+    )
+endif()
 
 target_compile_definitions(ti-mbedcrypto
     PUBLIC
@@ -133,13 +190,27 @@ target_compile_definitions(ti-mbedcrypto
     PRIVATE
         $<TARGET_PROPERTY:ot-config,INTERFACE_COMPILE_DEFINITIONS>
 )
-target_include_directories(ti-mbedcrypto
-    PUBLIC
-        ${CMAKE_CURRENT_BINARY_DIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}/alt
-        ${CMAKE_CURRENT_SOURCE_DIR}/repo/include
-    PRIVATE
-        ${OT_PUBLIC_INCLUDES}
-        $<TARGET_PROPERTY:ot-config,INTERFACE_INCLUDE_DIRECTORIES>
-)
+
+if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR  ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2745*")
+    target_include_directories(ti-mbedcrypto
+        PUBLIC
+            ${CMAKE_CURRENT_BINARY_DIR}
+            ${CMAKE_CURRENT_SOURCE_DIR}
+            ${CMAKE_CURRENT_SOURCE_DIR}/alt/cc23xx_cc27xx
+            ${CMAKE_CURRENT_SOURCE_DIR}/repo/include
+        PRIVATE
+            ${OT_PUBLIC_INCLUDES}
+            $<TARGET_PROPERTY:ot-config,INTERFACE_INCLUDE_DIRECTORIES>
+    )
+else()
+    target_include_directories(ti-mbedcrypto
+        PUBLIC
+            ${CMAKE_CURRENT_BINARY_DIR}
+            ${CMAKE_CURRENT_SOURCE_DIR}
+            ${CMAKE_CURRENT_SOURCE_DIR}/alt
+            ${CMAKE_CURRENT_SOURCE_DIR}/repo/include
+        PRIVATE
+            ${OT_PUBLIC_INCLUDES}
+            $<TARGET_PROPERTY:ot-config,INTERFACE_INCLUDE_DIRECTORIES>
+    )
+endif()
