@@ -138,6 +138,7 @@ set(PLATFORM_SRCS
     system.h
     uart.c
     diag.c
+    infra_if.c
 )
 
 if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*")

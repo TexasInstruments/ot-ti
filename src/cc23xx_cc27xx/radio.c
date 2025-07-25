@@ -567,6 +567,8 @@ static void handleRxDataFinish(otInstance *aInstance, unsigned int aEvents, RCL_
 {
     otError      error;
     otRadioFrame receiveFrame = {0};
+    uint8_t      rx_sequence;
+    uint8_t      tx_sequence;
 
     error = populateReceiveFrame(&receiveFrame, currEntry);
     if (OT_ERROR_NONE != error)
@@ -583,11 +585,12 @@ static void handleRxDataFinish(otInstance *aInstance, unsigned int aEvents, RCL_
     {
         Log_printf(LogModule_Thread, Log_VERBOSE,
                    "populateReceiveFrame: ACK received State: %d Sequence Number Exp: %d Actual Seq Number: %d", sState,
-                   otMacFrameGetSequence(&receiveFrame), otMacFrameGetSequence(&sTransmitFrame));
+                   otMacFrameGetSequence(&receiveFrame, &rx_sequence), otMacFrameGetSequence(&sTransmitFrame, &tx_sequence));
 
+        otMacFrameGetSequence(&receiveFrame, &rx_sequence);
+        otMacFrameGetSequence(&sTransmitFrame, &tx_sequence);
         if (((platformRadio_phyState_TransmitStandalone == sState) || (platformRadio_phyState_Transmit == sState)) &&
-            otMacFrameIsAckRequested(&sTransmitFrame) &&
-            otMacFrameGetSequence(&receiveFrame) == otMacFrameGetSequence(&sTransmitFrame))
+            otMacFrameIsAckRequested(&sTransmitFrame) && (rx_sequence == tx_sequence))
         {
             /*  No previous Rx was running */
             if (platformRadio_phyState_TransmitStandalone == sState)

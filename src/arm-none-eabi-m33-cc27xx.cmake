@@ -1,5 +1,5 @@
 #
-#  Copyright (c) 2019, The OpenThread Authors.
+#  Copyright (c) 2020, The OpenThread Authors.
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -26,9 +26,18 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 #
 
-if(OT_APP_CLI)
-    add_subdirectory(cli)
-endif()
+set(CMAKE_SYSTEM_NAME              Generic)
+set(CMAKE_SYSTEM_PROCESSOR         ARM)
 
-add_subdirectory(ncp)
-add_subdirectory(rcp)
+set(CMAKE_C_COMPILER               arm-none-eabi-gcc)
+set(CMAKE_CXX_COMPILER             arm-none-eabi-g++)
+set(CMAKE_ASM_COMPILER             arm-none-eabi-as)
+set(CMAKE_RANLIB                   arm-none-eabi-ranlib)
+
+set(COMMON_C_FLAGS                 "-mcpu=cortex-m33 -mfloat-abi=hard -mfpu=fpv5-sp-d16 -mabi=aapcs -mthumb -Os -fdata-sections -ffunction-sections -g -gdwarf-3 -gstrict-dwarf")
+
+#set(CMAKE_C_FLAGS_INIT             "${COMMON_C_FLAGS} -std=gnu99")
+set(CMAKE_C_FLAGS_INIT             "${COMMON_C_FLAGS} -std=c99")
+set(CMAKE_CXX_FLAGS_INIT           "${COMMON_C_FLAGS} -std=c++11 -fno-exceptions -fno-rtti")
+set(CMAKE_ASM_FLAGS_INIT           "${COMMON_C_FLAGS}")
+set(CMAKE_EXE_LINKER_FLAGS_INIT    "${COMMON_C_FLAGS} -nostartfiles -specs=nano.specs -specs=nosys.specs")

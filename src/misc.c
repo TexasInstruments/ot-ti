@@ -162,7 +162,7 @@ otError otPlatResetToBootloader(otInstance *aInstance)
     (void)aInstance;
 
     // Reset the system
-    SysCtrlSystemReset();
+    otPlatReset(aInstance);
 
     return OT_ERROR_NONE;
 }

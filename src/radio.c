@@ -261,10 +261,10 @@ static uint16_t getCslPhase(otRadioFrame *aFrame)
     {
         frameTime = aFrame->mInfo.mTxInfo.mTxDelayBaseTime + aFrame->mInfo.mTxInfo.mTxDelay;
     }
-    cslPeriodInUs = sCslPeriod * OT_US_PER_TEN_SYMBOLS;
+    cslPeriodInUs = sCslPeriod;
     delta = ((sCslSampleTime % cslPeriodInUs) - (frameTime % cslPeriodInUs) + cslPeriodInUs) % cslPeriodInUs;
 
-    return (uint16_t)(delta / OT_US_PER_TEN_SYMBOLS);
+    return (uint16_t)(delta);
 }
 #endif /* OPENTHREAD_CONFIG_MAC_CSL_RECEIVER_ENABLE */
 

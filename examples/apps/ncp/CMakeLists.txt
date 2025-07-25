@@ -26,9 +26,29 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 #
 
-if(OT_APP_CLI)
-    add_subdirectory(cli)
-endif()
+set(COMMON_INCLUDES
+    ${OT_PUBLIC_INCLUDES}
+    ${PROJECT_SOURCE_DIR}/openthread/examples/platforms
+    ${PROJECT_SOURCE_DIR}/openthread/src/core
+)
 
-add_subdirectory(ncp)
-add_subdirectory(rcp)
+set(COMMON_SOURCES
+    main.c
+    ncp.c
+)
+
+if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
+    list(APPEND COMMON_SOURCES freertos_main.c)
+
+
+else()
+    message(FATAL_ERROR "Unsuported TI_SIMPLELINK_KERNEL: ${TI_SIMPLELINK_KERNEL}")
+endif()
+if((OT_APP_NCP) AND (NOT TI_SIMPLELINK_DEVICE STREQUAL "cc13x2_cc26x2"))
+    if(OT_FTD)
+        include(ftd.cmake)
+    endif()
+    if(OT_MTD)
+        include(mtd.cmake)
+    endif()
+endif()

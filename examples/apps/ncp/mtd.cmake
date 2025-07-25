@@ -1,5 +1,5 @@
 #
-#  Copyright (c) 2019, The OpenThread Authors.
+#  Copyright (c) 2020, The OpenThread Authors.
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -26,9 +26,31 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 #
 
-if(OT_APP_CLI)
-    add_subdirectory(cli)
+add_executable(ot-ncp-mtd
+    ${COMMON_SOURCES}
+)
+
+target_include_directories(ot-ncp-mtd PRIVATE ${COMMON_INCLUDES})
+
+if(NOT DEFINED OT_PLATFORM_LIB_MTD)
+    set(OT_PLATFORM_LIB_MTD ${OT_PLATFORM_LIB})
 endif()
 
-add_subdirectory(ncp)
-add_subdirectory(rcp)
+target_link_libraries(ot-ncp-mtd PRIVATE
+    openthread-ncp-mtd
+    ${OT_PLATFORM_LIB_MTD}
+    openthread-mtd
+    ${OT_PLATFORM_LIB_MTD}
+    openthread-ncp-mtd
+    ${OT_MBEDTLS}
+    ot-config-mtd
+    ot-config
+)
+
+install(TARGETS ot-ncp-mtd
+    DESTINATION bin
+)
+set_target_properties(ot-ncp-mtd
+    PROPERTIES
+        SUFFIX .out
+)
