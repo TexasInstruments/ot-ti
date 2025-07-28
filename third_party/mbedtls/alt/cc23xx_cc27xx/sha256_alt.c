@@ -36,12 +36,12 @@
 #include <string.h>
 
 #include <ti/drivers/SHA2.h>
-#include <ti/drivers/sha2/SHA2LPF3HSM.h>
+#include <ti/drivers/sha2/SHA2XXF3HSM.h>
 
 /*!
  *  @brief Hardware-specific configuration attributes
  */
-const SHA2LPF3HSM_HWAttrs SHA2LPF3HSM_hwAttrs_sha = {
+const SHA2XXF3HSM_HWAttrs SHA2XXF3HSM_hwAttrs_sha = {
     0,
 };
 
@@ -97,7 +97,7 @@ int mbedtls_sha256_starts_ret(mbedtls_sha256_context *ctx, int is224)
         sha2Params.returnBehavior = SHA2_RETURN_BEHAVIOR_POLLING;
 
         ctx->config.object  = &ctx->object;
-        ctx->config.hwAttrs = &SHA2LPF3HSM_hwAttrs_sha;
+        ctx->config.hwAttrs = &SHA2XXF3HSM_hwAttrs_sha;
 
         ctx->hndl = SHA2_construct(&ctx->config, &sha2Params);
 
@@ -141,7 +141,7 @@ void mbedtls_sha256_clone(mbedtls_sha256_context *dst, const mbedtls_sha256_cont
     sha2Params.returnBehavior = SHA2_RETURN_BEHAVIOR_POLLING;
 
     ctx->config.object  = &ctx->object;
-    ctx->config.hwAttrs = &SHA2LPF3HSM_hwAttrs_sha;
+    ctx->config.hwAttrs = &SHA2XXF3HSM_hwAttrs_sha;
 
     ctx->hndl = SHA2_construct(&ctx->config, &sha2Params);
     /*clone */

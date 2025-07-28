@@ -126,17 +126,17 @@ NVSDGB.$name = "CONFIG_NVS_DBG_INTERNAL";
 /* place at the end of Flash */
 if(deviceId.match(/CC((13|26).2(R|RB|P)7)/))
 {
-    NVS1.internalFlash.regionBase = 0xAD800;
+    NVS1.internalFlash.regionBase = 0xAA000;
     NVS1.internalFlash.regionSize = 0x4000;
-    NVSDGB.internalFlash.regionBase = 0xA9800;
-    NVSDGB.internalFlash.regionSize = 0x800;   
+    NVSDGB.internalFlash.regionBase = 0xA8000;
+    NVSDGB.internalFlash.regionSize = 0x2000;
 }
 else if(deviceId.match(/CC((13|26).2(R|RB|P)1)/))
 {
-    NVS1.internalFlash.regionBase = 0x55800;
+    NVS1.internalFlash.regionBase = 0x52000;
     NVS1.internalFlash.regionSize = 0x4000;
-    NVSDGB.internalFlash.regionBase = 0x51800;
-    NVSDGB.internalFlash.regionSize = 0x800;
+    NVSDGB.internalFlash.regionBase = 0x50000;
+    NVSDGB.internalFlash.regionSize = 0x2000;
 }
 else if(deviceId.match(/CC((13|26).4P10)/))
 {

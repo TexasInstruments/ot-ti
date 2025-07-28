@@ -1,10 +1,9 @@
-# TI-OpenThread Release Notes
-
 ## Introduction
 
 This Texas Instruments OpenThread GitHub repository contains the software development tools that enable engineers to develop Thread Device and is the starting point for Thread development on all SimpleLink™ Thread devices.
 
 - Thread 1.3 networking stack based on [OpenThread](https://github.com/TexasInstruments/ot-ti)
+
 
 ## What's New
 <!-- new features labelled with thread_nf_cc13xx_cc26xx_gh_1_00_00) -->

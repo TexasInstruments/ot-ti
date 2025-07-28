@@ -106,7 +106,7 @@ if(deviceId.match(/CC(23.*)/))
     NVS1.internalFlash.regionBase = 0x10000;
     NVS1.internalFlash.regionSize = 0x4000;
 }
-else if(deviceId.match(/CC(274.*)/))
+else if(deviceId.match(/CC(27.*)/))
 {
     NVS1.internalFlash.regionBase = 0x7C000;
     NVS1.internalFlash.regionSize = 0x4000;
@@ -209,7 +209,7 @@ if (enableLogSinkBuf)
     {
         LogSinkBuf1.numEntries = 50;
     }
-    else if(deviceId.match(/CC(274.*)/))
+    else if(deviceId.match(/CC(27.*)/))
     {
         LogSinkBuf1.numEntries = 1700;
     }
@@ -228,7 +228,7 @@ if (enableLogSinkBuf)
 }
 
 /* Thread Stack logs directly to secondary UART */
-if ((deviceId.match(/CC(274.*)/)) && (enableThreadSecondaryDebugUART))
+if ((deviceId.match(/CC(27.*)/)) && (enableThreadSecondaryDebugUART))
 {
     var UART22      = UART2.addInstance();
 
@@ -291,18 +291,19 @@ if (enableLogSinkTracer)
 }
 
 /* coex support */
-RCL.signals                    = ["GRANT","PBEGPO0","PBEGPO1"];
+RCL.signals                    = ["COEX_GRANT","PBEGPO0","PBEGPO1"];
 RCL.lrfGpio.$assign            = "LRF";
+RCL.coexEnabled = false;
 
 if (board.match(/CC2340R53/) || board.match(/CC2340R5/) || board.match(/CC2340R22/))
 {
     RCL.lrfGpio.pbegpo0Pin.$assign = "boosterpack.25";
     RCL.lrfGpio.pbegpo1Pin.$assign = "boosterpack.27";
-    RCL.lrfGpio.grantPin.$assign   = "boosterpack.28";
+    RCL.lrfGpio.coex_grantPin.$assign   = "boosterpack.28";
 }
 else if (board.match(/CC27/))
 {
     RCL.lrfGpio.pbegpo0Pin.$assign = "boosterpack.2";
     RCL.lrfGpio.pbegpo1Pin.$assign = "boosterpack.6";
-    RCL.lrfGpio.grantPin.$assign   = "boosterpack.9";
+    RCL.lrfGpio.coex_grantPin.$assign   = "boosterpack.9";
 }

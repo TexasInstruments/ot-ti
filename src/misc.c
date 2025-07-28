@@ -37,7 +37,7 @@
 
 // clang-format off
 #include <ti/devices/DeviceFamily.h>
-#if !defined(DeviceFamily_CC23X0R5) && !defined (DeviceFamily_CC27XX)
+#if !defined(DeviceFamily_CC23X0R5) && !defined (DeviceFamily_CC27XXX10)
 #include DeviceFamily_constructPath(driverlib/sys_ctrl.h)
 #include DeviceFamily_constructPath(driverlib/flash.h)
 #else
@@ -59,7 +59,7 @@ void *nvsDataWrite(uint32_t* CoreDumpData, size_t core_dump_size);
 #endif
 void *nvsDataDump(void);
 
-#if !defined(DeviceFamily_CC23X0R5) && !defined (DeviceFamily_CC27XX)
+#if !defined(DeviceFamily_CC23X0R5) && !defined (DeviceFamily_CC27XXX10)
 
 void otPlatReset(otInstance *aInstance)
 {

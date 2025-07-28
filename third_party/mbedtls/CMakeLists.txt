@@ -49,7 +49,7 @@ if(TI_SIMPLELINK_ISA STREQUAL "m4f")
 endif()
 
 
-if(TI_SIMPLELINK_BOARD MATCHES "LP_EM_CC2745*")
+if(TI_SIMPLELINK_BOARD MATCHES "LP_EM_CC2755*")
     add_library(ti-mbedtls-hardware-alt
         alt/cc23xx_cc27xx/ecdsa_alt.c
         alt/cc23xx_cc27xx/sha256_alt.c
@@ -81,7 +81,7 @@ target_compile_definitions(ti-mbedtls-hardware-alt
 
 target_include_directories(ti-mbedtls-hardware-alt
     PRIVATE
-        ${OT_PLATFORM_INCLUDES}
+        ${TI_PLATFORM_INCLUDES}
         ${OT_PUBLIC_INCLUDES}
 )
 
@@ -97,7 +97,7 @@ target_compile_definitions(ti-mbedtls-hardware-alt
 )
 
 
-if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR  ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2745*")
+if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR  ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2755*")
 target_include_directories(ti-mbedtls-hardware-alt
     PUBLIC
         ${CMAKE_CURRENT_BINARY_DIR}
@@ -127,7 +127,7 @@ target_compile_definitions(ti-mbedtls
         $<TARGET_PROPERTY:ot-config,INTERFACE_COMPILE_DEFINITIONS>
 )
 
-if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR  ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2745*")
+if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR  ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2755*")
 target_include_directories(ti-mbedtls
     PUBLIC
         ${CMAKE_CURRENT_BINARY_DIR}
@@ -160,7 +160,7 @@ target_compile_definitions(ti-mbedx509
 )
 
 
-if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR  ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2745*")
+if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR  ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2755*")
     target_include_directories(ti-mbedx509
         PUBLIC
             ${CMAKE_CURRENT_BINARY_DIR}
@@ -191,7 +191,7 @@ target_compile_definitions(ti-mbedcrypto
         $<TARGET_PROPERTY:ot-config,INTERFACE_COMPILE_DEFINITIONS>
 )
 
-if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR  ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2745*")
+if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR  ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2755*")
     target_include_directories(ti-mbedcrypto
         PUBLIC
             ${CMAKE_CURRENT_BINARY_DIR}
@@ -214,3 +214,8 @@ else()
             $<TARGET_PROPERTY:ot-config,INTERFACE_INCLUDE_DIRECTORIES>
     )
 endif()
+
+
+#add_dependencies(ti-mbedtls-hardware-alt build_syscfg)
+#add_dependencies(ble-stack-lib freertos)
+#add_dependencies(ble-stack-lib cc13xx-cc26xx-sdk)

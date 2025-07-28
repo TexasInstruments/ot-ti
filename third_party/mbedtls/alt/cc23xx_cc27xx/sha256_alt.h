@@ -41,7 +41,7 @@ extern "C" {
 #endif
 
 #include <ti/drivers/SHA2.h>
-#include <ti/drivers/sha2/SHA2LPF3HSM.h>
+#include <ti/drivers/sha2/SHA2XXF3HSM.h>
 /**
  * \brief          SHA-256 context structure
  */
@@ -49,7 +49,7 @@ typedef struct
 {
     SHA2_Handle       hndl;   /*!< A handle that is returned by the SHA driver  */
     SHA2_Config       config; /*!< structure containing SHA2 driver specific implementation  */
-    SHA2LPF3HSM_Object object; /*!< Pointer to a driver specific data object */
+    SHA2XXF3HSM_Object object; /*!< Pointer to a driver specific data object */
 } mbedtls_sha256_context;
 
 #ifdef __cplusplus

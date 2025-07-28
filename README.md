@@ -13,21 +13,20 @@ built with FreeRTOS to enable an environment for the standard device drivers to 
 
 The following is the currently supported Thread roles for compatible TI devices. This list may be updated as the Thread stack is updated or new devices are added.
 
-| Device                   | RCP | MTD | FTD |
-| ------------------------ | --- | --- | --- |
-| [CC2340R5][cc2340r5]     | x   |     |     |
-| [CC2652R][cc2652r]       | x   |     |     |
-| [CC2652RB][cc2652rb]     | x   |     |     |
-| [CC2652P][cc2652p]       | x   |     |     |
-| [CC2652RSIP][cc2652rsip] | x   |     |     |
-| [CC2652PSIP][cc2652psip] | x   |     |     |
-| [CC2652R7][cc2652r7]     | x   | x   | x   |
-| [CC2652P7][cc2652p7]     | x   | x   | x   |
-| [CC2674R10][cc2674r10]   | x   | x   | x   |
-| [CC2674P10][cc2674p10]   | x   | x   | x   |
-| [CC2340R53 ][cc2340r53]  | x   | x   | x   |
-| [CC2755R10 ][cc2755r10]  | x   | x   | x   |
-
+| Device                   | RCP | MTD | FTD | RCP-Controller |
+| ------------------------ | --- | --- | --- | -------------- |
+| [CC2340R5][cc2340r5]     | x   |     |     |                |
+| [CC2652R][cc2652r]       | x   |     |     |                |
+| [CC2652RB][cc2652rb]     | x   |     |     |                |
+| [CC2652P][cc2652p]       | x   |     |     |                |
+| [CC2652RSIP][cc2652rsip] | x   |     |     |                |
+| [CC2652PSIP][cc2652psip] | x   |     |     |                |
+| [CC2652R7][cc2652r7]     | x   | x   | x   |                |
+| [CC2652P7][cc2652p7]     | x   | x   | x   |                |
+| [CC2674R10][cc2674r10]   | x   | x   | x   | x              |
+| [CC2674P10][cc2674p10]   | x   | x   | x   | x              |
+| [CC2340R53 ][cc2340r53]  | x   | x   | x   |                |
+| [CC2755R10 ][cc2755r10]  | x   | x   | x   | x              |
 
 [cc2652r]: https://www.ti.com/product/CC2652R
 [cc2652rb]: https://www.ti.com/product/CC2652RB
@@ -79,16 +78,17 @@ $ ./script/bootstrap
 
 ## Building
 
-In a Bash terminal, follow these instructions to build the cc13xx_cc26xx examples. The `<simplelink_board>` is a
+In a Bash terminal, follow these instructions to build the cc13xx_cc26xx/cc23xx_27xx examples. The `<simplelink_board>` is a
 reference development kit available on ti.com.
 
 ```bash
 $ cd <path-to-ot-ti>
 $ ./script/build <simplelink_board>
+OR to build the RCP+Controller application for supported platforms:
+$ ./script/build <simplelink_board> -DOT_APP_RCP_BLE_CONTROLLER=1
 ```
 
 \***\*Attention:\*\*** The above statement is only true when you have already run the bootstrap script.
-
 ## Flash Binaries
 
 If the build completed successfully, the `elf` files may be found in `<path-to-ot-ti>/build/bin/`. These files do not

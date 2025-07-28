@@ -34,7 +34,7 @@ set(CMAKE_CXX_COMPILER             arm-none-eabi-g++)
 set(CMAKE_ASM_COMPILER             arm-none-eabi-as)
 set(CMAKE_RANLIB                   arm-none-eabi-ranlib)
 
-set(COMMON_C_FLAGS                 "-mcpu=cortex-m0plus -march=armv6-m -mthumb -mfloat-abi=soft -Os -fdata-sections -ffunction-sections -g -gdwarf-3 -gstrict-dwarf")
+set(COMMON_C_FLAGS                 "-mcpu=cortex-m0plus -march=armv6-m -mthumb -mfloat-abi=soft -Os -fdata-sections -ffunction-sections -g -gdwarf-3 -gstrict-dwarf -fno-lto")
 
 set(CMAKE_C_FLAGS_INIT             "${COMMON_C_FLAGS} -std=c99")
 set(CMAKE_CXX_FLAGS_INIT           "${COMMON_C_FLAGS} -std=c++17 -fno-exceptions -fno-rtti")

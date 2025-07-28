@@ -29,6 +29,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include <utils/code_utils.h>
 #include <utils/link_metrics.h>
@@ -59,7 +60,14 @@
 #ifdef ti_log_Log_ENABLE
 #include "ti_log_config.h"
 #endif
-
+#include <rcl_stub_dmm.h>
+#ifdef USE_DMM
+#include <dmm_scheduler.h>
+#include <dmm_policy.h>
+#include <ti_dmm_application_policy.h>
+#include <dmm_thread_activity.h>
+#endif
+#include <ti/drivers/dpl/ClockP.h>
 /* General Definitions */
 #define PLATFORM_RADIO_RECEIVER_SENSITIVITY_DBM -90 /* dBm */
 
@@ -109,6 +117,8 @@
 #define convertMsToUs(ms) (1000 * ms)
 #define NO_RADIO_EVTS (0U)
 
+#define IEEE_NUM_SYMBOLS_PER_BACKOFF (20)
+#define IEEE_SYMBOL_TIME (16)
 /* Structures start */
 struct rfPktAdditionalInfo
 {
@@ -226,6 +236,8 @@ static otRadioCoexMetrics gCoexMetrics;
 
 
 bool rclRxActive = false;
+
+static ClockP_Handle rxBackoffClockHandle;
 /* Globals End */
 /* Function Prototypes */
 static void              rclRxTxCallback(RCL_Command *cmd, LRF_Events lrfEvents, RCL_Events rclEvents);
@@ -234,7 +246,8 @@ static RCL_CommandStatus rclSendReceiveCmd(otInstance *aInstance,
                                     uint32_t    aStart,
                                     uint32_t    aDuration,
                                     uint8_t     edScanReq,
-                                    uint8_t absStartReq);
+                                    uint8_t absStartReq,
+                                    uint32_t activityOverride);
 
 static RCL_CommandStatus rclSendTransmitCmd(otInstance *aInstance, otRadioFrame *aFrame, uint8_t endRxWhenDone, uint8_t absStartReq);
 #if OPENTHREAD_CONFIG_DIAG_ENABLE
@@ -256,7 +269,9 @@ static uint32_t normalizeUsTimestamp(uint64_t timestamp);
 static void    rclToggleReceiveCmd(otInstance *aInstance);
 static uint8_t rclFindShortSrcMatchIdx(uint16_t shortAddr);
 static uint8_t rclFindEmptyShortSrcMatchIdx(void);
-
+void startTimerForRxBackoff(void);
+static void rxBackoffTimerCallback(uintptr_t arg);
+extern uint32_t microToTicks(uint32_t micro);
 /* Function Prototypes End */
 
 /* Stop Combined or Standalone Tx command on radio */
@@ -266,12 +281,12 @@ void rclStopTransmitCmd(void)
     if (sTxState == platformRadio_txState_StandaloneActive)
     {
         /* Case 1 - Transmit was running without receive command */
-        RCL_Command_stop(&ieeeTxCmd, RCL_StopType_Hard);
+        OVRDE_RCL_Command_stop(&ieeeTxCmd, RCL_StopType_Hard);
     }
     else if (sTxState == platformRadio_txState_CombinedActive)
     {
         /* Case 2 - Transmit was running with receive command */
-        RCL_IEEE_Tx_stop(&ieeeRxTxCmd, RCL_StopType_Hard);
+        OVRDE_RCL_IEEE_Tx_stop(&ieeeRxTxCmd, RCL_StopType_Hard);
     }
 }
 /* Stop Rx command on radio */
@@ -279,7 +294,7 @@ void rclStopReceiveCmd(void)
 {
     Log_printf(LogModule_Thread, Log_WARNING, "Warning, Calling Rx Stop");
 
-    RCL_Command_stop(&ieeeRxTxCmd, RCL_StopType_Graceful);
+    OVRDE_RCL_Command_stop(&ieeeRxTxCmd, RCL_StopType_Graceful);
 }
 
 /**
@@ -310,6 +325,7 @@ static void radioSignal(unsigned int evts)
 void rclRxTxCallback(RCL_Command *cmd, LRF_Events lrfEvents, RCL_Events rclEvents)
 {
     unsigned int evts = NO_RADIO_EVTS;
+    uint8_t txDone = false;
 
     Log_printf(LogModule_Thread, Log_VERBOSE, "RF Callback: Callback entry point for command: %d", cmd->cmdId);
 
@@ -318,11 +334,16 @@ void rclRxTxCallback(RCL_Command *cmd, LRF_Events lrfEvents, RCL_Events rclEvent
         /* Tx handling */
         if ((((RCL_CmdIeeeRxTx *)cmd)->txAction != NULL) && ((RCL_CmdIeeeRxTx *)cmd)->txAction->txEntry != NULL)
         {
-            uint8_t txDone = false;
             Log_printf(LogModule_Thread, Log_VERBOSE, "RF Callback: Tx Action Status %d RCL Events: %d LRF Events: %d",
-                       txAction.txStatus, rclEvents.value, lrfEvents.value);
+                txAction.txStatus, rclEvents.value, lrfEvents.value);
 
-            if ((rclEvents.cmdStepDone) && (((RCL_CmdIeeeRxTx *)cmd)->txAction->txStatus == RCL_CommandStatus_Finished))
+            if (((RCL_CmdIeeeRxTx *)cmd)->common.status == RCL_CommandStatus_HardStopScheduling)
+            {
+                sTransmitError = OT_ERROR_CHANNEL_ACCESS_FAILURE;
+                txDone         = true;
+            }
+
+            else if ((rclEvents.cmdStepDone) && (((RCL_CmdIeeeRxTx *)cmd)->txAction->txStatus == RCL_CommandStatus_Finished))
             {
                 sTransmitError = OT_ERROR_NONE;
                 txDone         = true;
@@ -354,10 +375,12 @@ void rclRxTxCallback(RCL_Command *cmd, LRF_Events lrfEvents, RCL_Events rclEvent
                 sTransmitError = OT_ERROR_NO_ACK;
                 txDone         = true;
             }
-            else if (RCL_CommandStatus_isAnyStop(((RCL_CmdIeeeRxTx *)cmd)->txAction->txStatus))
+            else if (RCL_CommandStatus_isAnyStop(((RCL_CmdIeeeRxTx *)cmd)->txAction->txStatus) ||
+                ((((RCL_CmdIeeeRxTx *)cmd)->common.status >= RCL_CommandStatus_Error) &&
+                (((RCL_CmdIeeeRxTx *)cmd)->common.status <= RCL_CommandStatus_Error_UnknownOp)))
             {
                 /* Tx command aborted, general failure of the command string, notify processing loop.*/
-                sTransmitError = OT_ERROR_ABORT;
+                sTransmitError = OT_ERROR_CHANNEL_ACCESS_FAILURE;
                 txDone         = true;
             }
             else
@@ -370,7 +393,17 @@ void rclRxTxCallback(RCL_Command *cmd, LRF_Events lrfEvents, RCL_Events rclEvent
 
             if (txDone)
             {
-                sTxState = platformRadio_txState_Inactive;
+#ifdef USE_DMM
+                bool resetTxTracking = false;
+                (sTransmitError == OT_ERROR_NONE) ? (resetTxTracking = true) : (resetTxTracking = false);
+                dmmSetActivityTrackingTx(resetTxTracking);
+
+                if (((RCL_CmdIeeeRxTx *)cmd)->rxAction != NULL)
+                {
+                    // Reset Rx priority if combined was active as this may have been temporarily adjusted during a combined Tx
+                    ((RCL_CmdIeeeRxTx *)cmd)->common.runtime.activityInfo = dmmGetActivityPriorityRx();
+                }
+#endif
                 evts |= RF_EVENT_TX_DONE;
             }
         }
@@ -381,6 +414,8 @@ void rclRxTxCallback(RCL_Command *cmd, LRF_Events lrfEvents, RCL_Events rclEvent
         /* Rx handling */
         if (((RCL_CmdIeeeRxTx *)cmd)->rxAction != NULL)
         {
+            bool resetRxTracking = false;
+
             if (lrfEvents.txAck)
             {
                 Log_printf(LogModule_Thread, Log_VERBOSE, "Packet Rx, Ack Tx Success");
@@ -412,17 +447,29 @@ void rclRxTxCallback(RCL_Command *cmd, LRF_Events lrfEvents, RCL_Events rclEvent
 
                     evts |= RF_EVENT_ED_SCAN_DONE;
                 }
-                evts |= RF_EVENT_RX_CMD_STOP;
+
+                if (((RCL_CmdIeeeRxTx *)cmd)->common.status == RCL_CommandStatus_HardStopScheduling)
+                {
+                    startTimerForRxBackoff();
+                }
+                else
+                {
+                    resetRxTracking = true;
+                    evts |= RF_EVENT_RX_CMD_STOP;
+                }
             }
             /* General Error occurred for Rx */
-            if (((RCL_CmdIeeeRxTx *)cmd)->common.status >= RCL_CommandStatus_Error)
+            else if (((RCL_CmdIeeeRxTx *)cmd)->common.status >= RCL_CommandStatus_Error)
             {
                 rclRxActive = false;
-                evts |= RF_EVENT_RX_CMD_ERROR;
+                evts |= RF_EVENT_RX_CMD_STOP;
             }
+
+#ifdef USE_DMM
+                dmmSetActivityTrackingRx(resetRxTracking);
+#endif
         }
     }
-
     /* tell radio processing loop what happened */
     radioSignal(evts);
 }
@@ -557,8 +604,19 @@ static otError populateReceiveFrame(otRadioFrame *aFrame, RCL_Buffer_DataEntry *
  */
 void clearTransmitState(void)
 {
-    txAction.txEntry     = NULL;
-    ieeeRxTxCmd.txAction = NULL;
+    sTxState = platformRadio_txState_Inactive;
+
+    if (ieeeRxTxCmd.common.status != RCL_CommandStatus_Active)
+    {
+        ieeeRxTxCmd.txAction = NULL;
+
+    }
+
+    if (ieeeTxCmd.common.status != RCL_CommandStatus_Active)
+    {
+        txAction.txEntry     = NULL;
+    }
+
 }
 /**
  * An RX queue entry is in the finished state, process it.
@@ -602,6 +660,12 @@ static void handleRxDataFinish(otInstance *aInstance, unsigned int aEvents, RCL_
                 sState = platformRadio_phyState_Receive;
             }
 
+#ifdef USE_DMM
+            if (receiveFrame.mPsdu[0] & IEEE802154_FRAME_PENDING)
+            {
+                dmmSetThreadActivityRx(aInstance, true);
+            }
+#endif
             platformRadioProcessTransmitDone(aInstance, &sTransmitFrame, &receiveFrame, error);
         }
         return;
@@ -681,7 +745,6 @@ void rclInitCmdParams(void)
     ieeeRxTxCmd.common.runtime.rclCallbackMask.value = RCL_EventLastCmdDone.value | RCL_EventRxEntryAvail.value |
                                                        RCL_EventCmdStarted.value | RCL_EventTxBufferFinished.value |
                                                        RCL_EventCmdStepDone.value | RCL_EventGracefulStop.value | RCL_EventHardStop.value;
-;
 
     ieeeRxTxCmd.common.runtime.lrfCallbackMask.value =
         LRF_EventRxBufFull.value | LRF_EventTxDone.value | LRF_EventTxAck.value;
@@ -717,6 +780,21 @@ void platformRadioInit(void)
 
     sState = platformRadio_phyState_Disabled;
 
+#ifdef USE_DMM
+    // Initialize the RX backoff timer
+    ClockP_Params clockParams;
+    ClockP_Params_init(&clockParams);
+    clockParams.period = 0; // One-shot timer
+    clockParams.startFlag = false; // Do not start immediately
+    clockParams.arg = 0; // No argument for the callback
+
+    rxBackoffClockHandle = ClockP_create(rxBackoffTimerCallback, 0, &clockParams);
+    if (rxBackoffClockHandle == NULL)
+    {
+        Log_printf(LogModule_Thread, Log_ERROR, "Failed to create RX backoff timer");
+    }
+#endif
+
     Log_printf(LogModule_Thread, Log_VERBOSE, "platformRadioInit complete");
 }
 
@@ -734,14 +812,18 @@ otError otPlatRadioEnable(otInstance *aInstance)
     }
     else if (sState == platformRadio_phyState_Disabled)
     {
-        RCL_init();
+        OVRDE_RCL_init();
         rclInitCmdParams();
 
-        sRclHandle = RCL_open(&rclClient, &LRF_config_ieee_802_15_4_0);
+        sRclHandle = OVRDE_RCL_open(&rclClient, &LRF_config_ieee_802_15_4_0);
 
         otEXPECT_ACTION(sRclHandle != NULL, error = OT_ERROR_FAILED);
         sState = platformRadio_phyState_Sleep;
 
+#ifdef USE_DMM
+        uint8_t dmmRet = DMMSch_registerClient(sRclHandle, DMMPolicy_StackRole_ThreadFtd, DMMPolicy_Id_Thread);
+        otEXPECT_ACTION(dmmRet != false, error = OT_ERROR_FAILED);
+#endif
         error = OT_ERROR_NONE;
     }
 
@@ -781,10 +863,12 @@ otError otPlatRadioDisable(otInstance *aInstance)
 
         if (ieeeRxTxCmd.common.status > RCL_CommandStatus_Idle)
         {
-            RCL_Command_pend(&ieeeRxTxCmd);
+            OVRDE_RCL_Command_pend(&ieeeRxTxCmd);
         }
-
-        RCL_close(sRclHandle);
+#ifdef USE_DMM
+        DMMSch_deregisterClient(sRclHandle);
+#endif
+        OVRDE_RCL_close(sRclHandle);
         sRclHandle = NULL;
 
         sState = platformRadio_phyState_Disabled;
@@ -879,7 +963,7 @@ otError otPlatRadioEnergyScan(otInstance *aInstance, uint8_t aScanChannel, uint1
         }
     }
     /* rclSendReceiveCmd takes duration and start time in uS */
-    edScanStatus = rclSendReceiveCmd(aInstance, aScanChannel, 0, convertMsToUs(aScanDuration), EDSCAN_REQ, USE_ABS_SCHED_TIMING);
+    edScanStatus = rclSendReceiveCmd(aInstance, aScanChannel, 0, convertMsToUs(aScanDuration), EDSCAN_REQ, USE_ABS_SCHED_TIMING, 0);
     otEXPECT_ACTION((!RCL_CommandStatus_isAnyDescheduled(edScanStatus) && edScanStatus < RCL_CommandStatus_Error),
                     error = OT_ERROR_FAILED);
 
@@ -1026,7 +1110,7 @@ OT_TOOL_WEAK otError otPlatRadioReceiveAt(otInstance *aInstance, uint8_t aChanne
         rclSetTransmitPower(sReqTxPower);
 
         /* Send the command to the radio */
-        rxStatus = rclSendReceiveCmd(aInstance, aChannel, aStart, aDuration, NO_EDSCAN_REQ, USE_REL_SCHED_TIMING);
+        rxStatus = rclSendReceiveCmd(aInstance, aChannel, aStart, aDuration, NO_EDSCAN_REQ, USE_REL_SCHED_TIMING, 0);
 
         /* Update the tracking variables */
         sChannel = aChannel;
@@ -1139,6 +1223,7 @@ void updateIeInfoTxFrame(otInstance *aInstance, otRadioFrame *aFrame)
  * @param [in] aDuration End time of receive
  * @param [in] edScanReq True if performing non-sync based energy scan
  * @param [in] absStartReq True if aStart should be treted as an absolute time
+ * @param [in] activityOverride If non-zero, this value will be used as the activityInfo field for DMM
  * in uS to issue the receive. Otherwise, aStart will be normalized to OtPlatRadioGetNow()
  * and Local radio time.
  *
@@ -1149,12 +1234,25 @@ static RCL_CommandStatus rclSendReceiveCmd(otInstance *aInstance,
                                     uint32_t    aStart,
                                     uint32_t    aDuration,
                                     uint8_t     edScanReq,
-                                    uint8_t absStartReq)
+                                    uint8_t absStartReq,
+                                    uint32_t activityOverride)
 {
+    RCL_CommandStatus rxStatus;
+    uintptr_t key;
+ 
+
     if (!rclRxActive)
     {
-        RCL_CommandStatus rxStatus;
+    key = HwiP_disable();
 
+        if (rxBackoffClockHandle != NULL)
+        {
+            // Stop any existing RX backoff timer
+            ClockP_stop(rxBackoffClockHandle);
+        }
+
+        Log_printf(LogModule_Thread, Log_DEBUG, "rclSendReceiveCmd Incoming status: %d", ieeeRxTxCmd.common.status);
+     
         ieeeRxTxCmd.common.status = RCL_CommandStatus_Idle;
 
         /* True if the exact same Rx command should be re-submitted */
@@ -1225,20 +1323,41 @@ static RCL_CommandStatus rclSendReceiveCmd(otInstance *aInstance,
         ieeeRxTxCmd.stats    = &ieeeRxTxStats;
 
         /* Allow for timing delay and maintian stop time */
-        ieeeRxTxCmd.common.allowDelay = true;
+        ieeeRxTxCmd.common.allowDelay = false;
 
         /* Clear Tx action of any stale Tx state */
         ieeeRxTxCmd.txAction = NULL;
 
-        #if OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE
+#if OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE
         ieeeRxTxCmd.coexControl.priority = RCL_CoexPriority_High;
-        #endif /* OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE */
+#endif /* OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE */
 
-        rxStatus = RCL_Command_submit(sRclHandle, &ieeeRxTxCmd);
+#ifdef USE_DMM
+        dmmSetThreadActivityRx(aInstance, false);
 
-        if (rxStatus < RCL_CommandStatus_Finished)
+        if (activityOverride != 0)
         {
-            rclRxActive = true;
+            ieeeRxTxCmd.common.runtime.activityInfo = activityOverride;
+        }
+        else
+        {
+            ieeeRxTxCmd.common.runtime.activityInfo = dmmGetActivityPriorityRx();
+        }
+
+#endif
+HwiP_restore(key);
+
+        /* Unconditionally set to active, will be resolved in ISR if a run-time issue occurs. */
+        rclRxActive = true;
+
+        rxStatus = OVRDE_RCL_Command_submit(sRclHandle, &ieeeRxTxCmd);
+
+        if ((rxStatus == RCL_CommandStatus_Error_AlreadySubmitted) ||
+            (rxStatus == RCL_CommandStatus_Error_CommandQueueFull) ||
+            (rxStatus == RCL_CommandStatus_Idle))
+        {
+            /* API error occurred, no callback is generated so reset here */
+            rclRxActive = false;
         }
 
         Log_printf(LogModule_Thread, Log_DEBUG, "rclSendReceiveCmd Status: %d Channel: %d EDScanReq: %d", rxStatus,
@@ -1249,10 +1368,9 @@ static RCL_CommandStatus rclSendReceiveCmd(otInstance *aInstance,
         Log_printf(LogModule_Thread, Log_DEBUG, "rclSendReceiveCmd Rx Already active Channel: %d", sChannel);
     }
 
-    #if OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE
+#if OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE
     gCoexMetrics.mNumRxRequest++;
-    #endif /* OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE */
-
+#endif /* OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE */
     return rxStatus;
 }
 
@@ -1274,6 +1392,10 @@ static RCL_CommandStatus rclSendReceiveCmd(otInstance *aInstance,
  */
 static RCL_CommandStatus rclSendTransmitCmd(otInstance *aInstance, otRadioFrame *aFrame, uint8_t endRxWhenDone, uint8_t absStartReq)
 {
+    uintptr_t key;
+ 
+    key = HwiP_disable();
+
     uint8_t *pTxPktBuffer;
     uint8_t  payloadLen = aFrame->mLength - NUM_CRC_BYTES; /* OT MAC Automatically adds 2 byte CRC length */
     /* Frame timing in uS */
@@ -1282,6 +1404,7 @@ static RCL_CommandStatus rclSendTransmitCmd(otInstance *aInstance, otRadioFrame 
     /* True if Tx command requires Rx to be active */
     uint8_t           rxRequired = false;
     RCL_CommandStatus txStatus   = RCL_CommandStatus_Idle;
+    RCL_CommandStatus rxStatus   = RCL_CommandStatus_Idle;
 
     Log_printf(LogModule_Thread, Log_VERBOSE, "rclSendTransmitCmd Incoming sTxState: %d Incoming TxAction Status: %d",
                sTxState, txAction.txStatus);
@@ -1290,11 +1413,11 @@ static RCL_CommandStatus rclSendTransmitCmd(otInstance *aInstance, otRadioFrame 
     ieeeTxCmd.common.status              = RCL_CommandStatus_Idle;
     ieeeTxCmd.common.scheduling          = RCL_Schedule_Now;
     ieeeTxCmd.common.timing.absStartTime = abstimeOffset;
-    ieeeTxCmd.common.allowDelay          = true;
+    ieeeTxCmd.common.allowDelay          = false;
 
     ieeeTxCmd.common.runtime.callback = rclRxTxCallback;
     ieeeTxCmd.common.runtime.rclCallbackMask.value =
-        RCL_EventLastCmdDone.value | RCL_EventTxBufferFinished.value | RCL_EventCmdStepDone.value | RCL_EventGracefulStop.value | RCL_EventHardStop.value;
+        RCL_EventLastCmdDone.value | RCL_EventTxBufferFinished.value | RCL_EventCmdStepDone.value | RCL_EventGracefulStop.value | RCL_EventHardStop.value | RCL_EventCmdStarted.value;
     ieeeTxCmd.common.runtime.lrfCallbackMask.value = LRF_EventTxDone.value;
 
     ieeeTxCmd.stats = &ieeeTxStats;
@@ -1381,6 +1504,11 @@ static RCL_CommandStatus rclSendTransmitCmd(otInstance *aInstance, otRadioFrame 
 
     Log_printf(LogModule_Thread, Log_DEBUG, "rclSendTransmitCmd Timing Start Time: %d Current RCL Time: %d Current Radio Time: %d",
          ieeeTxCmd.common.timing.absStartTime, RCL_Scheduler_getCurrentTime(), otPlatRadioGetNow(NULL));
+
+#ifdef USE_DMM
+            dmmSetThreadActivityTx(aInstance, (aFrame->mPsdu[0] & IEEE802154_FRAME_PENDING));
+            ieeeTxCmd.common.runtime.activityInfo = dmmGetActivityPriorityTx();
+#endif
     /*
      * Kick of Rx if inactive. Required for the following cases:
      * 1. Ack Request
@@ -1388,11 +1516,12 @@ static RCL_CommandStatus rclSendTransmitCmd(otInstance *aInstance, otRadioFrame 
      * 3. Case 1/2 AND Rx stopped due to new timing requirement for Tx action
      */
 
+    HwiP_restore(key);
     if ((rxRequired) && (!rclRxActive))
     {
         /* Receive API input for timing is in uS, convert back temporarily */
-        txStatus = rclSendReceiveCmd(aInstance, aFrame->mChannel, convertRCLTicksToUs(abstimeOffset),
-                                     UINT32_MAX /* No Duration, end when Transmit is complete */, NO_EDSCAN_REQ, USE_ABS_SCHED_TIMING);
+        rxStatus = rclSendReceiveCmd(aInstance, aFrame->mChannel, convertRCLTicksToUs(abstimeOffset),
+                                     UINT32_MAX /* No Duration, end when Transmit is complete */, NO_EDSCAN_REQ, USE_ABS_SCHED_TIMING, ieeeTxCmd.common.runtime.activityInfo);
     }
     else
     {
@@ -1413,34 +1542,33 @@ static RCL_CommandStatus rclSendTransmitCmd(otInstance *aInstance, otRadioFrame 
 
     Log_printf(LogModule_Thread, Log_VERBOSE, "Rx Required: %d Rx Active: %d", rxRequired, rclRxActive);
 
-    #if OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE
+#if OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE
     ieeeRxTxCmd.coexControl.priority = RCL_CoexPriority_High;
     ieeeTxCmd.coexControl.priority = RCL_CoexPriority_High;
     txAction.coexPriority = RCL_CoexPriority_High;
-    #endif /* OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE */
+#endif /* OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE */
 
-    /* Tx status is temporarily holding Rx state and must be IDLE/Active else Tx will fail
-     * in cases where Rx is required.
-     */
-    if (txStatus < RCL_CommandStatus_Finished)
+    /*
+    * Keep Receive active only if already on prior to this call.
+    */
+    txAction.endCmdWhenDone = endRxWhenDone;
+
+    if (rxStatus < RCL_CommandStatus_Finished)
     {
-        /*
-         * Keep Receive active only if already on prior to this call.
-         */
-        txAction.endCmdWhenDone = endRxWhenDone;
-
         if (rclRxActive)
         {
-            /* Submit Tx action on top of existing Rx command */
-            txStatus = RCL_IEEE_Tx_submit(&ieeeRxTxCmd, &txAction);
             sTxState = platformRadio_txState_CombinedActive;
+
+            /* Submit Tx action on top of existing Rx command */
+            txStatus = OVRDE_RCL_IEEE_Tx_submit(&ieeeRxTxCmd, &txAction);
         }
         else
         {
             /* Standalone Tx, no Receive */
             ieeeTxCmd.txAction = &txAction;
-            txStatus           = RCL_Command_submit(sRclHandle, &ieeeTxCmd);
             sTxState           = platformRadio_txState_StandaloneActive;
+
+            txStatus           = OVRDE_RCL_Command_submit(sRclHandle, &ieeeTxCmd);
         }
     }
 
@@ -1450,7 +1578,6 @@ static RCL_CommandStatus rclSendTransmitCmd(otInstance *aInstance, otRadioFrame 
     #if OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE
     gCoexMetrics.mNumTxRequest++;
     #endif /* OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE */
-
     return (txStatus);
 }
 #if OPENTHREAD_CONFIG_DIAG_ENABLE
@@ -1491,7 +1618,7 @@ static RCL_CommandStatus rclSendTxTestCmd(bool aModulated)
         ieeeTxTestCmd.txWord = PLATFORM_RADIO_TX_TEST_UNMODULATED_WORD;
     }
 
-    txTestStatus =  RCL_Command_submit(sRclHandle, &ieeeTxTestCmd);
+    txTestStatus =  OVRDE_RCL_Command_submit(sRclHandle, &ieeeTxTestCmd);
     return txTestStatus;
 }
 #endif
@@ -1647,15 +1774,19 @@ otError otPlatRadioTransmit(otInstance *aInstance, otRadioFrame *aFrame)
             sState = platformRadio_phyState_Transmit;
         }
 
-        /* Run-time failures handled in ISR */
-        otEXPECT_ACTION((!RCL_CommandStatus_isAnyDescheduled(txStatus) && txStatus < RCL_CommandStatus_Error),
-                        error = OT_ERROR_CHANNEL_ACCESS_FAILURE);
-
-        sChannel = aFrame->mChannel;
-
-        error = OT_ERROR_NONE;
-
-        otPlatRadioTxStarted(aInstance, aFrame);
+        /* All other run-time failures handled in ISR */
+        if ((txStatus == RCL_CommandStatus_Error_AlreadySubmitted) ||
+            (txStatus == RCL_CommandStatus_Error_CommandQueueFull) ||
+            (txStatus == RCL_CommandStatus_Idle))
+        {
+            error = OT_ERROR_CHANNEL_ACCESS_FAILURE;
+        }
+        else
+        {
+            sChannel = aFrame->mChannel;
+            error = OT_ERROR_NONE;
+            otPlatRadioTxStarted(aInstance, aFrame);
+        }
     }
 
 exit:
@@ -1987,7 +2118,7 @@ void otPlatRadioSetPromiscuous(otInstance *aInstance, bool aEnable)
     if (rxRequired)
     {
         /* Start Rx immediately, pull previous timing information from existing command */
-        rclSendReceiveCmd(aInstance, 0, 0, UINT32_MAX /* Infinite Duration */, NO_EDSCAN_REQ, USE_ABS_SCHED_TIMING);
+        rclSendReceiveCmd(aInstance, 0, 0, UINT32_MAX /* Infinite Duration */, NO_EDSCAN_REQ, USE_ABS_SCHED_TIMING, 0);
     }
 
     return;
@@ -2074,7 +2205,7 @@ void otPlatRadioSetPanId(otInstance *aInstance, uint16_t aPanid)
         rxAction->panConfig[0].localPanId = aPanid;
 
         /* Start Rx immediately, pull previous timing information from existing command */
-        rclSendReceiveCmd(aInstance, 0, 0, UINT32_MAX /* Infinite Duration */, NO_EDSCAN_REQ, USE_ABS_SCHED_TIMING);
+        rclSendReceiveCmd(aInstance, 0, 0, UINT32_MAX /* Infinite Duration */, NO_EDSCAN_REQ, USE_ABS_SCHED_TIMING, 0);
     }
     else
     {
@@ -2102,7 +2233,7 @@ void otPlatRadioSetExtendedAddress(otInstance *aInstance, const otExtAddress *aA
         memcpy((void *)&rxAction->panConfig[0].localExtAddr, aAddress, sizeof(otExtAddress));
 
         /* Start Rx immediately, pull previous timing information from existing command */
-        rclSendReceiveCmd(aInstance, 0, 0, UINT32_MAX /* Infinite Duration */, NO_EDSCAN_REQ, USE_ABS_SCHED_TIMING);
+        rclSendReceiveCmd(aInstance, 0, 0, UINT32_MAX /* Infinite Duration */, NO_EDSCAN_REQ, USE_ABS_SCHED_TIMING, 0);
     }
     else
     {
@@ -2128,7 +2259,7 @@ void otPlatRadioSetShortAddress(otInstance *aInstance, uint16_t aAddress)
         rxAction->panConfig[0].localShortAddr = aAddress;
 
         /* Start Rx immediately, pull previous timing information from existing command */
-        rclSendReceiveCmd(aInstance, 0, 0, UINT32_MAX /* Infinite Duration */, NO_EDSCAN_REQ, USE_ABS_SCHED_TIMING);
+        rclSendReceiveCmd(aInstance, 0, 0, UINT32_MAX /* Infinite Duration */, NO_EDSCAN_REQ, USE_ABS_SCHED_TIMING, 0);
     }
     else
     {
@@ -2223,7 +2354,7 @@ otError otPlatDiagRadioToneStop(otInstance *aInstance)
     sState = platformRadio_phyState_Sleep;
 
     rclStopReceiveCmd();
-    RCL_Command_stop(&ieeeTxTestCmd, RCL_StopType_Hard);
+    OVRDE_RCL_Command_stop(&ieeeTxTestCmd, RCL_StopType_Hard);
 
     Log_printf(LogModule_Thread, Log_WARNING, "otPlatDiagRadioToneStop");
 
@@ -2352,8 +2483,13 @@ static void platformRadioProcessTransmitDone(otInstance   *aInstance,
                                              otError       aTransmitError)
 {
     Log_printf(LogModule_Thread, Log_INFO, "platformRadioProcessTransmitDone");
+    uintptr_t key;
+ 
+    key = HwiP_disable();
 
     clearTransmitState();
+HwiP_restore(key);
+
 
 #if OPENTHREAD_CONFIG_DIAG_ENABLE
     if (otPlatDiagModeGet())
@@ -2461,8 +2597,7 @@ void platformRadioProcess(otInstance *aInstance, uintptr_t arg)
             Log_printf(LogModule_Thread, Log_VERBOSE, "RF_EVENT_BUF_FULL");
 
             clearRxQueue();
-            sTransmitError = OT_ERROR_ABORT;
-            handleTxState(aInstance, RF_EVENT_TX_DONE);
+            rclStopTransmitCmd();
         }
 
         /* Handle new received frame */
@@ -2474,12 +2609,12 @@ void platformRadioProcess(otInstance *aInstance, uintptr_t arg)
         }
 
         /* Re-start the RX command since we are still in the state. */
-        if ((platformRadio_phyState_Transmit == sState) && (arg & RF_EVENT_RX_CMD_STOP))
+        if ((platformRadio_phyState_Transmit == sState) && (arg & RF_EVENT_RX_CMD_STOP) && sTxState != platformRadio_txState_StandaloneActive)
         {
             Log_printf(LogModule_Thread, Log_DEBUG, "RF_EVENT_RX_CMD_STOP");
 
             /* Start Rx immediately, pull previous timing information from existing command */
-            rclSendReceiveCmd(aInstance, 0, 0, UINT32_MAX /* Infinite Duration */, NO_EDSCAN_REQ, USE_ABS_SCHED_TIMING);
+            rclSendReceiveCmd(aInstance, 0, 0, UINT32_MAX /* Infinite Duration */, NO_EDSCAN_REQ, USE_ABS_SCHED_TIMING, 0);
         }
         break;
     }
@@ -2542,7 +2677,7 @@ void platformRadioProcess(otInstance *aInstance, uintptr_t arg)
                 Log_printf(LogModule_Thread, Log_DEBUG, "ED Scan Restart Rx");
 
                 /* Start Rx immediately, pull previous timing information from existing command */
-                rclSendReceiveCmd(aInstance, 0, 0, UINT32_MAX /* Infinite Duration */, NO_EDSCAN_REQ, USE_ABS_SCHED_TIMING);
+                rclSendReceiveCmd(aInstance, 0, 0, UINT32_MAX /* Infinite Duration */, NO_EDSCAN_REQ, USE_ABS_SCHED_TIMING, 0);
             }
         }
 
@@ -2574,7 +2709,7 @@ void platformRadioProcess(otInstance *aInstance, uintptr_t arg)
             Log_printf(LogModule_Thread, Log_DEBUG, "RF_EVENT_RX_CMD_STOP");
 
             /* Start Rx immediately, pull previous timing information from existing command */
-            rclSendReceiveCmd(aInstance, 0, 0, UINT32_MAX /* Infinite Duration */, NO_EDSCAN_REQ, USE_ABS_SCHED_TIMING);
+            rclSendReceiveCmd(aInstance, 0, 0, UINT32_MAX /* Infinite Duration */, NO_EDSCAN_REQ, USE_ABS_SCHED_TIMING, 0);
         }
         break;
     }
@@ -2646,3 +2781,39 @@ exit:
     return error;
 }
 #endif /* OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE */
+
+// Timer callback function to post the RX_STOP event
+static void rxBackoffTimerCallback(uintptr_t arg)
+{
+    unsigned int evts = RF_EVENT_RX_CMD_STOP;
+    radioSignal(evts);
+}
+
+/**
+ * @brief Start a timer for RX backoff with a fixed backoff exponent of 5.
+ */
+void startTimerForRxBackoff(void)
+{
+    uint32_t backoffExponent = 5; // Fixed backoff exponent
+    uint32_t backoff;
+    uint32_t ticksTimeout;
+
+    // Calculate backoff time in microseconds
+    backoff = rand() % (1UL << backoffExponent);
+    backoff *= (IEEE_NUM_SYMBOLS_PER_BACKOFF * IEEE_SYMBOL_TIME);
+    ticksTimeout = microToTicks(backoff);
+
+    if (rxBackoffClockHandle != NULL)
+    {
+        // Stop any existing RX backoff timer
+        ClockP_stop(rxBackoffClockHandle);
+
+        // Set the timer period and start the timer
+        ClockP_setPeriod(rxBackoffClockHandle, ticksTimeout);
+        ClockP_start(rxBackoffClockHandle);
+    }
+    else
+    {
+        Log_printf(LogModule_Thread, Log_ERROR, "RX backoff timer handle is NULL");
+    }
+}

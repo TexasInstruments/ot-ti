@@ -44,7 +44,7 @@
 #include <ti/drivers/ECDSA.h>
 #endif
 
-#if !defined(DeviceFamily_CC23X0R5) && !defined (DeviceFamily_CC27XX)
+#if !defined(DeviceFamily_CC23X0R5) && !defined (DeviceFamily_CC27XXX10)
 #include <ti/drivers/ECDH.h>
 #include <ti/drivers/ECJPAKE.h>
 #endif
@@ -77,7 +77,7 @@ int main(void)
 #endif
     AESECB_init();
 
-#if !defined(DeviceFamily_CC23X0R5) && !defined (DeviceFamily_CC27XX)
+#if !defined(DeviceFamily_CC23X0R5) && !defined (DeviceFamily_CC27XXX10)
     ECDH_init();
 
     ECJPAKE_init();

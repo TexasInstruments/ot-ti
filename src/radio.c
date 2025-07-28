@@ -33,7 +33,7 @@
 
 #if defined(USE_DMM)
 #include <dmm/dmm_rfmap.h>
-#include <dmm_thread_activity.h>
+#include <dmm/dmm_thread_activity.h>
 #elif defined(TIOP_RADIO_USE_CSF)
 #include <cfs_rfmap.h>
 #else
@@ -246,6 +246,10 @@ static otRadioCoexMetrics gCoexMetrics;
 /* General MAC/PTA statistics, MUST be global for external stack usage */
 threadMacStatisticsStruct_t threadMacStats;
 static void updatePTADeniedRate(void);
+
+#ifdef USE_DMM
+extern otInstance * OtInstance_get(void);
+#endif
 
 #if OPENTHREAD_CONFIG_MAC_CSL_RECEIVER_ENABLE
 static uint16_t getCslPhase(otRadioFrame *aFrame)

@@ -70,7 +70,7 @@ readonly TI_LAUNCHPAD=(
     CC2674R10RSK
     LP_EM_CC2340R5
     LP_EM_CC2340R53
-    LP_EM_CC2745R10_Q1
+    LP_EM_CC2755P10
 )
 
 readonly OT_SRCDIR="$(pwd)"
@@ -104,7 +104,6 @@ build()
         IAR_ARMCOMPILER=${IAR_ARMCOMPILER} \
         TICLANG_ARMCOMPILER=${TICLANG_ARMCOMPILER} \
         GENERATOR=Ninja
-
     ${CMAKE} -GNinja -DOT_COMPILE_WARNING_AS_ERROR=ON "$@" "${OT_SRCDIR}" -B ${builddir}
 
     if [[ -n ${OT_CMAKE_NINJA_TARGET[*]} ]]; then
@@ -194,7 +193,7 @@ main()
        LP_EM_CC2340R53)
             options+=("-DCMAKE_TOOLCHAIN_FILE=src/arm-none-eabi-m0p.cmake")
             ;;
-       LP_EM_CC2745R10_Q1 | LP_EM_CC2745P10_Q1)
+       LP_EM_CC2755P10)
             options+=("-DCMAKE_TOOLCHAIN_FILE=src/arm-none-eabi-m33-cc27xx.cmake")
             ;;
     esac

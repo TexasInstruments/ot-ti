@@ -46,7 +46,7 @@
  *----------------------------------------------------------*/
 
 /* General options */
-#if !defined(DeviceFamily_CC27XX)
+#if !defined(DeviceFamily_CC27XXX10)
 #define configCPU_CLOCK_HZ ((unsigned long)(48000000))
 #else
 #define configCPU_CLOCK_HZ ((unsigned long)(96000000))
@@ -90,7 +90,7 @@
 #define configTOTAL_HEAP_SIZE ((size_t)(3400))
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION 0
 
-#elif defined(DeviceFamily_CC27XX)
+#elif defined(DeviceFamily_CC27XXX10)
 #define configTOTAL_HEAP_SIZE ((size_t)(0x9000))
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION 0
 /* TrustZone/PSA settings */
@@ -112,8 +112,12 @@
 #define configCHECK_FOR_STACK_OVERFLOW 2
 #define configEXPECTED_IDLE_TIME_BEFORE_SLEEP 2
 
+#define INCLUDE_xEventGroupSetBitFromISR 1
+#define INCLUDE_xTimerPendFunctionCall 1
 /* Software timer definitions. */
 #define configUSE_TIMERS 1
+#define INCLUDE_xEventGroupSetBitFromISR 1
+#define INCLUDE_xTimerPendFunctionCall 1
 #define configTIMER_TASK_PRIORITY (6)
 #define configTIMER_QUEUE_LENGTH (20)
 #define configTIMER_TASK_STACK_DEPTH ((unsigned short)(configMINIMAL_STACK_SIZE * 2))
@@ -229,9 +233,8 @@
 #define INCLUDE_xTaskGetCurrentTaskHandle 1
 #define INCLUDE_xTaskGetSchedulerState 1
 #define INCLUDE_xSemaphoreGetMutexHolder 0
-#define INCLUDE_xTimerPendFunctionCall 0
 
-#if defined(DeviceFamily_CC27XX)
+#if defined(DeviceFamily_CC27XXX10)
 #define configPRIO_BITS 4 /* 16 priority levels */
 /*
  * The lowest interrupt priority that can be used in a call to a "set priority"

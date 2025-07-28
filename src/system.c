@@ -71,11 +71,11 @@
  *  7   main processing loop commands
  *  6   radio process requests
  *  2   UART process requests
- * +1   buffer
+ * + 17   buffer
  * -----------------------------------
- *  16  queue slots
+ *  32  queue slots
  */
-#define OTSTACK_PROC_QUEUE_MAX_MSG      (16)
+#define OTSTACK_PROC_QUEUE_MAX_MSG      (32)
 
 enum OtStack_procQueueCmd
 {
@@ -195,7 +195,7 @@ void platformUartSignal(uintptr_t arg)
 
     (void) ret;
 }
-#if !defined(DeviceFamily_CC23X0R5) && !defined (DeviceFamily_CC27XX)
+#if !defined(DeviceFamily_CC23X0R5) && !defined (DeviceFamily_CC27XXX10)
 
 void platformSpiSignal()
 {
@@ -319,7 +319,7 @@ void otSysProcessDrivers(otInstance *aInstance)
                 platformAlarmMicroProcess(aInstance);
                 break;
             }
-#if !defined(DeviceFamily_CC23X0R5) && !defined (DeviceFamily_CC27XX)
+#if !defined(DeviceFamily_CC23X0R5) && !defined (DeviceFamily_CC27XXX10)
             case OtStack_procQueueCmd_spi:
             {
                 platformSpiProcess();

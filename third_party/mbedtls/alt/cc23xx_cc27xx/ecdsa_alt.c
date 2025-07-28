@@ -51,7 +51,7 @@
 
 #include <ti/drivers/ECDSA.h>
 #include <ti/drivers/cryptoutils/cryptokey/CryptoKeyPlaintext.h>
-#include <ti/drivers/ecdsa/ECDSALPF3HSM.h>
+#include <ti/drivers/ecdsa/ECDSAXXF3HSM.h>
 
 #ifdef MBEDTLS_ECDSA_VERIFY_ALT
 
@@ -74,8 +74,8 @@ int mbedtls_ecdsa_verify(mbedtls_ecp_group *      grp,
     ECDSA_Config          config = {0};
     ECDSA_Handle          handle = NULL;
     ECDSA_OperationVerify operationVerify;
-    ECDSALPF3HSM_HWAttrs hwAttrs = { 0 };
-    ECDSALPF3HSM_Object object   = { 0 };
+    ECDSAXXF3HSM_HWAttrs hwAttrs = { 0 };
+    ECDSAXXF3HSM_Object object   = { 0 };
 
     if (NULL == r_buf || NULL == s_buf || NULL == q_buf)
     {
@@ -201,8 +201,8 @@ int mbedtls_ecdsa_sign(mbedtls_ecp_group *  grp,
     ECDSA_Config        config = {0};
     ECDSA_Handle        handle = NULL;
     ECDSA_OperationSign operationSign;
-    ECDSALPF3HSM_HWAttrs hwAttrs = { 0 };
-    ECDSALPF3HSM_Object object   = { 0 };
+    ECDSAXXF3HSM_HWAttrs hwAttrs = { 0 };
+    ECDSAXXF3HSM_Object object   = { 0 };
 
     if (NULL == r_buf || NULL == s_buf || NULL == d_buf)
     {

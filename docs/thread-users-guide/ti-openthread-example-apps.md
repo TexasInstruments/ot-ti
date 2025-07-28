@@ -43,3 +43,16 @@ The project is used to connect to a host processor; for more information about t
 between the RCP and host processor: 
 
 -   [RCP README](https://github.com/TexasInstruments/ot-ti/blob/main/examples/apps/rcp/README.md)
+
+### Network Co-Processor (RCP)
+
+The project is used to connect to a host processor; for more information about the interface
+between the NCP and host processor: 
+
+-   [NCP README](https://github.com/TexasInstruments/ot-ti/blob/main/examples/apps/ncp/README.md)
+
+### Radio Co-Processor + BLE Host Controller Interface (RCP-Controller)
+
+The project is used to connect the to a host processor for Thread along with a BLE controller host; for more information about the interface RCP and host controller interface:
+
+-   [RCP-Controller README](https://github.com/TexasInstruments/ot-ti/blob/main/examples/apps/dmm/rcp_ble_controller/README.md)
