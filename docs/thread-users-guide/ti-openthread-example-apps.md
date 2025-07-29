@@ -26,6 +26,25 @@ to reset `NVS`.
 **_Warning:_** Reset of NVS does not erase the actual application image on the internal
 flash.
 
+## Coexistence Enablement
+
+TI OpenThread example applications allow for IEEE coexistence to be used with Wi-FI devices.
+In general, the Coex feature must first be enabled in the openthread-config*.h file.
+For example: In `src/openthread-core-cc13xx_cc26xx-config.h` user's must set
+`OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE` to `1`.
+
+Following this, platform specific sysconfig updates must be made:
+
+For CC13xx_CC26xx applications:
+
+Within the `/src/openthread.syscfg` file uncomment the IEEE Coex configuration section and assign
+the request, priority and grant pins as necessary.
+
+For CC23xx_CC27xx applications:
+
+Within the  `/src/cc23xx_cc27xx/openthread.syscfg` file set `RCL.coexEnabled` to `true`
+and assign the request, priority and grant pins as necessary.
+
 ## End Product Examples 
 
 ### Command Line Interface (CLI)
@@ -44,7 +63,7 @@ between the RCP and host processor:
 
 -   [RCP README](https://github.com/TexasInstruments/ot-ti/blob/main/examples/apps/rcp/README.md)
 
-### Network Co-Processor (RCP)
+### Network Co-Processor (NCP)
 
 The project is used to connect to a host processor; for more information about the interface
 between the NCP and host processor: 

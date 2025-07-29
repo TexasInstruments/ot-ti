@@ -297,13 +297,13 @@ RCL.coexEnabled = false;
 
 if (board.match(/CC2340R53/) || board.match(/CC2340R5/) || board.match(/CC2340R22/))
 {
-    RCL.lrfGpio.pbegpo0Pin.$assign = "boosterpack.25";
-    RCL.lrfGpio.pbegpo1Pin.$assign = "boosterpack.27";
-    RCL.lrfGpio.coex_grantPin.$assign   = "boosterpack.28";
+    RCL.lrfGpio.pbegpo0Pin.$assign = "boosterpack.25"; // COEX_REQUEST
+    RCL.lrfGpio.pbegpo1Pin.$assign = "boosterpack.27"; // COEX_PRIORITY
+    RCL.lrfGpio.coex_grantPin.$assign   = "boosterpack.28"; // COEX_GRANT
 }
 else if (board.match(/CC27/))
 {
-    RCL.lrfGpio.pbegpo0Pin.$assign = "boosterpack.2";
-    RCL.lrfGpio.pbegpo1Pin.$assign = "boosterpack.6";
-    RCL.lrfGpio.coex_grantPin.$assign   = "boosterpack.9";
+    RCL.lrfGpio.pbegpo0Pin.$assign = "boosterpack.2";; // COEX_REQUEST
+    RCL.lrfGpio.pbegpo1Pin.$assign = "boosterpack.6"; // COEX_PRIORITY
+    RCL.lrfGpio.coex_grantPin.$assign   = "boosterpack.9"; // COEX_GRANT
 }

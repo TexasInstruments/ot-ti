@@ -6,6 +6,7 @@ This document describes how to setup the NCP + OTBR setup working with a CLI-FTD
 * Create a Thread network via OTBR + NCP setup
 * Join a node to the thread network created 
 * Send messages between the two thread network devices
+# NOTE: THE BORDER ROUTER WITH NCP IS STILL EXPERIMENTAL AND UNDER DEVELOPMENT BY OPENSOURCE COMMUNITY. PLEASE REFER TO HERE FOR UPDATES: [OTBR WEBSITE](https://github.com/openthread/ot-br-posix/issues/2398)
 
 # Software Prerequisites
 - [Border Router software](https://github.com/openthread/ot-br-posix)
@@ -66,47 +67,50 @@ Once built the images will be in ot-ti/build/bin.
 Flash the board using UniFlash with the image generated.
 ## 3. Start NCP
 
-From the border router set up basic network info to create a network
+
+Connect NCP to border router and restart border router to make sure all configurations have taken effect.
+
+Open a terminal within the border router and set up network information.
+
 ```bash
-sudo wpanctl set Network:Key 00112233445566778899aabbccddeeff
-sudo wpanctl set Network:PANID 0xface
-sudo wpanctl set NCP:Channel 11
+sudo ot-ctl panid 0xface
+Done
+sudo ot-ctl channel 11
+Done
+sudo ot-ctl networkkey 00112233445566778899aabbccddeeff
+Done
+sudo ot-ctl ifconfig up
+Done
+sudo ot-ctl thread start
+Done
 ```
-Form the network
+Bring up the IPv6 interface:
 ```bash
-sudo wpanctl form test
+sudo ot-ctl ifconfig up
+Done
 ```
 
-Check status of network
+Start Thread protocol operation:
+
+```bash
+sudo ot-ctl thread start
+Done
 ```
-sudo wpanctl status
-wpan0 => [
-    "NCP:State" => "associated"
-    "Daemon:enable" => true
-    "NCP:Version" => "OPENTHREAD/1.3.0.1; CC13XX_CC26XX; Jan 19 2024 09:38:17"
-    "Daemon:Version" => "0.08.00d (0.07.01-366-ge2fd726; Jan 11 2024 19:05:22)"
-    "Config:NCP:DriverName" => "spinel"
-    "NCP:HardwareAddress" => [00124B0014FE56E1]
-    "Network:NodeType" => "leader"
-    "Network:Name" => "test"
-    "Network:XPANID" => 0xD7936715C2F0F95B
-    "Network:PANID" => 0xface
-    "IPv6:LinkLocalAddress" => "fe80::3cb1:87fc:9a38:d8bc"
-    "IPv6:MeshLocalAddress" => "fdd7:9367:15c2:0:bdb5:360c:49f1:c854"
-    "IPv6:MeshLocalPrefix" => "fdd7:9367:15c2::/64"
-]
+Check status of network after a few seconds
+```bash
+sudo ot-ctl state
+leader
+Done
 ```
-Note: the information displayed for your system will be different.
 
 ## 4. Start node 1
 Set up the basic network information for the node.
 
-Note: Make sure the channel and Panid listed from status command match what is input here.
 
 ```bash
 > networkkey 00112233445566778899aabbccddeeff
 Done
->panid 0xface
+> panid 0xface
 Done
 > channel 11
 Done
@@ -133,6 +137,24 @@ Wait a few seconds and verify that the device has become a Thread child:
 > state
 child
 Done
+```
+
+
+
+## 5. Ping Node 1 from NCP
+
+Get IP address of Node 1
+
+```bash
+> ipaddr rloc
+fd9e:6062:a089:68d:0:ff:fe00:4800
+Done
+```
+
+Ping Node 1 from NCP
+```bash
+sudo ot-ctl ping fd9e:6062:a089:68d:0:ff:fe00:4800
+18 bytes from fd9e:6062:a089:68d:0:ff:fe00:4800: icmp_seq=1 hlim=64 time=24ms
 ```
 
 
