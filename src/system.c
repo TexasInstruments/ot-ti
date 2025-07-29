@@ -57,7 +57,13 @@
 #include <openthread/tasklet.h>
 
 #include <stdio.h>
+#include <ti/log/Log.h>
+#ifdef ti_log_Log_ENABLE
+#include "ti_log_config.h"
+#endif
 
+#include <FreeRTOS.h>
+#include <task.h>
 /**
  * @brief Size of the message queue for `OtStack_procQueue`
  *
@@ -65,11 +71,11 @@
  *  7   main processing loop commands
  *  6   radio process requests
  *  2   UART process requests
- * +1   buffer
+ * + 17   buffer
  * -----------------------------------
- *  16  queue slots
+ *  32  queue slots
  */
-#define OTSTACK_PROC_QUEUE_MAX_MSG      (16)
+#define OTSTACK_PROC_QUEUE_MAX_MSG      (32)
 
 enum OtStack_procQueueCmd
 {
@@ -141,6 +147,8 @@ OT_TOOL_WEAK void otTaskletsSignalPending(otInstance *aInstance)
     (void)aInstance;
     struct OtStack_procQueueMsg msg;
     int                         ret;
+    Log_printf(LogModule_System, Log_INFO, "otTaskletsSignalPending");
+
     msg.cmd = OtStack_procQueueCmd_tasklets;
     ret = mq_send(OtStack_procQueueDesc, (const char *)&msg, sizeof(msg), 0);
     assert(0 == ret);
@@ -153,6 +161,8 @@ void platformAlarmSignal()
     struct OtStack_procQueueMsg msg;
     int                         ret;
     msg.cmd = OtStack_procQueueCmd_alarm;
+    Log_printf(LogModule_System, Log_INFO, "platformAlarmSignal");
+
     ret = mq_send(OtStack_procQueueDesc, (const char *)&msg, sizeof(msg), 0);
     assert(0 == ret);
 
@@ -164,6 +174,8 @@ void platformAlarmMicroSignal()
     struct OtStack_procQueueMsg msg;
     int                         ret;
     msg.cmd = OtStack_procQueueCmd_alarmu;
+    Log_printf(LogModule_System, Log_INFO, "platformAlarmMicroSignal");
+
     ret = mq_send(OtStack_procQueueDesc, (const char *)&msg, sizeof(msg), 0);
     assert(0 == ret);
 
@@ -176,34 +188,68 @@ void platformUartSignal(uintptr_t arg)
     int                         ret;
     msg.cmd = OtStack_procQueueCmd_uart;
     msg.arg = arg;
+    Log_printf(LogModule_System, Log_INFO, "platformUartSignal");
+
     ret = mq_send(OtStack_procQueueDesc, (const char *)&msg, sizeof(msg), 0);
     assert(0 == ret);
 
     (void) ret;
 }
+#if !defined(DeviceFamily_CC23X0R5) && !defined (DeviceFamily_CC27XXX10)
 
 void platformSpiSignal()
 {
     struct OtStack_procQueueMsg msg;
     int                         ret;
     msg.cmd = OtStack_procQueueCmd_spi;
+    Log_printf(LogModule_System, Log_INFO, "platformSpiSignal");
+
     ret = mq_send(OtStack_procQueueDesc, (const char *)&msg, sizeof(msg), 0);
     assert(0 == ret);
 
     (void) ret;
 }
-
+#endif
 void platformRadioSignal(uintptr_t arg)
 {
     struct OtStack_procQueueMsg msg;
     int                         ret;
     msg.cmd = OtStack_procQueueCmd_radio;
     msg.arg = arg;
+    Log_printf(LogModule_System, Log_INFO, "platformRadioSignal");
+
     ret = mq_send(OtStack_procQueueDesc, (const char *)&msg, sizeof(msg), 0);
     assert(0 == ret);
 
     (void) ret;
 }
+#ifdef AUTO_PRINT_METRICS
+void printStackAndHeapUsage(void)
+{
+    /* Define the maximum number of tasks you expect */
+    const UBaseType_t uxArraySize = 10;
+    TaskStatus_t pxTaskStatusArray[10];
+    UBaseType_t uxTaskCount;
+    UBaseType_t x;
+    uint32_t ulTotalRunTime;
+
+    uxTaskCount = uxTaskGetSystemState(pxTaskStatusArray, uxArraySize, &ulTotalRunTime);
+    /* Iterate through each task and print its stack high water mark */
+    for (x = 0; x < uxTaskCount; x++)
+    {
+        Log_printf(LogModule_System, Log_INFO, "Task: %s, Minimum free stack space: %u bytes", pxTaskStatusArray[x].pcTaskName,
+                 pxTaskStatusArray[x].usStackHighWaterMark);
+    }
+
+    size_t xFreeHeapSpace            = xPortGetFreeHeapSize();
+    size_t xMinimumEverFreeHeapSpace = xPortGetMinimumEverFreeHeapSize();
+    (void) xFreeHeapSpace;
+    (void) xMinimumEverFreeHeapSpace;
+    /* Print the heap usage statistics */
+    Log_printf(LogModule_System, Log_INFO, "Current free heap space: %u bytes", (unsigned int) xFreeHeapSpace);
+    Log_printf(LogModule_System, Log_INFO, "Minimum ever free heap space: %u bytes", (unsigned int) xMinimumEverFreeHeapSpace);
+}
+#endif
 
 /**
  * Main processing thread for OpenThread Stack.
@@ -222,6 +268,18 @@ void otSysProcessDrivers(otInstance *aInstance)
         }
 #endif
         ret = mq_receive(OtStack_procQueueLoopDesc, (char *)&msg, sizeof(msg), NULL);
+#ifdef AUTO_PRINT_METRICS
+        struct mq_attr mqstat;
+        (void)mqstat;
+        volatile static int maxQSize = 0;
+        mq_getattr(OtStack_procQueueLoopDesc, &mqstat);
+        if (mqstat.mq_curmsgs > maxQSize)
+        {
+            maxQSize = mqstat.mq_curmsgs;
+        }
+        Log_printf(LogModule_System, Log_INFO, "otSysProcessDrivers: Current Queue size: %d, Max Messages: %d High Watermark: %d", mqstat.mq_curmsgs, mqstat.mq_maxmsg, maxQSize);
+        printStackAndHeapUsage();
+#endif
         /* priorities are ignored */
         if (ret < 0 || ret != sizeof(msg))
         {
@@ -261,13 +319,13 @@ void otSysProcessDrivers(otInstance *aInstance)
                 platformAlarmMicroProcess(aInstance);
                 break;
             }
-
+#if !defined(DeviceFamily_CC23X0R5) && !defined (DeviceFamily_CC27XXX10)
             case OtStack_procQueueCmd_spi:
             {
                 platformSpiProcess();
                 break;
             }
-
+#endif
             default:
             {
                 break;

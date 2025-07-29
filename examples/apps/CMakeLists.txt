@@ -25,10 +25,20 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #  POSSIBILITY OF SUCH DAMAGE.
 #
+if (OT_APP_RCP_BLE_CONTROLLER)
+
+add_subdirectory(dmm/rcp_ble_controller)
+
+else()
 
 if(OT_APP_CLI)
-    add_subdirectory(cli)
+   add_subdirectory(cli)
 endif()
 
+if(NOT TI_SIMPLELINK_BOARD STREQUAL "LP_EM_CC2340R5")
+  add_subdirectory(ncp)
+endif()
 
 add_subdirectory(rcp)
+
+endif()

@@ -37,12 +37,16 @@
 #include <ti/drivers/GPIO.h>
 #include <ti/drivers/NVS.h>
 #include <ti/drivers/UART2.h>
-
 #include <ti/drivers/AESECB.h>
-#include <ti/drivers/ECDH.h>
-#include <ti/drivers/ECDSA.h>
-#include <ti/drivers/ECJPAKE.h>
+#if !defined(DeviceFamily_CC23X0R5)
 #include <ti/drivers/SHA2.h>
+#include <ti/drivers/ECDSA.h>
+#endif
+
+#if !defined(DeviceFamily_CC23X0R5) && !defined (DeviceFamily_CC27XXX10)
+#include <ti/drivers/ECJPAKE.h>
+#include <ti/drivers/ECDH.h>
+#endif
 
 // The entry point for the application
 extern int app_main(int argc, char *argv[]);
@@ -65,17 +69,21 @@ int main(void)
     GPIO_init();
 
     NVS_init();
+    
+    AESECB_init();
 
-    ECDH_init();
-
+#if !defined(DeviceFamily_CC23X0R5)
     ECDSA_init();
 
-    AESECB_init();
+    SHA2_init();
+#endif
+#if !defined(DeviceFamily_CC23X0R5) && !defined (DeviceFamily_CC27XXX10)
+    ECDH_init();
 
     ECJPAKE_init();
 
     SHA2_init();
-
+#endif
     if (NULL ==
         xTaskCreateStatic(vTaskCode, "APP", APP_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, appStack, &appTaskBuffer))
     {

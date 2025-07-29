@@ -1,6 +1,5 @@
 # OpenThread RCP Example
 
-
 # Introduction
 This document describes how to setup the RCP + OTBR setup working with a CLI-FTD application. Following this document you will be able to: 
 * Create a Thread network via OTBR + RCP setup
@@ -15,18 +14,7 @@ Border Router:
 - [Beagle Bone Black](https://www.beagleboard.org/boards/beaglebone-black)
 - [Raspberry Pi](https://www.raspberrypi.com/)
 
-RCP/FTD: Two launch pads of boards listed below
- 
-- [SimpleLink CC1352P2 Launchpad](https://www.ti.com/tool/LAUNCHXL-CC1352P)
-- [SimpleLink CC1352P4 Launchpad](https://www.ti.com/tool/LAUNCHXL-CC1352P)
-- [SimpleLink CC1352P7 Launchpad](https://www.ti.com/tool/LP-CC1352P7)
-- [SimpleLink CC1352P7-4 Launchpad](https://www.ti.com/tool/LP-CC1352P7)
-- [SimpleLink CC1354P10-1 Launchpads](https://www.ti.com/tool/LP-EM-CC1354P10)
-- [SimpleLink CC26X2R1 Laundpads](https://www.ti.com/tool/LAUNCHXL-CC26X2R1)
-- [SimpleLink CC2652PSIP Launchpad](https://www.ti.com/tool/LP-CC2652RSIP)
-- [SimpleLink CC2652R7 Launchpad](https://www.ti.com/tool/LP-CC2652R7)
-- [SimpleLink CC2652RB Launchpad](https://www.ti.com/tool/LP-CC2652RB)  
-- [SimpleLink CC2652RSIP Launchpad](https://www.ti.com/tool/LP-CC2652RSIP)
+RCP/FTD: Two LaunchPads from the list of supported [TI devices](../../../README.md#openthread-simplelink-example)
 
 Serial Terminal
 - [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)

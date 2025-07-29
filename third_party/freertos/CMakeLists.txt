@@ -39,6 +39,8 @@ set(FREERTOS_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/repo/stream_buffer.c
     ${CMAKE_CURRENT_SOURCE_DIR}/repo/tasks.c
     ${CMAKE_CURRENT_SOURCE_DIR}/repo/timers.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/repo/event_groups.c 
+
 )
 
 if(TI_SIMPLELINK_ISA STREQUAL "m4f")
@@ -62,6 +64,16 @@ elseif(TI_SIMPLELINK_ISA STREQUAL "m33f")
         ${CMAKE_CURRENT_SOURCE_DIR}/repo/portable/GCC/ARM_CM33_NTZ/non_secure
     )
 
+    elseif(TI_SIMPLELINK_ISA STREQUAL "m0p")
+    set(FREERTOS_PORT_SRCS
+        ${CMAKE_CURRENT_SOURCE_DIR}/repo/portable/MemMang/heap_4.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/repo/portable/GCC/ARM_CM0/port.c
+    )
+
+    set(FREERTOS_PORT_INC
+        ${CMAKE_CURRENT_SOURCE_DIR}/repo/portable/GCC/ARM_CM0/
+    )
+
 else()
     message(WARNING "TI_SIMPLELINK_ISA not recognized, FreeRTOS port not included")
 
@@ -80,15 +92,6 @@ target_include_directories(freertos
         ${CMAKE_CURRENT_SOURCE_DIR}/repo/include
         ${FREERTOS_PORT_INC}
         ${FREERTOS_CONFIG_DIR}
-)
-
-target_compile_options(freertos
-    PRIVATE
-       -Wall
-       -Wextra
-       -Wshadow
-       -Wno-type-limits
-       -Werror
 )
 
 target_link_libraries(freertos

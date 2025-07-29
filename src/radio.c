@@ -33,7 +33,7 @@
 
 #if defined(USE_DMM)
 #include <dmm/dmm_rfmap.h>
-#include <dmm_thread_activity.h>
+#include <dmm/dmm_thread_activity.h>
 #elif defined(TIOP_RADIO_USE_CSF)
 #include <cfs_rfmap.h>
 #else
@@ -64,6 +64,7 @@
 #include DeviceFamily_constructPath(driverlib/ioc.h)
 #include DeviceFamily_constructPath(inc/hw_ccfg.h)
 #include DeviceFamily_constructPath(inc/hw_fcfg1.h)
+#include DeviceFamily_constructPath(driverlib/rf_ieee_coex.h)
 // clang-format on
 
 #include <ti_radio_config.h>
@@ -238,6 +239,17 @@ static uint32_t         sAckFrameCounter;
 
 static uint32_t sCslPeriod;
 static uint32_t sCslSampleTime;
+#if  OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE
+// OT general Coex metrics structure
+static otRadioCoexMetrics gCoexMetrics;
+#endif
+/* General MAC/PTA statistics, MUST be global for external stack usage */
+threadMacStatisticsStruct_t threadMacStats;
+static void updatePTADeniedRate(void);
+
+#ifdef USE_DMM
+extern otInstance * OtInstance_get(void);
+#endif
 
 #if OPENTHREAD_CONFIG_MAC_CSL_RECEIVER_ENABLE
 static uint16_t getCslPhase(otRadioFrame *aFrame)
@@ -253,10 +265,10 @@ static uint16_t getCslPhase(otRadioFrame *aFrame)
     {
         frameTime = aFrame->mInfo.mTxInfo.mTxDelayBaseTime + aFrame->mInfo.mTxInfo.mTxDelay;
     }
-    cslPeriodInUs = sCslPeriod * OT_US_PER_TEN_SYMBOLS;
+    cslPeriodInUs = sCslPeriod;
     delta = ((sCslSampleTime % cslPeriodInUs) - (frameTime % cslPeriodInUs) + cslPeriodInUs) % cslPeriodInUs;
 
-    return (uint16_t)(delta / OT_US_PER_TEN_SYMBOLS);
+    return (uint16_t)(delta);
 }
 #endif /* OPENTHREAD_CONFIG_MAC_CSL_RECEIVER_ENABLE */
 
@@ -645,6 +657,7 @@ static void rfCoreTxCallback(RF_Handle aRfHandle, RF_CmdHandle aRfCmdHandle, RF_
         {
             // CMSA was used as CCA and had an error
             sTransmitError = OT_ERROR_CHANNEL_ACCESS_FAILURE;
+            threadMacStats.cca_failures++;
         }
         if (sTransmitCmd.status == IEEE_DONE_OK)
         {
@@ -657,6 +670,31 @@ static void rfCoreTxCallback(RF_Handle aRfHandle, RF_CmdHandle aRfCmdHandle, RF_
             {
                 sTransmitError = OT_ERROR_NONE;
             }
+        }
+        else if (sTransmitCmd.status == IEEE_ERROR_NO_GRANT)
+        {
+            RF_CoexOverride coex;
+
+#ifdef TIOP_USE_CSF
+            CFS_getCoexPriority(CMD_IEEE_TX, &coex);
+#else
+            coex.priority = sPriorityCoex;
+            coex.request = sRequestCoex;
+#endif
+            if (coex.priority  == RF_PriorityCoexHigh)
+            {
+                threadMacStats.pta_hi_pri_denied++;
+            }
+            else
+            {
+                threadMacStats.pta_lo_pri_denied++;
+            }
+#if  OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE
+            gCoexMetrics.mNumTxGrantWait++;
+#endif
+            updatePTADeniedRate();
+
+            sTransmitError = OT_ERROR_CHANNEL_ACCESS_FAILURE;
         }
         else
         {
@@ -698,6 +736,7 @@ static RF_CmdHandle rfCoreSendTransmitCmd(otInstance *aInstance, RF_Handle aRfHa
 {
     RF_ScheduleCmdParams rfScheduleCmdParams;
     RF_Op *op;
+    uint8_t seq_no;
 
     RF_ScheduleCmdParams_init(&rfScheduleCmdParams);
     sCsmaCmd = RF_cmdIeeeCsma;
@@ -764,9 +803,8 @@ static RF_CmdHandle rfCoreSendTransmitCmd(otInstance *aInstance, RF_Handle aRfHa
     {
         sTransmitCmd.pNextOp        = (RF_Op *)&sRxAckCmd;
         sTransmitCmd.condition.rule = COND_STOP_ON_FALSE;
-
         sRxAckCmd.startTrigger.pastTrig     = 1; // XXX: workaround for RF scheduler
-        sRxAckCmd.seqNo                     = otMacFrameGetSequence(aFrame);
+        otMacFrameGetSequence(aFrame, (uint8_t *)&sRxAckCmd.seqNo);
         sRxAckCmd.endTrigger.triggerType    = TRIG_REL_PREVEND;
         sRxAckCmd.condition.rule            = COND_NEVER;
 
@@ -787,6 +825,27 @@ static RF_CmdHandle rfCoreSendTransmitCmd(otInstance *aInstance, RF_Handle aRfHa
 #endif
     rfScheduleCmdParams.coexPriority = sPriorityCoex;
     rfScheduleCmdParams.coexRequest  = sRequestCoex;
+
+    RF_CoexOverride coex;
+
+#ifdef TIOP_RADIO_USE_CSF
+    CFS_getCoexPriority(CMD_IEEE_TX, &coex);
+#else
+    coex.priority = sPriorityCoex;
+    coex.request = sRequestCoex;
+#endif
+    if (coex.priority == RF_PriorityCoexHigh)
+    {
+        threadMacStats.pta_hi_pri_req++;
+    }
+    else
+    {
+        threadMacStats.pta_lo_pri_req++;
+    }
+#if  OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE
+    gCoexMetrics.mNumTxRequest++;
+#endif
+    updatePTADeniedRate();
 
     /* no error has occurred (yet) */
     sTransmitError = OT_ERROR_NONE;
@@ -906,6 +965,27 @@ static void rfCoreSendReceiveCmd(RF_Handle aRfHandle)
         rfScheduleCmdParams.coexPriority = sPriorityCoex;
         rfScheduleCmdParams.coexRequest  = sRequestCoex;
 
+    RF_CoexOverride coex;
+
+    #ifdef TIOP_RADIO_USE_CSF
+        CFS_getCoexPriority(CMD_IEEE_RX, &coex);
+    #else
+        coex.priority = sPriorityCoex;
+        coex.request = sRequestCoex;
+    #endif
+        if (coex.priority == RF_PriorityCoexHigh)
+        {
+            threadMacStats.pta_hi_pri_req++;
+        }
+        else
+        {
+            threadMacStats.pta_lo_pri_req++;
+        }
+#if  OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE
+        gCoexMetrics.mNumRxRequest++;
+#endif
+        updatePTADeniedRate();
+
         sReceiveCmd.status = IDLE;
 
         sReceiveCmdHandle = RF_scheduleCmd(
@@ -923,6 +1003,7 @@ static otError rfCoreSetTransmitPower(int8_t aPower)
 {
     otError               retval = OT_ERROR_NONE;
     RF_TxPowerTable_Value newValue;
+    RF_TxPowerTable_Value oldValue;
     unsigned int          i;
 
     /* search for a matching backoff if there is one */
@@ -1104,10 +1185,12 @@ void rfCoreRequestCoex(bool aEnable)
 
 void platformRadioInit(void)
 {
+    memset(&threadMacStats, 0, sizeof(threadMacStatisticsStruct_t));
     rfCoreInitBufs();
     rfCoreInitSetupCmd();
     /* Populate the RX parameters data structure with default values */
     rfCoreInitReceiveParams();
+    memset(&threadMacStats, 0, sizeof(threadMacStatisticsStruct_t));
 
     sState = platformRadio_phyState_Disabled;
     sCurrentRegionCode = CC_UINT16('W', 'W');
@@ -1133,6 +1216,9 @@ otError otPlatRadioEnable(otInstance *aInstance)
 
         otEXPECT_ACTION(sRfHandle != NULL, error = OT_ERROR_FAILED);
         sState = platformRadio_phyState_Sleep;
+
+        /* Clear Coex statistics on re-enablement for RCP use-cases */
+        memset(&threadMacStats, 0, sizeof(threadMacStatisticsStruct_t));
 
         error = OT_ERROR_NONE;
     }
@@ -1382,6 +1468,57 @@ otRadioFrame *otPlatRadioGetTransmitBuffer(otInstance *aInstance)
     return &sTransmitFrame;
 }
 
+static bool IsSrcAddrPresent(uint16_t aFcf) { return (aFcf & FCF_SRC_ADDR_MASK) != FCF_DST_ADDR_NONE; }
+static bool IsDstAddrPresent(uint16_t aFcf) { return (aFcf & FCF_DST_ADDR_MASK) != FCF_DST_ADDR_NONE; }
+static bool IsVersion2015(uint16_t aFcf) { return (aFcf & FCF_FRAME_VERSION_MASK) == VERSION_2015; }
+
+bool IsDstPanIdPresent(uint16_t aFcf)
+{
+    bool present = true;
+
+    if (IsVersion2015(aFcf))
+    {
+        switch (aFcf & (FCF_DST_ADDR_MASK | FCF_SRC_ADDR_MASK | FCF_PANID_COMPRESSION))
+        {
+        case (FCF_DST_ADDR_NONE | FCF_DST_ADDR_NONE):                         // 1
+        case (FCF_DST_ADDR_SHORT | FCF_DST_ADDR_NONE | FCF_PANID_COMPRESSION): // 4 (short dst)
+        case (FCF_DST_ADDR_EXT | FCF_DST_ADDR_NONE | FCF_PANID_COMPRESSION):   // 4 (ext dst)
+        case (FCF_DST_ADDR_NONE | FCF_SRC_ADDR_SHORT):                        // 5 (short src)
+        case (FCF_DST_ADDR_NONE | FCF_SRC_ADDR_EXT):                          // 5 (ext src)
+        case (FCF_DST_ADDR_NONE | FCF_SRC_ADDR_SHORT | FCF_PANID_COMPRESSION): // 6 (short src)
+        case (FCF_DST_ADDR_NONE | FCF_SRC_ADDR_EXT | FCF_PANID_COMPRESSION):   // 6 (ext src)
+        case (FCF_DST_ADDR_EXT | FCF_SRC_ADDR_EXT | FCF_PANID_COMPRESSION):    // 8
+            present = false;
+            break;
+        default:
+            break;
+        }
+    }
+    else
+    {
+        present = IsDstAddrPresent(aFcf);
+    }
+
+    return present;
+}
+
+bool IsSrcPanIdPresent(uint16_t aFcf)
+{
+    bool present = IsSrcAddrPresent(aFcf) && ((aFcf & FCF_PANID_COMPRESSION) == 0);
+
+    if (IsVersion2015(aFcf) && ((aFcf & (FCF_DST_ADDR_MASK | FCF_SRC_ADDR_MASK)) == (FCF_DST_ADDR_EXT | FCF_SRC_ADDR_EXT)))
+    {
+        present = false;
+    }
+
+    return present;
+}
+
+bool IsSequenceSuppressed(uint16_t aFcf)
+{
+    return (aFcf & (FCF_SEQUENCE_SUPRESSION | FCF_FRAME_VERSION_MASK)) == (FCF_SEQUENCE_SUPRESSION | VERSION_2015);
+}
+
 /**
  * This function is designed to generate an empty Enh-Ack frame to enable
  * scheduling the necessary TX command. This is highly specific to Thread and
@@ -1397,14 +1534,34 @@ static otError rfCoreGenerateEmptyEnhAck(otRadioFrame *aRxFrame, otRadioFrame *a
 
     // FCF length
     len += sizeof(uint16_t);
-    // sequence Number
-    len += sizeof(uint8_t);
+
+    if (!IsSequenceSuppressed(fcf))
+    {
+        len += sizeof(uint8_t); // Seq number
+    }
+
 
     // PAN id compression
-    if (0U == (fcf & (1 << 6)))
+    //section 7.2.1.1.5 of 802.15.4-2006 spec
+    if (fcf & FCF_PANID_COMPRESSION)
     {
-        // PAN id
+        //if panid compression bit is 1 it is assumed that src and dst are the same
+        //only the size of one panid is added
         len += sizeof(otPanId);
+    }
+    else
+    {
+        //if panid compression bit is 0 check if both panids are present
+        //if they are present then add them otherwise do not include
+        if (IsDstPanIdPresent(fcf))
+        {
+            len += sizeof(otPanId);
+        }
+
+        if (IsSrcPanIdPresent(fcf))
+        {
+            len += sizeof(otPanId);
+        }
     }
 
     // dst Addr
@@ -2063,6 +2220,15 @@ otError otPlatRadioEnableCsl(otInstance *        aInstance,
     return OT_ERROR_NONE;
 }
 
+otError otPlatRadioResetCsl(otInstance *aInstance)
+{
+    OT_UNUSED_VARIABLE(aInstance);
+
+    sCslPeriod = 0;
+
+    return OT_ERROR_NONE;
+}
+
 uint8_t otPlatRadioGetCslAccuracy(otInstance *aInstance)
 {
     OT_UNUSED_VARIABLE(aInstance);
@@ -2162,6 +2328,13 @@ uint32_t otPlatRadioGetBusSpeed(otInstance *aInstance)
     return 0;
 }
 
+uint32_t otPlatRadioGetBusLatency(otInstance *aInstance)
+{
+    OT_UNUSED_VARIABLE(aInstance);
+
+    return 0;
+}
+
 otError otPlatRadioGetFemLnaGain(otInstance *aInstance, int8_t *aGain)
 {
     OT_UNUSED_VARIABLE(aInstance);
@@ -2236,7 +2409,7 @@ otError otPlatRadioSetRegion(otInstance *aInstance, uint16_t aRegionCode)
     otEXPECT_ACTION(regionIndex != OT_HAL_REGION_MAX, retval = OT_ERROR_INVALID_ARGS);
     otEXPECT_ACTION(regionIndex < otARRAY_LENGTH(otPlat_powerTable),
                     retval = OT_ERROR_INVALID_ARGS);
-    otEXPECT_ACTION(sReceiveCmdHandle != RF_ALLOC_ERROR,
+    otEXPECT_ACTION(sRfHandle != NULL, 
                     retval = OT_ERROR_INVALID_STATE);
     powerDbm = otPlat_powerTable[regionIndex][sReceiveCmd.channel - OT_RADIO_2P4GHZ_OQPSK_CHANNEL_MIN];
     otEXPECT_ACTION(REGION_IS_CH_DISABLED(powerDbm) == false,
@@ -2269,6 +2442,19 @@ static void platformRadioProcessTransmitDone(otInstance *  aInstance,
     if (sTransmitCmd.pPayload != NULL) {
     /* clear the pseudo-transmit-active flag */
     sTransmitCmd.pPayload = NULL;
+
+    if(aTransmitFrame->mInfo.mTxInfo.mCsmaCaEnabled && aTransmitFrame->mInfo.mTxInfo.mIsARetx)
+    {
+        threadMacStats.cca_retries++;
+    }
+    if(aTransmitFrame->mInfo.mTxInfo.mIsARetx && sReceiveCmd.localPanID != 0xffff)
+    {
+        threadMacStats.mac_tx_ucast_retry++;
+    }
+    if(sReceiveCmd.localPanID != 0xffff && aTransmitError != OT_ERROR_NONE)
+    {
+        threadMacStats.mac_tx_ucast_fail++;
+    }
 
 #if OPENTHREAD_CONFIG_DIAG_ENABLE
     if (otPlatDiagModeGet())
@@ -2444,6 +2630,8 @@ static void handleRxDataFinish(otInstance *aInstance, unsigned int aEvents, rfc_
 {
     otError      error;
     otRadioFrame receiveFrame = {0};
+    uint8_t      rx_sequence;
+    uint8_t      tx_sequence;
 
     error = populateReceiveFrame(&receiveFrame, &(curEntry->data));
     if (OT_ERROR_NONE != error)
@@ -2463,8 +2651,10 @@ static void handleRxDataFinish(otInstance *aInstance, unsigned int aEvents, rfc_
     /* Is this an ACK frame? */
     if (otMacFrameIsAck(&receiveFrame))
     {
+        otMacFrameGetSequence(&receiveFrame, &rx_sequence);
+        otMacFrameGetSequence(&sTransmitFrame, &tx_sequence);
         if (platformRadio_phyState_Transmit == sState && otMacFrameIsAckRequested(&sTransmitFrame) &&
-            otMacFrameGetSequence(&receiveFrame) == otMacFrameGetSequence(&sTransmitFrame))
+            rx_sequence == tx_sequence)
         {
             sState = platformRadio_phyState_Receive;
 
@@ -2888,3 +3078,67 @@ void platformRadioProcess(otInstance *aInstance, uintptr_t arg)
     }
 }
 
+/* Calculate Rate of PTA failures compared to requests for transmission */
+static void updatePTADeniedRate(void)
+{
+    threadMacStats.pta_denied_rate =
+        (((threadMacStats.pta_hi_pri_denied + threadMacStats.pta_lo_pri_denied) * 100) /
+        (threadMacStats.pta_hi_pri_req + threadMacStats.pta_lo_pri_req));
+}
+
+#if  OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE
+otError otPlatRadioSetCoexEnabled(otInstance *aInstance, bool aEnabled)
+{
+    OT_UNUSED_VARIABLE(aInstance);
+    /* Coex enable is controlled via sysconfig at compile time */
+    return OT_ERROR_NONE;
+}
+#if defined(CONFIG_RF_COEX_REQUEST) || defined (CONFIG_RF_COEX_PRIORITY) || defined (CONFIG_RF_COEX_GRANT)
+    extern rfc_ieeeCoExConfig_t coexConfig;
+#endif
+bool otPlatRadioIsCoexEnabled(otInstance *aInstance)
+{
+    OT_UNUSED_VARIABLE(aInstance);
+#if defined(CONFIG_RF_COEX_REQUEST) || defined (CONFIG_RF_COEX_PRIORITY) || defined (CONFIG_RF_COEX_GRANT)
+    return coexConfig.coExEnable.bCoExEnable;
+#else
+    return false;
+#endif
+}
+
+otError otPlatRadioGetCoexMetrics(otInstance *aInstance, otRadioCoexMetrics *aCoexMetrics)
+{
+    OT_UNUSED_VARIABLE(aInstance);
+
+    otError error = OT_ERROR_NONE;
+
+    otEXPECT_ACTION(aCoexMetrics != NULL, error = OT_ERROR_INVALID_ARGS);
+
+    memset(aCoexMetrics, 0, sizeof(otRadioCoexMetrics));
+    aCoexMetrics->mNumTxRequest                       = gCoexMetrics.mNumTxRequest;
+    aCoexMetrics->mNumTxGrantWait                     = gCoexMetrics.mNumTxGrantWait;
+    aCoexMetrics->mNumTxGrantImmediate                = aCoexMetrics->mNumTxRequest - aCoexMetrics->mNumTxGrantWait; // Total requests - Denied requests
+
+    aCoexMetrics->mNumRxRequest                       = gCoexMetrics.mNumRxRequest;
+    aCoexMetrics->mNumRxGrantImmediate                = gCoexMetrics.mNumRxRequest; // RX always has grant clearence
+
+    /* Unsupported Metrics */
+    aCoexMetrics->mStopped                            = false;
+    aCoexMetrics->mNumGrantGlitch                     = 0;
+    aCoexMetrics->mNumTxGrantWaitActivated            = 0;
+    aCoexMetrics->mNumTxGrantWaitTimeout              = 0;
+    aCoexMetrics->mNumTxGrantDeactivatedDuringRequest = 0;
+    aCoexMetrics->mNumTxDelayedGrant                  = 0;
+    aCoexMetrics->mAvgTxRequestToGrantTime            = 0;
+    aCoexMetrics->mNumRxGrantWait                     = 0;
+    aCoexMetrics->mNumRxGrantWaitActivated            = 0;
+    aCoexMetrics->mNumRxGrantWaitTimeout              = 0;
+    aCoexMetrics->mNumRxGrantDeactivatedDuringRequest = 0;
+    aCoexMetrics->mNumRxDelayedGrant                  = 0;
+    aCoexMetrics->mAvgRxRequestToGrantTime            = 0;
+    aCoexMetrics->mNumRxGrantNone                     = 0;
+
+exit:
+    return error;
+}
+#endif

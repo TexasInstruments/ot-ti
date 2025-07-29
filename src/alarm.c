@@ -43,10 +43,10 @@
 #ifdef OT_TI_KERNEL_freertos
 #include <FreeRTOS.h>
 #endif
-
-#define SYSTICK64_ROLLOVER_DELAY      0x80000
-#define SET_SYSTICK64_UPDATE_STATUS   0
-#define CLEAR_SYSTICK64_UPDATE_STATUS 1
+#include <ti/log/Log.h>
+#ifdef ti_log_Log_ENABLE
+#include "ti_log_config.h"
+#endif
 
 static uint32_t         Alarm_time0   = 0;
 static uint32_t         Alarm_time    = 0;
@@ -55,10 +55,13 @@ static ClockP_Struct    Alarm_Struct;
 static ClockP_Params    Alarm_Params;
 static bool             Alarm_running = false;
 
+#define SYSTICK64_ROLLOVER_DELAY      0x80000
+#define SET_SYSTICK64_UPDATE_STATUS   0
+#define CLEAR_SYSTICK64_UPDATE_STATUS 1
+
 /* Upper 32 bits of the 64-bit SysTickCount */
 static uint32_t upperSysTicks64    = 0;
 static bool updatedUpperSysTicks64 = true;
-
 /* Callback function to increment 64-bit counter on 32-bit counter overflow */
 static void systemTicks64Callback(uintptr_t arg);
 
@@ -92,7 +95,8 @@ uint32_t ticksToMilli(uint64_t ticks)
 
     if(ticks != 0U)
     {
-        milli = (ticks * tickPeriodUs) / 1000;
+
+        milli = (uint64_t)((ticks * tickPeriodUs) / 1000);
         if(milli == 0U)
         {
             milli = 1U;
@@ -118,7 +122,7 @@ static void systemTicks64Callback(uintptr_t arg)
 }
 
 /*
- *  ======== ClockP_getSystemTicks64 ========
+ *  ======== Alarm_getSystemTicks64 ========
  */
 uint64_t Alarm_getSystemTicks64(void)
 {
@@ -212,6 +216,7 @@ uint64_t Alarm_getSystemTicks64(void)
 void Alarm_handler(uintptr_t val)
 {
     (void)val;
+
     platformAlarmSignal();
 }
 
@@ -230,13 +235,13 @@ void platformAlarmInit(void)
 
     Alarm_running = false;
 }
-
 /**
  * Function documented in platform/alarm-milli.h
  */
 uint32_t otPlatAlarmMilliGetNow(void)
 {
     uint64_t ticks = Alarm_getSystemTicks64();
+    Log_printf(LogModule_Alarm, Log_DEBUG, "otPlatAlarmMilliGetNow ticks: 0x%lx%lx", ((ticks >> 32) & 0xFFFFFFFF), ticks & 0xFFFFFFFF);
 
     return (ticksToMilli(ticks));
 }
@@ -252,11 +257,12 @@ void otPlatAlarmMilliStartAt(otInstance *aInstance, uint32_t aT0, uint32_t aDt)
     Alarm_time0   = aT0;
     Alarm_time    = aDt;
     Alarm_running = true;
-
+    Log_printf(LogModule_Alarm, Log_DEBUG, "otPlatAlarmMilliStartAt aT0: %x aDt: %x", aT0, aDt);
     if ((delta) >= aDt)
     {
         // alarm is in the past
         platformAlarmSignal();
+        Log_printf(LogModule_Alarm, Log_DEBUG, "otPlatAlarmMilliStartAt Error, Alarm is in past");
     }
     else
     {
@@ -265,6 +271,7 @@ void otPlatAlarmMilliStartAt(otInstance *aInstance, uint32_t aT0, uint32_t aDt)
 
         ClockP_setTimeout(Alarm_handle, ticksTimeout);
         ClockP_start(Alarm_handle);
+        Log_printf(LogModule_Alarm, Log_DEBUG, "otPlatAlarmMilliStartAt Calculated Timeout: %x", ticksTimeout);
     }
 }
 
@@ -274,7 +281,7 @@ void otPlatAlarmMilliStartAt(otInstance *aInstance, uint32_t aT0, uint32_t aDt)
 void otPlatAlarmMilliStop(otInstance *aInstance)
 {
     (void)aInstance;
-
+    Log_printf(LogModule_Alarm, Log_DEBUG, "otPlatAlarmMilliStop");
     ClockP_stop(Alarm_handle);
     Alarm_running = false;
 }
@@ -284,14 +291,19 @@ void otPlatAlarmMilliStop(otInstance *aInstance)
  */
 void platformAlarmProcess(otInstance *aInstance)
 {
+    Log_printf(LogModule_Alarm, Log_DEBUG, "platformAlarmProcess: Entry");
+
     if (Alarm_running)
     {
         uint32_t nowTime    = otPlatAlarmMilliGetNow();
         uint32_t offsetTime = nowTime - Alarm_time0;
+        Log_printf(LogModule_Alarm, Log_DEBUG, "platformAlarmProcess: Entry Active params: NowTime: %x offsetTime: %x AlarmTime0: %x", nowTime, offsetTime, Alarm_time0);
 
         if (Alarm_time <= offsetTime)
         {
             Alarm_running = false;
+            Log_printf(LogModule_Alarm, Log_DEBUG, "platformAlarmProcess, time expired nowTime: %x offset time: %x alarmTime: %x", nowTime, offsetTime, Alarm_time);
+
 #if OPENTHREAD_CONFIG_DIAG_ENABLE
 
             if (otPlatDiagModeGet())
@@ -306,10 +318,9 @@ void platformAlarmProcess(otInstance *aInstance)
         }
         else
         {
-
+            Log_printf(LogModule_Alarm, Log_DEBUG, "platformAlarmProcess Restart Timer nowTime: %x offset time: %x alarmTime: %x", nowTime, offsetTime, Alarm_time);
             // restart the timer, might have overflowed or fired early for some reason
             otPlatAlarmMilliStartAt(aInstance, nowTime, Alarm_time - offsetTime);
         }
     }
 }
-

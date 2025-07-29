@@ -14,15 +14,6 @@ Internet-Draft for the [Spinel Protocol](https://github.com/openthread/spinel-sp
 A Python CLI tool called Pyspinel is available for testing purposes. For
 more information, see the [Pyspinel GitHub repository](https://github.com/openthread/pyspinel).
 
-# wpantund 
-
-`wpantund` is a user-space network interface driver/daemon that provides
-a native IPv6 network interface to an NCP. It was written and developed
-by Nest Labs to better support Thread connectivity on Unix-like
-operating systems. It uses Spinel to communicate with an NCP.
-
-`wpantund` is not included with OpenThread. For more information, see
-the [wpantund GitHub repository](https://github.com/openthread/wpantund).
 
 # Serial Interface Configuration 
 

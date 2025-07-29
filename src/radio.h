@@ -37,6 +37,18 @@
 
 #include <openthread/instance.h>
 
+#define VERSION_2015           (2 << 12)
+#define FCF_PANID_COMPRESSION  (1 << 6)
+#define FCF_DST_ADDR_NONE      (0 << 10)
+#define FCF_DST_ADDR_SHORT     (2 << 10)
+#define FCF_DST_ADDR_EXT       (3 << 10)
+#define FCF_DST_ADDR_MASK      (3 << 10)
+#define FCF_FRAME_VERSION_MASK (3 << 12)
+#define FCF_SRC_ADDR_NONE      (0 << 14)
+#define FCF_SRC_ADDR_SHORT     (2 << 14)
+#define FCF_SRC_ADDR_EXT       (3 << 14)
+#define FCF_SRC_ADDR_MASK      (3 << 14)
+#define FCF_SEQUENCE_SUPRESSION (1 << 8)
 /**
  * Size of the receive buffers in the receive queue.
  */
@@ -142,6 +154,29 @@ typedef enum platformRadio_address
     platformRadio_address_short = 0,
     platformRadio_address_ext   = 1,
 } platformRadio_address;
+
+/* Proprietary thread pta statistics struct, this tracks additional elements currently exposed by the
+standardized diag variables */
+typedef struct {
+    /* Total number of low priority PTA request */
+    uint16_t pta_lo_pri_req;
+    /* Total number of high priority PTA request */
+    uint16_t pta_hi_pri_req;
+    /* Total number of low priority PTA request denied by Controller */
+    uint16_t pta_lo_pri_denied;
+    /* Total number of high priority PTA request denied by Controller */
+    uint16_t pta_hi_pri_denied;
+    /* Total number of CCA retries */
+    uint16_t cca_retries;
+    /* Total number of CCA failure */
+    uint16_t cca_failures;
+    /* Total number of Unicast retries at MAC layer */
+    uint16_t mac_tx_ucast_retry;
+    /* Total number of Unicast failures at MAC layer */
+    uint16_t mac_tx_ucast_fail;
+    /* PTA deny rate */
+    uint16_t pta_denied_rate;
+} threadMacStatisticsStruct_t;
 
 /**
  * This enum represents the state of a radio.

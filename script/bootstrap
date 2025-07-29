@@ -29,15 +29,38 @@
 
 set -euxo pipefail
 
-SYSCONFIG_VERSION=sysconfig_1.18.1
+SYSCONFIG_VERSION=sysconfig_1.24.1
 SYSCONFIG_USER=~/ti/${SYSCONFIG_VERSION}/
 SYSCONFIG_SYSTEM=/opt/ti/${SYSCONFIG_VERSION}/
-SYSCONFIG_DL=https://dr-download.ti.com/software-development/ide-configuration-compiler-or-debugger/MD-nsUM6f7Vvb/1.18.1.3343/sysconfig-1.18.1_3343-setup.run
+SYSCONFIG_DL=https://dr-download.ti.com/software-development/ide-configuration-compiler-or-debugger/MD-nsUM6f7Vvb/1.24.1.4189/sysconfig-1.24.1_4189-setup.run
 
 if [ ! -d "$SYSCONFIG_USER" ] && [ ! -d "$SYSCONFIG_SYSTEM" ]; then
-    wget "$SYSCONFIG_DL" --tries 4 --no-check-certificate --quiet -c -O /tmp/sysconfig-1.18.1_3343-setup.run
-    chmod +x /tmp/sysconfig-1.18.1_3343-setup.run
-    /tmp/sysconfig-1.18.1_3343-setup.run --mode unattended
+    wget "$SYSCONFIG_DL" --tries 4 --no-check-certificate --quiet -c -O /tmp/sysconfig-1.24.1_4189-setup.run
+    chmod +x /tmp/sysconfig-1.24.1_4189-setup.run
+    /tmp/sysconfig-1.24.1_4189-setup.run --mode unattended
 fi
 
 "$(dirname "$0")"/../openthread/script/bootstrap
+
+#overwrite Openthread GCC Version
+install_ti_packages_apt()
+{
+    # apt-get update and install dependencies
+
+    PLATFORM=$(lsb_release -is)
+    ARCH=$(arch)
+
+    if [ "$PLATFORM" = "Raspbian" ]; then
+        sudo apt-get --no-install-recommends install -y binutils-arm-none-eabi gcc-arm-none-eabi gdb-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
+    elif [ "$PLATFORM" = "Ubuntu" ]; then
+        sudo apt-get --no-install-recommends install -y bzip2 ca-certificates wget
+        (cd /tmp \
+            && wget --tries 4 --no-check-certificate -c https://developer.arm.com/-/media/Files/downloads/gnu/12.2.rel1/binrel/arm-gnu-toolchain-12.2.rel1-"$ARCH"-arm-none-eabi.tar.xz \
+            && sudo tar xvf arm-gnu-toolchain-12.2.rel1-"$ARCH"-arm-none-eabi.tar.xz -C /opt \
+            && rm arm-gnu-toolchain-12.2.rel1-"$ARCH"-arm-none-eabi.tar.xz \
+            && sudo ln -s -f /opt/arm-gnu-toolchain-12.2.rel1-"$ARCH"-arm-none-eabi/bin/* /usr/local/bin/.)
+    fi
+}
+
+echo 'Installing TI toolchain dependencies...'
+install_ti_packages_apt
