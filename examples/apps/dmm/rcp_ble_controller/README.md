@@ -28,7 +28,8 @@ Border Router:
     - [Raspberry Pi](https://www.raspberrypi.com/)
     - OR Generic Linux Ubuntu 22.04 host
 
-- UART FTDI cable (Pins: DIO46-TX, DIO47-RX)
+- UART FTDI cable
+- TI LaunchPad with XDS110 Connected
 - [SimpleLink CC1354P10-6 Launchpad](https://www.ti.com/tool/LP-EM-CC1354P10)
 - [SimpleLink LP_EM_CC2755P10 Launchpad](https://www.ti.com/tool/LP-EM-CC2745R10-Q1)
 
@@ -84,21 +85,22 @@ Disable existing adapters, since later on we wish to use the TI Device as the so
 
 ## 0. Identify relevant UART Ports
 
-The RCP-BLE-Controller application utilizes two UART ports on the device; the FTDI cable is used for the RCP->OTBR connection and the XDS110 UART is used for BLE HCI->Linux Host connection.
+The RCP-BLE-Controller application utilizes two UART ports on the device via the FTDI cable and XDS110. Each of these are used for a specific protocol, either for the RCP->OTBR
+connection or for theBLE HCI->Linux Host connection. See the example Sysconfig file for pin mappings
 Plug in the RCP-BLE-Controller Launchpad to the Linux Host machine using the XDS110 UART cable and FTDI cable.
 
 Identify which ports are active on the command line via:
 ```bash
 ls /dev/tty*
 ```
-Note: You should see three ports, two from the Launchpad (usually /dev/ttyACM0 for HCI) and one for the FTDI cable (usually /dev/ttyUSB0 for RCP).
+Note: You should see three ports, two from the Launchpad (usually /dev/ttyACM0) and one for the FTDI cable (usually /dev/ttyUSB0).
 
 ## 1. Set Up Linux Host
 
 Note: Only complete Task 1 from the Simplelink Academy link below to set up the border router (OTBR).
 
 [Border router set up guide](https://openthread.io/guides/border-router/build) 
-When running the OTBR, make sure to use the UART port associated with the FTDI cable, this should be /dev/ttyUSB0.
+When running the OTBR, make sure to use the UART port associated with the Openthread reference in your Sysconfig file.
 
 Note: For initial setup of an RPI follow the [Matter User's Guide](https://github.com/project-chip/certification-tool/blob/main/docs/Matter_TH_User_Guide/Matter_TH_User_Guide.adoc#fresh_install)
 
@@ -225,7 +227,7 @@ sudo ot-ctl ping fd9e:6062:a089:68d:0:ff:fe00:4800
 ```
 ## 6. Configure BLE on the Linux Host
 
-Note: Replace the device with the corresponding LP UART port. This should be /dev/ttyACM0
+Note: Replace the device with the corresponding XDS110 Port or FTDI port, reference the Sysconfig file for details.
 ```bash
 sudo hciattach /dev/ttyACM0 any 921600
 ```
