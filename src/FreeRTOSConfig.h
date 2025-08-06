@@ -46,7 +46,7 @@
  *----------------------------------------------------------*/
 
 /* General options */
-#if !defined(DeviceFamily_CC27XXX10)
+#if !defined(DeviceFamily_CC27XXX10) && !defined(DeviceFamily_CC27XXX20)
 #define configCPU_CLOCK_HZ ((unsigned long)(48000000))
 #else
 #define configCPU_CLOCK_HZ ((unsigned long)(96000000))
@@ -90,7 +90,7 @@
 #define configTOTAL_HEAP_SIZE ((size_t)(3400))
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION 0
 
-#elif defined(DeviceFamily_CC27XXX10)
+#elif defined(DeviceFamily_CC27XXX10) || defined(DeviceFamily_CC27XXX20)
 #define configTOTAL_HEAP_SIZE ((size_t)(0x9000))
 #define configUSE_PORT_OPTIMISED_TASK_SELECTION 0
 /* TrustZone/PSA settings */
@@ -234,7 +234,7 @@
 #define INCLUDE_xTaskGetSchedulerState 1
 #define INCLUDE_xSemaphoreGetMutexHolder 0
 
-#if defined(DeviceFamily_CC27XXX10)
+#if defined(DeviceFamily_CC27XXX10) || defined(DeviceFamily_CC27XXX20)
 #define configPRIO_BITS 4 /* 16 priority levels */
 /*
  * The lowest interrupt priority that can be used in a call to a "set priority"

@@ -89,6 +89,8 @@ main()
     build LP_EM_CC2340R53 "${OT_OPTIONS[@]}"
     
     build LP_EM_CC2755P10 "${OT_OPTIONS[@]}"
+
+    build LP_EM_CC2755P20 "${OT_OPTIONS[@]}"
 }
 
 main "$@"

@@ -115,6 +115,10 @@ if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
         set(CC13XX_CC26XX_LDS
             ${TI_SIMPLELINK_SDK_DIR}/source/ti/boards/lpf3/lpf3_cc23xx_freertos.lds
         )
+    elseif(TI_SIMPLELINK_BOARD MATCHES "LP_EM_CC2755P20")
+            set(CC13XX_CC26XX_LDS
+                ${TI_SIMPLELINK_SDK_DIR}/source/ti/boards/cc27xxx20/cc27xxx20_freertos.lds
+            )
     elseif(TI_SIMPLELINK_BOARD MATCHES "LP_EM_CC2755*")
             set(CC13XX_CC26XX_LDS
                 ${TI_SIMPLELINK_SDK_DIR}/source/ti/boards/lpf3/lpf3_cc27xx_freertos.lds
@@ -205,9 +209,13 @@ elseif(${TI_SIMPLELINK_BOARD} STREQUAL "LP_EM_CC2340R53")
     target_compile_definitions(cc13xx-cc26xx-sdk PUBLIC DeviceFamily_CC23X0R53)
     target_compile_definitions(ot-config INTERFACE DeviceFamily_CC23X0R53)
 
-elseif(${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2755*")
+elseif(${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2755P10")
     target_compile_definitions(cc13xx-cc26xx-sdk PUBLIC DeviceFamily_CC27XXX10)
     target_compile_definitions(ot-config INTERFACE DeviceFamily_CC27XXX10)
+
+elseif(${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2755P20")
+    target_compile_definitions(cc13xx-cc26xx-sdk PUBLIC DeviceFamily_CC27XXX20)
+    target_compile_definitions(ot-config INTERFACE DeviceFamily_CC27XXX20)
 else()
     message(FATAL_ERROR "Unsuported TI_SIMPLELINK_DEVICE: ${TI_SIMPLELINK_DEVICE}")
 endif()

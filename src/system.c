@@ -195,7 +195,7 @@ void platformUartSignal(uintptr_t arg)
 
     (void) ret;
 }
-#if !defined(DeviceFamily_CC23X0R5) && !defined (DeviceFamily_CC27XXX10)
+#if !defined(DeviceFamily_CC23X0R5) && !defined (DeviceFamily_CC27XXX10) && !defined(DeviceFamily_CC27XXX20)
 
 void platformSpiSignal()
 {
@@ -319,7 +319,7 @@ void otSysProcessDrivers(otInstance *aInstance)
                 platformAlarmMicroProcess(aInstance);
                 break;
             }
-#if !defined(DeviceFamily_CC23X0R5) && !defined (DeviceFamily_CC27XXX10)
+#if !defined(DeviceFamily_CC23X0R5) && !defined (DeviceFamily_CC27XXX10) && !defined(DeviceFamily_CC27XXX20)
             case OtStack_procQueueCmd_spi:
             {
                 platformSpiProcess();
