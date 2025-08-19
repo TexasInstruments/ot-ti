@@ -27,7 +27,7 @@
 #
 if(NOT $ENV{TI_SIMPLELINK_SDK_DIR} STREQUAL "")
     set(TI_SIMPLELINK_SDK_DIR $ENV{TI_SIMPLELINK_SDK_DIR} CACHE PATH "")
-elseif ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR  ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2755*")
+elseif ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR  ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC27(45|55)*")
     set(TI_SIMPLELINK_SDK_DIR ${PROJECT_SOURCE_DIR}/third_party/ti_simplelink_sdk/repo_cc23xx_cc27xx CACHE PATH "")
 else()  
     set(TI_SIMPLELINK_SDK_DIR ${PROJECT_SOURCE_DIR}/third_party/ti_simplelink_sdk/repo_cc13xx_cc26xx CACHE PATH "")
@@ -80,7 +80,7 @@ if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
         )
         endif()
 
-    elseif ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2755*")
+    elseif ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC27(45|55)*")
         list(APPEND CC13XX_CC26XX_DPL_SRCS
             ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/ClockPLPF3_freertos.c
             ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/dpl/HwiPCC27XX_freertos.c
@@ -119,7 +119,7 @@ if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
             set(CC13XX_CC26XX_LDS
                 ${TI_SIMPLELINK_SDK_DIR}/source/ti/boards/cc27xxx20/cc27xxx20_freertos.lds
             )
-    elseif(TI_SIMPLELINK_BOARD MATCHES "LP_EM_CC2755*")
+    elseif(TI_SIMPLELINK_BOARD MATCHES "LP_EM_CC27(45|55)*")
             set(CC13XX_CC26XX_LDS
                 ${TI_SIMPLELINK_SDK_DIR}/source/ti/boards/lpf3/lpf3_cc27xx_freertos.lds
             )
@@ -209,7 +209,7 @@ elseif(${TI_SIMPLELINK_BOARD} STREQUAL "LP_EM_CC2340R53")
     target_compile_definitions(cc13xx-cc26xx-sdk PUBLIC DeviceFamily_CC23X0R53)
     target_compile_definitions(ot-config INTERFACE DeviceFamily_CC23X0R53)
 
-elseif(${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2755P10")
+elseif(${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2745R10_Q1")
     target_compile_definitions(cc13xx-cc26xx-sdk PUBLIC DeviceFamily_CC27XXX10)
     target_compile_definitions(ot-config INTERFACE DeviceFamily_CC27XXX10)
 
@@ -220,7 +220,7 @@ else()
     message(FATAL_ERROR "Unsuported TI_SIMPLELINK_DEVICE: ${TI_SIMPLELINK_DEVICE}")
 endif()
 
-if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR  ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2755*")
+if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR  ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC27(45|55)*")
 list(APPEND TI_PLATFORM_INCLUDES
     ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/
     ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos/exception)
@@ -242,7 +242,7 @@ target_include_directories(ot-config INTERFACE
 
 
 
-if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR  ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2755*")
+if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR  ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC27(45|55)*")
     # Loki CC23x* Platforms
     add_library(cc23xx-driverlib INTERFACE)
     target_link_libraries(cc23xx-driverlib

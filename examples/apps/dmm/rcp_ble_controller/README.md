@@ -3,7 +3,7 @@
 
 # Introduction
 This document describes how to communicate with both Thread and BLE devices using a single TI CC1354P10-6 attached to a Linux machine.
-This is accomplished by the TI CC1354P10-6 or LP_EM_CC2755P10 device running the DMM (RCP + BLE-Controller) example interfacing with a Linux host running OTBR and BlueZ.
+This is accomplished by the TI CC1354P10-6 or LP_EM_CC2745R10_Q1 device running the DMM (RCP + BLE-Controller) example interfacing with a Linux host running OTBR and BlueZ.
 Following this document you will be able to:
 * Create a Thread network via OTBR + RCP-BLE-Controller setup
 * Join a node to the Thread network created
@@ -31,7 +31,7 @@ Border Router:
 - UART FTDI cable
 - TI LaunchPad with XDS110 Connected
 - [SimpleLink CC1354P10-6 Launchpad](https://www.ti.com/tool/LP-EM-CC1354P10)
-- [SimpleLink LP_EM_CC2755P10 Launchpad](https://www.ti.com/tool/LP-EM-CC2745R10-Q1)
+- [SimpleLink LP_EM_CC2745R10_Q1 Launchpad](https://www.ti.com/tool/LP-EM-CC2745R10-Q1)
 
 Linux BLE Controller Host:
 - Raspberry PI 4
@@ -53,7 +53,7 @@ FTD/MTD: Boards listed below for secondary Thread device which will join the net
 - [SimpleLink CC2652R7 Launchpad](https://www.ti.com/tool/LP-CC2652R7)
 - [SimpleLink CC2652RB Launchpad](https://www.ti.com/tool/LP-CC2652RB)  
 - [SimpleLink CC2652RSIP Launchpad](https://www.ti.com/tool/LP-CC2652RSIP)
-- [SimpleLink LP_EM_CC2755P10 Launchpad](https://www.ti.com/tool/LP-EM-CC2745R10-Q1)
+- [SimpleLink LP_EM_CC2745R10_Q1 Launchpad](https://www.ti.com/tool/LP-EM-CC2745R10-Q1)
 
 Serial Terminal
 - [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)
@@ -123,13 +123,13 @@ Build image for your platform.
 cd ot-ti
 ./script/build <Platform> -DOT_APP_RCP_BLE_CONTROLLER=1
 ```
-For this document, the specific platform is CC1354P10-6 or LP_EM_CC2755P10:
+For this document, the specific platform is CC1354P10-6 or LP_EM_CC2745R10_Q1:
 ```bash
 ./script/build LP_EM_CC1354P10_6 -DOT_APP_RCP_BLE_CONTROLLER=1
 ```
 OR
 ```bash
-./script/build LP_EM_CC2755P10 -DOT_APP_RCP_BLE_CONTROLLER=1
+./script/build LP_EM_CC2745R10_Q1 -DOT_APP_RCP_BLE_CONTROLLER=1
 ```
 Once built the images will be in ot-ti/build/bin.
 
