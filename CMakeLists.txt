@@ -65,6 +65,12 @@ set(OPENTHREAD_CONFIG_FILE "openthread-core-cc13xx_cc26xx-config.h" CACHE STRING
 set(OPENTHREAD_PROJECT_CORE_CONFIG_FILE "openthread-core-cc13xx_cc26xx-config.h" CACHE STRING "")
 set(OPENTHREAD_CORE_CONFIG_PLATFORM_CHECK_FILE "openthread-core-cc13xx_cc26xx-config-check.h" CACHE STRING "")
 
+if (NCP_BUILD_ENABLED)
+    target_compile_definitions(ot-config INTERFACE "NCP_BUILD_ENABLED=1")
+else()
+    target_compile_definitions(ot-config INTERFACE "NCP_BUILD_ENABLED=0")
+endif()
+
 target_compile_definitions(ot-config INTERFACE
     "OPENTHREAD_CONFIG_FILE=\"${OPENTHREAD_CONFIG_FILE}\""
     "OPENTHREAD_PROJECT_CORE_CONFIG_FILE=\"${OPENTHREAD_PROJECT_CORE_CONFIG_FILE}\""

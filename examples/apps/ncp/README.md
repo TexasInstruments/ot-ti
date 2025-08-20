@@ -10,25 +10,13 @@ This document describes how to setup the NCP + OTBR setup working with a CLI-FTD
 
 # Software Prerequisites
 - [Border Router software](https://github.com/openthread/ot-br-posix)
-- [Wpantund software](https://github.com/openthread/wpantund)
 - [UniFlash](https://www.ti.com/tool/UNIFLASH)
 # Hardware Prerequisites
 Border Router:
 - [Beagle Bone Black](https://www.beagleboard.org/boards/beaglebone-black)
 - [Raspberry Pi](https://www.raspberrypi.com/)
 
-NCP/FTD: Two launch pads of boards listed below
- 
-- [SimpleLink CC1352P2 Launchpad](https://www.ti.com/tool/LAUNCHXL-CC1352P)
-- [SimpleLink CC1352P4 Launchpad](https://www.ti.com/tool/LAUNCHXL-CC1352P)
-- [SimpleLink CC1352P7 Launchpad](https://www.ti.com/tool/LP-CC1352P7)
-- [SimpleLink CC1352P7-4 Launchpad](https://www.ti.com/tool/LP-CC1352P7)
-- [SimpleLink CC1354P10-1 Launchpads](https://www.ti.com/tool/LP-EM-CC1354P10)
-- [SimpleLink CC26X2R1 Laundpads](https://www.ti.com/tool/LAUNCHXL-CC26X2R1)
-- [SimpleLink CC2652PSIP Launchpad](https://www.ti.com/tool/LP-CC2652RSIP)
-- [SimpleLink CC2652R7 Launchpad](https://www.ti.com/tool/LP-CC2652R7)
-- [SimpleLink CC2652RB Launchpad](https://www.ti.com/tool/LP-CC2652RB)  
-- [SimpleLink CC2652RSIP Launchpad](https://www.ti.com/tool/LP-CC2652RSIP)
+NCP/FTD: Two LaunchPads from the list of supported [TI devices](../../../README.md#openthread-simplelink-example)
 
 Serial Terminal
 - [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)
@@ -40,23 +28,28 @@ Serial Terminal
 
 - [NCP Overview](https://openthread.io/platforms/co-processor)
 
-- [Wpantund Overview](https://github.com/openthread/wpantund/tree/master)
-
-
 # Example Usage
 
-## 1. Set up Border Router and wpantund
+## 1. Set up Border Router
 
 Note: Only complete Task 1 from the simplelink academy link below to set up the border router. Other tasks are not required to get the NCP working. 
 
 [Border router set up guide](https://dev.ti.com/tirex/explore/node?node=A__AUviXt3yUXFwOz5WHh5IlQ__com.ti.SIMPLELINK_ACADEMY_CC13XX_CC26XX_SDK__AfkT0vQ__LATEST&search=thread) 
 
-[WPANTUND install guide](https://github.com/openthread/wpantund/blob/master/INSTALL.md)
-
-
 ## 2. Build and flash NCP
 
 To obtain a list of supported platforms input ./script/build
+
+Uncomment the following code from ot-ti/script/build to properly build the NCP.
+```
+"-DNCP_BUILD_ENABLED=ON"
+"-DOT_NCP_DNSSD=ON"
+"-DOT_NCP_CLI_STREAM=ON"
+"-DOT_NCP_INFRA_IF=ON"
+"-DOT_BORDER_ROUTING=ON"
+```
+
+Once uncommented run the following commands to build the image for your platform.
 
 ```bash
 cd ot-ti
@@ -64,7 +57,7 @@ cd ot-ti
 ```
 Once built the images will be in ot-ti/build/bin.
 
-Flash the board using UniFlash with the image generated.
+Flash the board using UniFlash or CCS with the image generated.
 ## 3. Start NCP
 
 
