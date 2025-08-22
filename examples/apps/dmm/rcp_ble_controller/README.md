@@ -1,15 +1,16 @@
 # OpenThread RCP-BLE-Controller Example
 
-
 # Introduction
+
 This document describes how to communicate with both Thread and BLE devices using a single TI CC1354P10-6 attached to a Linux machine.
 This is accomplished by the TI CC1354P10-6 or LP_EM_CC2745R10_Q1 device running the DMM (RCP + BLE-Controller) example interfacing with a Linux host running OTBR and BlueZ.
 Following this document you will be able to:
-* Create a Thread network via OTBR + RCP-BLE-Controller setup
-* Join a node to the Thread network created
-* Send messages between the two Thread network devices
-* Scan for active BLE peripheral devices via BlueZ + RCP-BLE-Controller setup
-* Connect to a BLE peripheral device
+
+- Create a Thread network via OTBR + RCP-BLE-Controller setup
+- Join a node to the Thread network created
+- Send messages between the two Thread network devices
+- Scan for active BLE peripheral devices via BlueZ + RCP-BLE-Controller setup
+- Connect to a BLE peripheral device
 
 <div style="text-align: center;">
   <img src="resources/RCP-BLE-Controller-setup.png" alt="Figure 1. Example RCP-BLE-Controller Setup">
@@ -17,11 +18,13 @@ Following this document you will be able to:
 </div>
 
 # Software Prerequisites
+
 - [Border Router software](https://github.com/openthread/ot-br-posix)
 - [UniFlash](https://www.ti.com/tool/UNIFLASH)
 - x86 based Linux environment for application builds
 
 # Hardware Prerequisites
+
 This application has been verified to work with the following OTBR/BLE host setups
 Border Router:
 
@@ -34,15 +37,17 @@ Border Router:
 - [SimpleLink LP_EM_CC2745R10_Q1 Launchpad](https://www.ti.com/tool/LP-EM-CC2745R10-Q1)
 
 Linux BLE Controller Host:
+
 - Raspberry PI 4
 - OR Generic Linux Ubuntu 22.04 host
-Note: Host must have compatible Linux Ubuntu 22.04+ OR Debian image with Native BlueZ & HCI Config support
+  Note: Host must have compatible Linux Ubuntu 22.04+ OR Debian image with Native BlueZ & HCI Config support
 
 A Beaglebone Black may be used for a host, but has not been verified with this application:
+
 - [Beagle Bone Black](https://www.beagleboard.org/boards/beaglebone-black)
 
 FTD/MTD: Boards listed below for secondary Thread device which will join the network started by the OTBR + TI Device running the DMM (RCP+BLE-Controller) example
- 
+
 - [SimpleLink CC1352P2 Launchpad](https://www.ti.com/tool/LAUNCHXL-CC1352P)
 - [SimpleLink CC1352P4 Launchpad](https://www.ti.com/tool/LAUNCHXL-CC1352P)
 - [SimpleLink CC1352P7 Launchpad](https://www.ti.com/tool/LP-CC1352P7)
@@ -51,34 +56,38 @@ FTD/MTD: Boards listed below for secondary Thread device which will join the net
 - [SimpleLink CC26X2R1 Laundpads](https://www.ti.com/tool/LAUNCHXL-CC26X2R1)
 - [SimpleLink CC2652PSIP Launchpad](https://www.ti.com/tool/LP-CC2652RSIP)
 - [SimpleLink CC2652R7 Launchpad](https://www.ti.com/tool/LP-CC2652R7)
-- [SimpleLink CC2652RB Launchpad](https://www.ti.com/tool/LP-CC2652RB)  
+- [SimpleLink CC2652RB Launchpad](https://www.ti.com/tool/LP-CC2652RB)
 - [SimpleLink CC2652RSIP Launchpad](https://www.ti.com/tool/LP-CC2652RSIP)
 - [SimpleLink LP_EM_CC2745R10_Q1 Launchpad](https://www.ti.com/tool/LP-EM-CC2745R10-Q1)
 
 Serial Terminal
+
 - [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)
 - [Tera Term](https://osdn.net/projects/ttssh2/releases)
 - [RealTerm](https://sourceforge.net/projects/realterm/)
 - [Windows PowerShell](https://learn.sparkfun.com/tutorials/terminal-basics/command-line-windows-mac-linux)
 
 # Building the Example
+
 Instructions may be found in the Building section within the top level [README](../../../../README.md) for the supported platforms.
 
 # Example Usage
 
-##  Pre-work
+## Pre-work
 
 Check to see if any Bluetooth adapters are already active
+
 ```bash
 > sudo hciconfig
 hci0:   Type: Primary  Bus: UART
         BD Address: XX:XX:XX:XX:XX:XX  ACL MTU: 255:5  SCO MTU: 0:0
-        UP RUNNING 
+        UP RUNNING
         RX bytes:2505 acl:0 sco:0 events:77 errors:0
         TX bytes:283 acl:0 sco:0 commands:34 errors:0
 ```
 
 Disable existing adapters, since later on we wish to use the TI Device as the sole Bluetooth LE adapter.
+
 ```bash
 > sudo hciconfig hci0 down
 ```
@@ -90,16 +99,18 @@ connection or for theBLE HCI->Linux Host connection. See the example Sysconfig f
 Plug in the RCP-BLE-Controller Launchpad to the Linux Host machine using the XDS110 UART cable and FTDI cable.
 
 Identify which ports are active on the command line via:
+
 ```bash
 ls /dev/tty*
 ```
+
 Note: You should see three ports, two from the Launchpad (usually /dev/ttyACM0) and one for the FTDI cable (usually /dev/ttyUSB0).
 
 ## 1. Set Up Linux Host
 
 Note: Only complete Task 1 from the Simplelink Academy link below to set up the border router (OTBR).
 
-[Border router set up guide](https://openthread.io/guides/border-router/build) 
+[Border router set up guide](https://openthread.io/guides/border-router/build)
 When running the OTBR, make sure to use the UART port associated with the Openthread reference in your Sysconfig file.
 
 Note: For initial setup of an RPI follow the [Matter User's Guide](https://github.com/project-chip/certification-tool/blob/main/docs/Matter_TH_User_Guide/Matter_TH_User_Guide.adoc#fresh_install)
@@ -114,29 +125,39 @@ Navigate to the root of the ot-ti repository.
 To obtain a list of supported platforms, execute ./script/build
 
 On first time build, run bootstrap script.
+
 ```bash
 cd ot-ti
 ./script/bootstrap
 ```
+
 Build image for your platform.
+
 ```bash
 cd ot-ti
 ./script/build <Platform> -DOT_APP_RCP_BLE_CONTROLLER=1
 ```
+
 For this document, the specific platform is CC1354P10-6 or LP_EM_CC2745R10_Q1:
+
 ```bash
 ./script/build LP_EM_CC1354P10_6 -DOT_APP_RCP_BLE_CONTROLLER=1
 ```
+
 OR
+
 ```bash
 ./script/build LP_EM_CC2745R10_Q1 -DOT_APP_RCP_BLE_CONTROLLER=1
 ```
+
 Once built the images will be in ot-ti/build/bin.
 
 Flash the board using UniFlash with the image generated (ot-rcp-ble-controller.out).
+
 ## 3. Start RCP
 
 Connect RCP to the Linux Host running OTBR (setup from step 1), then restart OTBR to make sure all configurations have taken effect.
+
 ```bash
 sudo systemctl restart otbr-agent.service
 ```
@@ -157,18 +178,21 @@ Done
 ```
 
 Bring up the IPv6 interface:
+
 ```bash
 sudo ot-ctl ifconfig up
 Done
 ```
 
 Start Thread protocol operation:
+
 ```bash
 sudo ot-ctl thread start
 Done
 ```
 
 Check status of network after a few seconds
+
 ```bash
 sudo ot-ctl state
 leader
@@ -176,6 +200,7 @@ Done
 ```
 
 ## 4. Start Thread Node 1
+
 Set up the basic Thread network information for the node.
 (Note you will need to build this image similarly to step 2. Recommended to use the cli-ftd example.)
 
@@ -221,13 +246,16 @@ Done
 ```
 
 Ping Node 1 from RCP
+
 ```bash
 sudo ot-ctl ping fd9e:6062:a089:68d:0:ff:fe00:4800
 18 bytes from fd9e:6062:a089:68d:0:ff:fe00:4800: icmp_seq=1 hlim=64 time=24ms
 ```
+
 ## 6. Configure BLE on the Linux Host
 
 Note: Replace the device with the corresponding XDS110 Port or FTDI port, reference the Sysconfig file for details.
+
 ```bash
 sudo hciattach /dev/ttyACM0 any 921600
 ```
@@ -240,7 +268,7 @@ Find BDADDR (XX:XX:XX:XX:XX:XX) of HCI adapter.
 > sudo hciconfig
 hci0:   Type: Primary  Bus: UART
         BD Address: XX:XX:XX:XX:XX:XX  ACL MTU: 255:5  SCO MTU: 0:0
-        UP RUNNING 
+        UP RUNNING
         RX bytes:2505 acl:0 sco:0 events:77 errors:0
         TX bytes:283 acl:0 sco:0 commands:34 errors:0
 ```

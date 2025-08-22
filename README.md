@@ -13,7 +13,6 @@ built with FreeRTOS to enable an environment for the standard device drivers to 
 
 For list of supported devices in a release please refer to the [release notes](docs/ti-openthread-release-notes.md).
 
-
 ## Navigating TI OpenThread Documentation
 
 The documentation hosted in the `docs` folder is sorted by alphabetical order. After reading the rest of the README document, it is recommended to read the documentation in the following order:
@@ -62,6 +61,7 @@ $ ./script/build <simplelink_board> -DOT_APP_RCP_BLE_CONTROLLER=1
 ```
 
 \***\*Attention:\*\*** The above statement is only true when you have already run the bootstrap script.
+
 ## Flash Binaries
 
 If the build completed successfully, the `elf` files may be found in `<path-to-ot-ti>/build/bin/`. These files do not

@@ -333,5 +333,3 @@ void otSysProcessDrivers(otInstance *aInstance)
         }
     }
 }
-
-
