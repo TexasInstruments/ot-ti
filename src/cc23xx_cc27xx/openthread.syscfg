@@ -106,7 +106,17 @@ if(deviceId.match(/CC(23.*)/))
     NVS1.internalFlash.regionBase = 0x10000;
     NVS1.internalFlash.regionSize = 0x4000;
 }
-else if(deviceId.match(/CC(27.*)/))
+else if (deviceId.match(/cc2755p10/i))
+{
+    NVS1.internalFlash.regionBase = 0xE4000;
+    NVS1.internalFlash.regionSize = 0x4000;
+}
+else if (deviceId.match(/cc2755p20/i))
+{
+    NVS1.internalFlash.regionBase = 0x1E4000;
+    NVS1.internalFlash.regionSize = 0x4000;
+}
+else if (deviceId.match(/CC(27.*)/))
 {
     NVS1.internalFlash.regionBase = 0x7C000;
     NVS1.internalFlash.regionSize = 0x4000;

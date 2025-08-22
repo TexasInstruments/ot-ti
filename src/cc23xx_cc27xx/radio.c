@@ -270,7 +270,9 @@ static void    rclToggleReceiveCmd(otInstance *aInstance);
 static uint8_t rclFindShortSrcMatchIdx(uint16_t shortAddr);
 static uint8_t rclFindEmptyShortSrcMatchIdx(void);
 void startTimerForRxBackoff(void);
+#ifdef USE_DMM
 static void rxBackoffTimerCallback(uintptr_t arg);
+#endif
 extern uint32_t microToTicks(uint32_t micro);
 /* Function Prototypes End */
 
@@ -467,6 +469,8 @@ void rclRxTxCallback(RCL_Command *cmd, LRF_Events lrfEvents, RCL_Events rclEvent
 
 #ifdef USE_DMM
                 dmmSetActivityTrackingRx(resetRxTracking);
+#else
+                (void)resetRxTracking;
 #endif
         }
     }
@@ -2783,11 +2787,13 @@ exit:
 #endif /* OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE */
 
 // Timer callback function to post the RX_STOP event
+#ifdef USE_DMM
 static void rxBackoffTimerCallback(uintptr_t arg)
 {
     unsigned int evts = RF_EVENT_RX_CMD_STOP;
     radioSignal(evts);
 }
+#endif
 
 /**
  * @brief Start a timer for RX backoff with a fixed backoff exponent of 5.

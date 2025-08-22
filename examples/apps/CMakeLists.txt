@@ -36,8 +36,10 @@ if(OT_APP_CLI)
 endif()
 
 if(NOT TI_SIMPLELINK_BOARD STREQUAL "LP_EM_CC2340R5")
+if(NCP_BUILD_ENABLED)
   add_subdirectory(ncp)
-endif()
+endif() #NCP_BUILD_ENABLED
+endif() #TI_SIMPLELINK_BOARD
 
 add_subdirectory(rcp)
 

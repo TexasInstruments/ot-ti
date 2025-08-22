@@ -70,12 +70,16 @@ readonly TI_LAUNCHPAD=(
     CC2674R10RSK
     LP_EM_CC2340R5
     LP_EM_CC2340R53
-    LP_EM_CC2755P10
+    LP_EM_CC2745R10_Q1
+    LP_EM_CC2755P20
 )
 
 readonly OT_SRCDIR="$(pwd)"
 readonly OT_OPTIONS=(
     "-DOT_PLATFORM=external"
+    #8/18/25 -NOTE: There are defines for this in the config file but the current OT commit does not use them.
+    #uncomment the following lines to enable NCP build
+    # "-DNCP_BUILD_ENABLED=ON"
     # "-DOT_NCP_DNSSD=ON"
     # "-DOT_NCP_CLI_STREAM=ON"
     # "-DOT_NCP_INFRA_IF=ON"
@@ -193,7 +197,8 @@ main()
        LP_EM_CC2340R53)
             options+=("-DCMAKE_TOOLCHAIN_FILE=src/arm-none-eabi-m0p.cmake")
             ;;
-       LP_EM_CC2755P10)
+       LP_EM_CC2745R10_Q1 | \
+                LP_EM_CC2755P20)
             options+=("-DCMAKE_TOOLCHAIN_FILE=src/arm-none-eabi-m33-cc27xx.cmake")
             ;;
     esac

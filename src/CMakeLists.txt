@@ -90,7 +90,7 @@ if(${TI_SIMPLELINK_BOARD} MATCHES "CC2674*")
     set(sysconfig_file CC2674.syscfg)
 
 
-elseif ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2755*")
+elseif ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC27(55|45)*")
     set(syscfg_cmd ${TI_SYSCONFIG_CMD}
                     -s ${TI_SIMPLELINK_SDK_DIR}/.metadata/product.json
                     -o ${CMAKE_CURRENT_BINARY_DIR}/syscfg
@@ -101,7 +101,7 @@ elseif ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR ${TI_SIMPLELINK_BOA
 
     set(sysconfig_file openthread.syscfg)
     if(OT_APP_RCP_BLE_CONTROLLER)
-        if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR  ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2755*")
+        if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR  ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC27(55|45)*")
             set(syscfg_cmd ${TI_SYSCONFIG_CMD}
                             -s ${TI_SIMPLELINK_SDK_DIR}/.metadata/product.json
                             -o ${CMAKE_CURRENT_BINARY_DIR}/syscfg
@@ -175,7 +175,7 @@ if (OT_APP_RCP_BLE_CONTROLLER)
         dmm/dmm_thread_activity.c
     )
 
-if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2755*")
+if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC27(55|45)*")
 
     set(BLE_LIBS
         ble-stack-lib
@@ -233,7 +233,7 @@ if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*")
     list(APPEND TI_PLATFORM_INCLUDES  ${CMAKE_CURRENT_SOURCE_DIR}/cc23xx_cc27xx  ${CMAKE_CURRENT_SOURCE_DIR} ${DMM_INCLUDES})
 
 
-elseif ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2755*")
+elseif ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC27(55|45)*")
     list(APPEND PLATFORM_SRCS
         cc23xx_cc27xx/startup_cc27xx.c
         cc23xx_cc27xx/radio.c
@@ -264,13 +264,13 @@ else()
 endif()
 
 
-if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR  ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2755*")
-        list(APPEND PLATFORM_LIBRARIES
-            cc23xx-driverlib
-        )
-        list(APPEND PLATFORM_LIBRARIES
-            ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_utils_build_linker.cmd.genmap
-        )
+if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR  ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC27(55|45)*")
+    list(APPEND PLATFORM_LIBRARIES
+        cc23xx-driverlib
+    )
+    list(APPEND PLATFORM_LIBRARIES
+        ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_utils_build_linker.cmd.genmap
+    )
 else()
     list(APPEND PLATFORM_LIBRARIES
         cc13xx-cc26xx-driverlib

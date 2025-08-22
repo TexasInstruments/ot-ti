@@ -94,21 +94,6 @@ static uint16_t PlatDiag_rxReceivedCount;
 static otPlatDiagOutputCallback sDiagOutputCallback  = NULL;
 static void                    *sDiagCallbackContext = NULL;
 
-
-static void DiagOutput(const char *aFormat, ...)
-{
-    va_list args;
-
-    va_start(args, aFormat);
-
-    if (sDiagOutputCallback != NULL)
-    {
-        sDiagOutputCallback(aFormat, args, sDiagCallbackContext);
-    }
-
-    va_end(args);
-}
-
 /**
  * Helper function to parse strings into long variables and mark errors.
  *
