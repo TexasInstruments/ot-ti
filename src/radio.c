@@ -2405,15 +2405,15 @@ otError otPlatRadioSetRegion(otInstance *aInstance, uint16_t aRegionCode)
     otError retval = OT_ERROR_NONE;
     int8_t powerDbm;
 
-    otPlat_radioRegion_t regionIndex = regionCodeToPowerTableIndex(aRegionCode);
-    otEXPECT_ACTION(regionIndex != OT_HAL_REGION_MAX, retval = OT_ERROR_INVALID_ARGS);
-    otEXPECT_ACTION(regionIndex < otARRAY_LENGTH(otPlat_powerTable),
-                    retval = OT_ERROR_INVALID_ARGS);
-    otEXPECT_ACTION(sRfHandle != NULL, 
-                    retval = OT_ERROR_INVALID_STATE);
-    powerDbm = otPlat_powerTable[regionIndex][sReceiveCmd.channel - OT_RADIO_2P4GHZ_OQPSK_CHANNEL_MIN];
-    otEXPECT_ACTION(REGION_IS_CH_DISABLED(powerDbm) == false,
-                    retval = OT_ERROR_INVALID_ARGS);
+    // otPlat_radioRegion_t regionIndex = regionCodeToPowerTableIndex(aRegionCode);
+    // otEXPECT_ACTION(regionIndex != OT_HAL_REGION_MAX, retval = OT_ERROR_INVALID_ARGS);
+    // otEXPECT_ACTION(regionIndex < otARRAY_LENGTH(otPlat_powerTable),
+    //                 retval = OT_ERROR_INVALID_ARGS);
+    // otEXPECT_ACTION(sRfHandle != NULL, 
+    //                 retval = OT_ERROR_INVALID_STATE);
+    powerDbm = otPlat_powerTable[OT_HAL_REGION_UNITED_STATES][sReceiveCmd.channel - OT_RADIO_2P4GHZ_OQPSK_CHANNEL_MIN];
+    // otEXPECT_ACTION(REGION_IS_CH_DISABLED(powerDbm) == false,
+    //                 retval = OT_ERROR_INVALID_ARGS);
     retval = otPlatRadioSetTransmitPower(aInstance, powerDbm);
     sCurrentRegionCode = aRegionCode;
 exit:
