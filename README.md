@@ -132,7 +132,7 @@ following options:
 
 | Parameter    | Value    |
 | ------------ | -------- |
-| Speed (baud) | `921600` |
+| Speed (baud) | `115200` |
 | Data bits    | `8`      |
 | Stop bits    | `1`      |
 | Parity       | `None`   |
