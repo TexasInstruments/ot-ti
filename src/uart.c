@@ -56,13 +56,13 @@
  * can send more data. Less efficient than callback mode. Necessary for certain
  * versions of the UART2 driver.
  */
-#define TI_PLAT_UART_BLOCKING 0
+#define TI_PLAT_UART_BLOCKING 1
 
 #define PLATFORM_UART_EVENT_TX_DONE (1U << 0)
 #define PLATFORM_UART_EVENT_RX_DONE (1U << 1)
 
 #define PLATFORM_UART_RECV_BUF_LEN 256
-#define PLATFORM_UART_RECV_MQUEUE_LEN 3
+#define PLATFORM_UART_RECV_MQUEUE_LEN 6
 
 static uint8_t PlatformUart_receiveBuffer[PLATFORM_UART_RECV_BUF_LEN];
 
@@ -187,8 +187,9 @@ otError otPlatUartSend(const uint8_t *aBuf, uint16_t aBufLength)
     int_fast16_t ret;
 
     /* Block any incoming Tx requests if one is already in progress */
-    otPlatUartFlush();
-
+#if !TI_PLAT_UART_BLOCKING
+    SemaphoreP_pend(PlatformUart_writeSemHandle, UINT32_MAX);
+#endif
     ret = UART2_write(PlatformUart_uartHandle, aBuf, aBufLength, NULL);
 
 #if TI_PLAT_UART_BLOCKING
@@ -232,12 +233,7 @@ void platformUartProcess(uintptr_t arg)
 
 otError otPlatUartFlush(void)
 {
-#if TI_PLAT_UART_BLOCKING
     return OT_ERROR_NOT_IMPLEMENTED;
-#else
-    SemaphoreP_pend(PlatformUart_writeSemHandle, UINT32_MAX);
-    return OT_ERROR_NONE;
-#endif
 }
 
 #if (OPENTHREAD_CONFIG_LOG_OUTPUT == OPENTHREAD_CONFIG_LOG_OUTPUT_DEBUG_UART)
