@@ -53,3 +53,7 @@ set_target_properties(ot-rcp
     PROPERTIES
         SUFFIX .out
 )
+
+add_custom_command(TARGET ot-rcp POST_BUILD
+    COMMAND ${CMAKE_OBJCOPY} -O binary $<TARGET_FILE:ot-rcp> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ot-rcp.bin
+)
