@@ -54,9 +54,9 @@ extern RF_TxPowerTable_Entry txPowerTable_2400_pa20_10[]; // 2400 MHz, 20 + 10 d
 //*********************************************************************************
 
 // PA table usage
-#define TX_POWER_TABLE_SIZE TXPOWERTABLE_2400_PA5_10_SIZE
+// #define TX_POWER_TABLE_SIZE TXPOWERTABLE_2400_PA5_10_SIZE
 
-#define txPowerTable txPowerTable_2400_pa5_10
+// #define txPowerTable txPowerTable_2400_pa5_10
 
 // TI-RTOS RF Mode object
 extern RF_Mode RF_prop;

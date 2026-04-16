@@ -1017,7 +1017,7 @@ static otError rfCoreSetTransmitPower(int8_t aPower)
     }
 
     /* find the tx power configuration */
-    newValue = RF_TxPowerTable_findValue(txPowerTable, aPower);
+    newValue = RF_TxPowerTable_findValue(txPowerTable_2400_pa20_10, aPower);
 
     otEXPECT_ACTION(RF_TxPowerTable_INVALID_VALUE != newValue.rawValue, retval = OT_ERROR_INVALID_ARGS);
     otEXPECT_ACTION(RF_StatSuccess == RF_setTxPower(sRfHandle, newValue), retval = OT_ERROR_FAILED);
@@ -1325,7 +1325,7 @@ otError otPlatRadioGetTransmitPower(otInstance *aInstance, int8_t *aPower)
     (void)aInstance;
 
     otEXPECT_ACTION(aPower != NULL, error = OT_ERROR_INVALID_ARGS);
-    *aPower = RF_TxPowerTable_findPowerLevel(txPowerTable, RF_getTxPower(sRfHandle));
+    *aPower = RF_TxPowerTable_findPowerLevel(txPowerTable_2400_pa20_10, RF_getTxPower(sRfHandle));
 
 exit:
     return error;
