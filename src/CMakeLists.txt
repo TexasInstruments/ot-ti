@@ -42,12 +42,13 @@ endif()
 # NOTE: posix source only needed for NVOCMP middleware
 if(TI_SIMPLELINK_KERNEL STREQUAL "freertos")
     set(SYSCONFIG_OUTPUT_C
-        ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_devices_config.c
-        ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_devices_config.h
-        ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_drivers_config.c
-        ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_drivers_config.h
-        ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_radio_config.c
-        ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_radio_config.h
+        # Use local syscfg files
+        ${CMAKE_CURRENT_SOURCE_DIR}/syscfg/ti_devices_config.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/syscfg/ti_devices_config.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/syscfg/ti_drivers_config.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/syscfg/ti_drivers_config.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/syscfg/ti_radio_config.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/syscfg/ti_radio_config.h
 
         # TI SimpleLink FreeRTOS configuration and build is not possible until
         # configTICK_RATE_HZ is configurable and source directory set correctly.
