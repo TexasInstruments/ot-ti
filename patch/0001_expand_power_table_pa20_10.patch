@@ -1,0 +1,71 @@
+diff --git a/source/ti/devices/radioconfig/.meta/config/pa_tables/cc13x2_cc26x2_r7/pasettings.json b/source/ti/devices/radioconfig/.meta/config/pa_tables/cc13x2_cc26x2_r7/pasettings.json
+index 4e0c188ee..8302e318c 100644
+--- a/source/ti/devices/radioconfig/.meta/config/pa_tables/cc13x2_cc26x2_r7/pasettings.json
++++ b/source/ti/devices/radioconfig/.meta/config/pa_tables/cc13x2_cc26x2_r7/pasettings.json
+@@ -1019,6 +1019,66 @@
+                         "Max": "2510",
+                         "PaSettingTable": {
+                             "PaSetting": [
++                                {
++                                    "_text": "20",
++                                    "Value": "0xFFFF",
++                                    "TxHighPa": "0x3F75F5"
++                                },
++                                {
++                                    "_text": "19",
++                                    "Value": "0xFFFF",
++                                    "TxHighPa": "0x3F61E2"
++                                },
++                                {
++                                    "_text": "18",
++                                    "Value": "0xFFFF",
++                                    "TxHighPa": "0x3047E0"
++                                },
++                                {
++                                    "_text": "17",
++                                    "Value": "0xFFFF",
++                                    "TxHighPa": "0x1B4FE5"
++                                },
++                                {
++                                    "_text": "16",
++                                    "Value": "0xFFFF",
++                                    "TxHighPa": "0x1B39DE"
++                                },
++                                {
++                                    "_text": "15",
++                                    "Value": "0xFFFF",
++                                    "TxHighPa": "0x1B2FDA"
++                                },
++                                {
++                                    "_text": "14",
++                                    "Value": "0xFFFF",
++                                    "TxHighPa": "0x1B27D6"
++                                },
++                                {
++                                    "_text": "10",
++                                    "Value": "0xFFFF",
++                                    "TxHighPa": "0x104F66"
++                                },
++                                {
++                                    "_text": "9",
++                                    "Value": "0xFFFF",
++                                    "TxHighPa": "0x103F5F"
++                                },
++                                {
++                                    "_text": "8",
++                                    "Value": "0xFFFF",
++                                    "TxHighPa": "0x10335A"
++                                },
++                                {
++                                    "_text": "7",
++                                    "Value": "0xFFFF",
++                                    "TxHighPa": "0x14285F"
++                                },
++                                {
++                                    "_text": "6",
++                                    "Value": "0xFFFF",
++                                    "TxHighPa": "0x144F2A"
++                                },
+                                 {
+                                     "_text": "5",
+                                     "Value": "0x762E"

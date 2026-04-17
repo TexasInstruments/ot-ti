@@ -70,3 +70,9 @@ install_ti_packages_apt()
 
 echo 'Installing TI toolchain dependencies...'
 install_ti_packages_apt
+
+# Apply patch to expand power table for PA20
+SCRIPT_PATH=$(pwd)/$(dirname $0)
+cd $SCRIPT_PATH/../third_party/ti_simplelink_sdk/repo_cc13xx_cc26xx/
+git apply ../../../patch/0001_expand_power_table_pa20_10.patch
+cd $SCRIPT_PATH/..
