@@ -55,4 +55,11 @@ set_target_properties(ot-cli-mtd
         SUFFIX .out
 )
 
+add_custom_command(TARGET ot-cli-mtd POST_BUILD
+    COMMAND arm-none-eabi-objcopy -O binary
+        $<TARGET_FILE:ot-cli-mtd>
+        $<TARGET_FILE_DIR:ot-cli-mtd>/$<TARGET_FILE_BASE_NAME:ot-cli-mtd>.bin
+    COMMENT "Generating ot-cli-mtd.bin"
+)
+
 target_compile_definitions(ot-cli-mtd PRIVATE -DOPENTHREAD_MTD)

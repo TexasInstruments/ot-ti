@@ -46,6 +46,7 @@ set(TI_BOARD_VALUES
     "LP_EM_CC2340R5"
     "LP_EM_CC2340R53"
     "LP_EM_CC2745R10_Q1"
+    "LP_EM_CC2755P10"
     "LP_EM_CC2755P20"
 )
 
@@ -146,6 +147,11 @@ elseif(TI_SIMPLELINK_BOARD MATCHES "LP_EM_CC2340R5*")
     set(TI_SIMPLELINK_FAMILY    "cc23x0r5"    )
     set(TI_SIMPLELINK_ISA       "m0p"         )
 elseif(TI_SIMPLELINK_BOARD STREQUAL "LP_EM_CC2745R10_Q1")
+    set(TI_SIMPLELINK_DEVICE    "cc27xxx10" )
+    set(TI_SIMPLELINK_FAMILY    "cc27xx"    )
+    set(TI_SIMPLELINK_ISA       "m33f"      )
+
+elseif(TI_SIMPLELINK_BOARD STREQUAL "LP_EM_CC2755P10")
     set(TI_SIMPLELINK_DEVICE    "cc27xxx10" )
     set(TI_SIMPLELINK_FAMILY    "cc27xx"    )
     set(TI_SIMPLELINK_ISA       "m33f"      )

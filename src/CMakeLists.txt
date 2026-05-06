@@ -29,7 +29,7 @@
 if(NOT $ENV{TI_SYSCONFIG_ROOT} STREQUAL "")
     set(TI_SYSCONFIG_INSTALL_DIR $ENV{TI_SYSCONFIG_ROOT} CACHE PATH "")
 else()
-    set(TI_SYSCONFIG_INSTALL_DIR $ENV{HOME}/ti/sysconfig_1.24.1 CACHE PATH "")
+    set(TI_SYSCONFIG_INSTALL_DIR $ENV{HOME}/ti/sysconfig_1.27.0 CACHE PATH "")
 endif()
 
 if(WIN32)
@@ -138,8 +138,9 @@ else()
 
 endif()
 
-# Create empty logging file in case user has completely disabled logging
+# Create empty logging files in case user has completely disabled logging
 file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_log_config.c )
+file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_log_config.h )
 
 list(APPEND SYSCONFIG_OUTPUT_C
         # SILK Log required dependencies

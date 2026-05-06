@@ -104,7 +104,6 @@ static const otCliCommand kCommands[] = {
 
 int app_main(int argc, char *argv[])
 {
-
     OT_SETUP_RESET_JUMP(argv);
  
     Log_printf(LogModule_Thread, Log_DEBUG, "CLI Initialized");
