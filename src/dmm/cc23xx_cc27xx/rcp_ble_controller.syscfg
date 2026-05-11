@@ -120,10 +120,34 @@ GPIO3.$name     = "CONFIG_GPIO_GLED";
 GPIO4.$hardware = system.deviceData.board.components.LED_RED;
 GPIO4.$name     = "CONFIG_GPIO_RLED";
 
-NVS1.$name                    = "CONFIG_NVSINTERNAL";
-NVS1.internalFlash.$name      = "ti_drivers_nvs_NVSLPF30";
-NVS1.internalFlash.regionBase = 0x1E4000;
-NVS1.internalFlash.regionSize = 0x4000;
+NVS1.$name = "CONFIG_NVSINTERNAL";
+
+/* place at the end of Flash */
+const deviceId = system.deviceData.deviceId;
+if(deviceId.match(/CC(23.*)/))
+{
+    NVS1.internalFlash.regionBase = 0x10000;
+    NVS1.internalFlash.regionSize = 0x4000;
+}
+else if (deviceId.match(/cc2755p10/i))
+{
+    NVS1.internalFlash.regionBase = 0xE4000;
+    NVS1.internalFlash.regionSize = 0x4000;
+}
+else if (deviceId.match(/cc2755p20/i))
+{
+    NVS1.internalFlash.regionBase = 0x1E4000;
+    NVS1.internalFlash.regionSize = 0x4000;
+}
+else if (deviceId.match(/CC(27.*)/))
+{
+    NVS1.internalFlash.regionBase = 0x7C000;
+    NVS1.internalFlash.regionSize = 0x4000;
+}
+else
+{
+    throw new Error("Could not set NVS location for deviceId: " + deviceId);
+}
 
 RNG1.$name = "CONFIG_RNG_0";
 

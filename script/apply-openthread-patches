@@ -1,0 +1,65 @@
+#!/bin/bash
+#
+#  Copyright (c) 2026, Texas Instruments Incorporated
+#  All rights reserved.
+#
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions are met:
+#  1. Redistributions of source code must retain the above copyright
+#     notice, this list of conditions and the following disclaimer.
+#  2. Redistributions in binary form must reproduce the above copyright
+#     notice, this list of conditions and the following disclaimer in the
+#     documentation and/or other materials provided with the distribution.
+#  3. Neither the name of the copyright holder nor the
+#     names of its contributors may be used to endorse or promote products
+#     derived from this software without specific prior written permission.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+#  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+#  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+#  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+#  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+#  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+#  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+#  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+#  POSSIBILITY OF SUCH DAMAGE.
+
+#
+#   Applies the patches in third_party/openthread_patches to the openthread submodule.
+#   A patch that is already applied is skipped, so the script can be run repeatedly.
+#
+
+set -euo pipefail
+
+OT_SRCDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+readonly OT_SRCDIR
+readonly OT_SUBMODULE="${OT_SRCDIR}/openthread"
+readonly OT_PATCH_DIR="${OT_SRCDIR}/third_party/openthread_patches"
+
+main()
+{
+    local patch
+    local pinned
+
+    pinned="$(git -C "${OT_SUBMODULE}" rev-parse --short HEAD)"
+
+    for patch in "${OT_PATCH_DIR}"/*.patch; do
+        [[ -e ${patch} ]] || continue
+
+        if git -C "${OT_SUBMODULE}" apply --reverse --check "${patch}" 2>/dev/null; then
+            echo "Already applied: $(basename "${patch}")"
+        elif git -C "${OT_SUBMODULE}" apply --check "${patch}" 2>/dev/null; then
+            git -C "${OT_SUBMODULE}" apply "${patch}"
+            echo "Applied: $(basename "${patch}")"
+        else
+            echo "Error: $(basename "${patch}") does not apply to openthread ${pinned}." >&2
+            echo "The patch was made for a different OpenThread revision or the file was modified." >&2
+            echo "Regenerate the patch against openthread ${pinned}." >&2
+            exit 1
+        fi
+    done
+}
+
+main "$@"

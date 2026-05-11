@@ -94,6 +94,9 @@ build()
     OT_SDK_DIR_CC23XX_CC27XX=third_party/ti_simplelink_sdk/repo_cc23xx_cc27xx
 
     local builddir="${OT_CMAKE_BUILD_DIR:-build}"
+
+    "${OT_SRCDIR}/script/apply-openthread-patches"
+
     # the SimpleLink SDK uses normal 'make' to re-build it's libraries
     make \
         -C ${OT_SDK_DIR} \
@@ -110,7 +113,15 @@ build()
         IAR_ARMCOMPILER=${IAR_ARMCOMPILER} \
         TICLANG_ARMCOMPILER=${TICLANG_ARMCOMPILER} \
         GENERATOR=Ninja
-    ${CMAKE} -GNinja -DOT_COMPILE_WARNING_AS_ERROR=ON "$@" "${OT_SRCDIR}" -B ${builddir}
+    # CMake keeps -D values in the build directory. Clear the DMM example selection so that it only
+    # applies to the build that asks for it.
+    ${CMAKE} -GNinja \
+        -UOT_APP_RCP_BLE_CONTROLLER \
+        -UOT_APP_NCP_BLE_CONTROLLER \
+        -UOT_APP_ZIGBEE_NCP_BLE_CONTROLLER \
+        -UOT_APP_ZIGBEE_NCP_OT_NCP_BLE_CONTROLLER \
+        -UOT_DMM_BUILD_FROM_SOURCE \
+        -DOT_COMPILE_WARNING_AS_ERROR=ON "$@" "${OT_SRCDIR}" -B ${builddir}
 
     if [[ -n ${OT_CMAKE_NINJA_TARGET[*]} ]]; then
 	    ${CMAKE} --build ${builddir} "${OT_CMAKE_NINJA_TARGET[@]}"

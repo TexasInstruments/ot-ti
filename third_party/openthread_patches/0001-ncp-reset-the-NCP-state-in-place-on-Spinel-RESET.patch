@@ -1,0 +1,51 @@
+From 1f492567606f95cd3590857f22f1a79e7541c494 Mon Sep 17 00:00:00 2001
+From: Bharghav Ram <b-ram@ti.com>
+Date: Tue, 10 Nov 2026 12:19:36 +0530
+Subject: [PATCH] [ncp] reset the NCP state in place on Spinel RESET
+
+In a multi-stack DMM build, OpenThread shares the SoC with other stacks
+such as BLE and Zigbee, so a platform reset triggered by the host's
+Spinel RESET command also resets those stacks.
+
+Instead of calling otInstanceReset(), disable Thread and IPv6, reset the
+NCP counters and buffer, and reply with SPINEL_STATUS_RESET_POWER_ON so
+that the host continues as if the device had restarted.
+---
+ src/ncp/ncp_base.cpp | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/src/ncp/ncp_base.cpp b/src/ncp/ncp_base.cpp
+index 7b7fc1658..bf35a8e78 100644
+--- a/src/ncp/ncp_base.cpp
++++ b/src/ncp/ncp_base.cpp
+@@ -1330,19 +1330,19 @@ otError NcpBase::CommandHandler_RESET(uint8_t aHeader)
+     else
+ #endif
+     {
+-        // Signal a platform reset. If implemented, this function
+-        // shouldn't return.
+-        otInstanceReset(mInstance);
+-
++        // Soft-reset workaround: instead of issuing a hardware reset (which
++        // would disrupt co-existing stacks such as BLE in a DMM build), reset
++        // the Thread/NCP state in-place and immediately reply with
++        // RESET_POWER_ON so that otbr-agent proceeds normally.
+ #if OPENTHREAD_MTD || OPENTHREAD_FTD
+-        // We only get to this point if the
+-        // platform doesn't support resetting.
+-        // In such a case we fake it.
+         IgnoreError(otThreadSetEnabled(mInstance, false));
+         IgnoreError(otIp6SetEnabled(mInstance, false));
+ #endif
+ 
+-        sNcpInstance = nullptr;
++        ResetCounters();
++        mEncoder.ClearNcpBuffer();
++        SuccessOrAssert(error = WriteLastStatusFrame(SPINEL_HEADER_FLAG | SPINEL_HEADER_TX_NOTIFICATION_IID,
++                                                     SPINEL_STATUS_RESET_POWER_ON));
+     }
+ 
+     return error;
+-- 
+2.53.0
+

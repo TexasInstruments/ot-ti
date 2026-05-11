@@ -160,6 +160,34 @@ The Thread network data/features can be modified by changing the defined value/v
 - TIOP_POWER_CSL_PERIOD
 - networkKeyVal
 
+## SSED (Synchronized Sleepy End Device)
+
+SSED is implemented on this branch using CSL (Coordinated Sampled Listening). CSL is disabled by default.
+
+**To enable CSL**, set the following in `src/openthread-core-cc13xx_cc26xx-config.h` and rebuild:
+
+```c
+#define OPENTHREAD_CONFIG_MAC_CSL_RECEIVER_ENABLE    1
+#define OPENTHREAD_CONFIG_MAC_CSL_TRANSMITTER_ENABLE 1
+#define OPENTHREAD_CONFIG_MAC_CSL_AUTO_SYNC_ENABLE   1
+```
+
+**To set the CSL period** (in microseconds, must be a multiple of 160):
+
+```
+> csl period 500000
+Done
+```
+
+To disable at runtime:
+
+```
+> csl period 0
+Done
+```
+
+> **Note:** If CSL is compiled out (the default), the `csl` command is not available and returns `Error 35: InvalidCommand`.
+
 ## TI Support
 
 For technical support, please consider creating a post on TI's [E2E forum][e2e]. Additionally, we welcome any feedback.

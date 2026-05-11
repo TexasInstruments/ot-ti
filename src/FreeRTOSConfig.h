@@ -118,7 +118,7 @@
 #define configUSE_TIMERS 1
 #define INCLUDE_xEventGroupSetBitFromISR 1
 #define INCLUDE_xTimerPendFunctionCall 1
-#define configTIMER_TASK_PRIORITY (6)
+#define configTIMER_TASK_PRIORITY (5)
 #define configTIMER_QUEUE_LENGTH (20)
 #define configTIMER_TASK_STACK_DEPTH ((unsigned short)(configMINIMAL_STACK_SIZE * 2))
 /*

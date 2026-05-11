@@ -29,6 +29,18 @@ if (OT_APP_RCP_BLE_CONTROLLER)
 
 add_subdirectory(dmm/rcp_ble_controller)
 
+elseif(OT_APP_NCP_BLE_CONTROLLER)
+
+add_subdirectory(dmm/ncp_ble_controller)
+
+elseif (OT_APP_ZIGBEE_NCP_OT_NCP_BLE_CONTROLLER)
+
+add_subdirectory(dmm/zigbee_ncp_ot_ncp_ble_controller)
+
+elseif (OT_APP_ZIGBEE_NCP_BLE_CONTROLLER)
+
+add_subdirectory(dmm/zigbee_ncp_ble_controller)
+
 else()
 
 if(OT_APP_CLI)

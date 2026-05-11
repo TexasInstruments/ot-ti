@@ -66,6 +66,20 @@
  * (IEEE 802.15.4-2006) PSDU.FCF.bAR.
  */
 #define IEEE802154_ACK_REQUEST (1 << 5)
+#define IEEE802154_FCF_ACK_REQUEST(fcf) ((((fcf) & 0xFF) & IEEE802154_ACK_REQUEST) != 0)
+
+#define VERSION_2015            (2 << 12)
+#define FCF_PANID_COMPRESSION   (1 << 6)
+#define FCF_DST_ADDR_NONE       (0 << 10)
+#define FCF_DST_ADDR_SHORT      (2 << 10)
+#define FCF_DST_ADDR_EXT        (3 << 10)
+#define FCF_DST_ADDR_MASK       (3 << 10)
+#define FCF_FRAME_VERSION_MASK  (3 << 12)
+#define FCF_SRC_ADDR_NONE       (0 << 14)
+#define FCF_SRC_ADDR_SHORT      (2 << 14)
+#define FCF_SRC_ADDR_EXT        (3 << 14)
+#define FCF_SRC_ADDR_MASK       (3 << 14)
+#define FCF_SEQUENCE_SUPRESSION (1 << 8)
 
 /**
  * Return value used when searching the source match array.

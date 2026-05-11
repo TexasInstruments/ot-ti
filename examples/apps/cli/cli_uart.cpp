@@ -94,7 +94,7 @@
 #define TIOP_POWER_PANID        0x5b35
 #define TIOP_POWER_CH           23
 #define TIOP_POWER_POLL_PERIOD  1000
-#define TIOP_POWER_CSL_PERIOD   500 * 6.25 //Multiply value by 6.25 to get csl value
+#define TIOP_POWER_CSL_PERIOD   500000U // 500 ms in microseconds (otLinkSetCslPeriod unit)
 #endif
 
 enum
@@ -419,7 +419,7 @@ extern "C" void otAppCliInit(otInstance *aInstance)
 
     #if TIOP_POWER_SSED
     //set CSL period to enable SSED
-    otLinkCslSetPeriod(aInstance, TIOP_POWER_CSL_PERIOD);
+    otLinkSetCslPeriod(aInstance, TIOP_POWER_CSL_PERIOD);
     #endif /* TIOP_POWER_SSED */
     /*********************************************************************/
 

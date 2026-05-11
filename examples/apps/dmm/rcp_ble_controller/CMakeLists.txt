@@ -30,7 +30,3 @@
 if (${TI_SIMPLELINK_BOARD} MATCHES ".*(2745|2755).*")
   add_subdirectory(cc23xx_cc27xx)
 endif()
-
-if(${TI_SIMPLELINK_BOARD} MATCHES ".*(2674|1354).*")
-  add_subdirectory(cc13xx_cc26xx)
-endif()
