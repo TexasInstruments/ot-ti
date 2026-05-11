@@ -54,6 +54,13 @@
 #include <dmm_policy.h>
 #include <ti_dmm_application_policy.h>
 #include <dmm_priority_ble_thread.h>
+
+#ifdef USE_COMBINED_SERIAL
+#include "ti_drivers_config.h"   /* CONFIG_UART2_0 */
+#include "thread_mux.h"
+#include "ti/dmm/combined_serial/embedded/mux_task_app.h"
+#include "ti/dmm/combined_serial/embedded/mux_virt_uart.h"
+#endif
 // The entry point for the application
 extern int app_main(int argc, char *argv[]);
 #define APP_STACK_SIZE (2048)
@@ -118,6 +125,24 @@ int main(void)
 
     DMMPolicy_updateApplicationState(DMMPolicy_StackRole_ThreadFtd, DMMPOLICY_THREAD_IDLE);
     DMMPolicy_updateApplicationState(DMMPolicy_StackRole_BlePeripheral, DMMPOLICY_BLE_IDLE);
+
+#ifdef USE_COMBINED_SERIAL
+    /* Create MUX task and open the single physical UART first.
+     * MuxTask_create() zeroes gMuxTask (including rxCbs[]), so callbacks
+     * MUST be registered AFTER this call, not before. */
+    if (MuxTask_create(CONFIG_UART2_0, 921600) != MUX_SUCCESS)
+    {
+        while (1)
+            ;
+    }
+
+    /* Register Thread NLI_OT callback — delivers decoded spinel frames to OT. */
+    ThreadMux_init();
+
+    /* Register BLE NLI_BLE callback — delivers decoded HCI bytes to NPI
+     * virtual UART ring buffer, which triggers the NPI read callback. */
+    MuxTask_registerRxCb(MUX_NLI_BLE, MuxVirtUart_rxNotify);
+#endif /* USE_COMBINED_SERIAL */
 
     BLEController_main(0);
 

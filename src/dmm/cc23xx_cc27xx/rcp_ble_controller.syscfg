@@ -43,7 +43,6 @@ const SHA2          = scripting.addModule("/ti/drivers/SHA2");
 const SHA21         = SHA2.addInstance();
 const UART2         = scripting.addModule("/ti/drivers/UART2");
 const UART21        = UART2.addInstance();
-const UART22        = UART2.addInstance();
 const Watchdog      = scripting.addModule("/ti/drivers/Watchdog");
 const Watchdog1     = Watchdog.addInstance();
 const AESCommonXXF3 = scripting.addModule("/ti/drivers/cryptoutils/aes/AESCommonXXF3");
@@ -132,12 +131,13 @@ RNG2.$name = "CONFIG_RNG_THREAD";
 
 SHA21.$name = "CONFIG_SHA2_0";
 
+/* Single UART for the Combined Serial MUX (Thread spinel + BLE HCI).
+ * CONFIG_UART2_0 = 0 = XDS110 USB UART.
+ * CONFIG_DISPLAY_UART is defined as CONFIG_UART2_0 in ble.cmake so that the
+ * NPI transport (npi_tl_uart.c) opens the same index and is transparently
+ * intercepted by the mux_virt_uart virtual UART port. */
 UART21.$hardware = system.deviceData.board.components.XDS110UART;
-UART21.$name     = "CONFIG_DISPLAY_UART";
-
-UART22.$name              = "CONFIG_UART2_0";
-UART22.uart.txPin.$assign = "boosterpack.2";
-UART22.uart.rxPin.$assign = "boosterpack.6";
+UART21.$name     = "CONFIG_UART2_0";
 
 Watchdog1.$name = "CONFIG_WATCHDOG0";
 
@@ -166,9 +166,6 @@ UART21.uart.dmaTxChannel.$suggestSolution            = "DMA_CH2";
 UART21.uart.dmaRxChannel.$suggestSolution            = "DMA_CH3";
 UART21.uart.txPin.$suggestSolution                   = "boosterpack.4";
 UART21.uart.rxPin.$suggestSolution                   = "boosterpack.3";
-UART22.uart.$suggestSolution                         = "UART1";
-UART22.uart.dmaTxChannel.$suggestSolution            = "DMA_CH1";
-UART22.uart.dmaRxChannel.$suggestSolution            = "DMA_CH0";
 AESCommonXXF3.laes.$suggestSolution                  = "LAES";
 AESCommonXXF3.laes.dataLaesChannelA.$suggestSolution = "DMA_CH4";
 AESCommonXXF3.laes.dataLaesChannelB.$suggestSolution = "DMA_CH5";

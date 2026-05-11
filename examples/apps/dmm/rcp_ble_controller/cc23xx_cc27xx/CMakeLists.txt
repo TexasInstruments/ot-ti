@@ -30,6 +30,8 @@ set(COMMON_INCLUDES
     ${OT_PUBLIC_INCLUDES}
     ${PROJECT_SOURCE_DIR}/openthread/examples/platforms
     ${PROJECT_SOURCE_DIR}/openthread/src/core
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/combined_serial
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/combined_serial/embedded
 )
 
 # BLE OPT files must occur in application build context as it overrides the library definitions

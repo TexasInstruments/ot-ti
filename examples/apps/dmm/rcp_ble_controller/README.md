@@ -2,15 +2,14 @@
 
 # Introduction
 
-This document describes how to communicate with both Thread and BLE devices using a single TI CC1354P10-6 attached to a Linux machine.
-This is accomplished by the TI CC1354P10-6 or LP_EM_CC2745R10_Q1 device running the DMM (RCP + BLE-Controller) example interfacing with a Linux host running OTBR and BlueZ.
-Following this document you will be able to:
+This document describes how to communicate with both Thread and BLE devices using a single TI CC2755P20 (or compatible cc27xx device) attached to a Linux machine over **a single USB serial port**.
 
-- Create a Thread network via OTBR + RCP-BLE-Controller setup
-- Join a node to the Thread network created
-- Send messages between the two Thread network devices
-- Scan for active BLE peripheral devices via BlueZ + RCP-BLE-Controller setup
-- Connect to a BLE peripheral device
+This is accomplished by the TI device running the DMM (RCP + BLE-Controller) example with the **Combined Serial MUX**, which multiplexes Thread spinel and BLE HCI traffic over one UART using HDLC framing and Spinel NLI routing.
+
+The Linux host runs:
+- `host_mux_ot_ble` — a daemon that demultiplexes the single serial stream into two PTY devices
+- `otbr-agent` — connects to the Thread PTY to provide a Thread Border Router
+- `hciattach` / BlueZ — connects to the BLE PTY for Bluetooth LE functionality
 
 <div style="text-align: center;">
   <img src="resources/RCP-BLE-Controller-setup.png" alt="Figure 1. Example RCP-BLE-Controller Setup">
@@ -21,177 +20,101 @@ Following this document you will be able to:
 
 - [Border Router software](https://github.com/openthread/ot-br-posix)
 - [UniFlash](https://www.ti.com/tool/UNIFLASH)
-- x86 based Linux environment for application builds
+- x86 based Linux environment for application builds and host daemon
+- GCC for building `host_mux_ot_ble`
 
 # Hardware Prerequisites
 
-This application has been verified to work with the following OTBR/BLE host setups
-Border Router:
+- **One** USB cable connecting the LaunchPad XDS110 port to the Linux host
+  (no FTDI cable required — single UART carries both Thread and BLE)
+- TI LaunchPad with XDS110 onboard debugger/UART
+- [SimpleLink LP_EM_CC2755P20 Launchpad](https://www.ti.com/tool/LP-EM-CC2755P20)
+- Raspberry Pi or x86 Linux host running Ubuntu 22.04+
 
-    - [Raspberry Pi](https://www.raspberrypi.com/)
-    - OR Generic Linux Ubuntu 22.04 host
+# Wire Protocol
 
-- UART FTDI cable
-- TI LaunchPad with XDS110 Connected
-- [SimpleLink CC1354P10-6 Launchpad](https://www.ti.com/tool/LP-EM-CC1354P10)
-- [SimpleLink LP_EM_CC2745R10_Q1 Launchpad](https://www.ti.com/tool/LP-EM-CC2745R10-Q1)
+The Combined Serial MUX encapsulates each protocol in an HDLC frame with a Spinel header:
 
-Linux BLE Controller Host:
+```
+[0x7E] [Spinel header (NLI)] [payload] [CRC16] [0x7E]
 
-- Raspberry PI 4
-- OR Generic Linux Ubuntu 22.04 host
-  Note: Host must have compatible Linux Ubuntu 22.04+ OR Debian image with Native BlueZ & HCI Config support
-
-A Beaglebone Black may be used for a host, but has not been verified with this application:
-
-- [Beagle Bone Black](https://www.beagleboard.org/boards/beaglebone-black)
-
-FTD/MTD: Boards listed below for secondary Thread device which will join the network started by the OTBR + TI Device running the DMM (RCP+BLE-Controller) example
-
-- [SimpleLink CC1352P2 Launchpad](https://www.ti.com/tool/LAUNCHXL-CC1352P)
-- [SimpleLink CC1352P4 Launchpad](https://www.ti.com/tool/LAUNCHXL-CC1352P)
-- [SimpleLink CC1352P7 Launchpad](https://www.ti.com/tool/LP-CC1352P7)
-- [SimpleLink CC1352P7-4 Launchpad](https://www.ti.com/tool/LP-CC1352P7)
-- [SimpleLink CC1354P10-1 Launchpads](https://www.ti.com/tool/LP-EM-CC1354P10)
-- [SimpleLink CC26X2R1 Laundpads](https://www.ti.com/tool/LAUNCHXL-CC26X2R1)
-- [SimpleLink CC2652PSIP Launchpad](https://www.ti.com/tool/LP-CC2652RSIP)
-- [SimpleLink CC2652R7 Launchpad](https://www.ti.com/tool/LP-CC2652R7)
-- [SimpleLink CC2652RB Launchpad](https://www.ti.com/tool/LP-CC2652RB)
-- [SimpleLink CC2652RSIP Launchpad](https://www.ti.com/tool/LP-CC2652RSIP)
-- [SimpleLink LP_EM_CC2745R10_Q1 Launchpad](https://www.ti.com/tool/LP-EM-CC2745R10-Q1)
-
-Serial Terminal
-
-- [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html)
-- [Tera Term](https://osdn.net/projects/ttssh2/releases)
-- [RealTerm](https://sourceforge.net/projects/realterm/)
-- [Windows PowerShell](https://learn.sparkfun.com/tutorials/terminal-basics/command-line-windows-mac-linux)
+NLI 0 = Thread spinel frames  → otbr-agent
+NLI 1 = BLE HCI packets       → BlueZ / hciattach
+NLI 3 = Keepalive heartbeat   → internal
+```
 
 # Building the Example
 
-Instructions may be found in the Building section within the top level [README](../../../../README.md) for the supported platforms.
+```bash
+cd ot-ti
+./script/bootstrap          # first time only
+
+./script/build LP_EM_CC2755P20 -DOT_APP_RCP_BLE_CONTROLLER=1
+```
+
+Flash `build/bin/ot-rcp-ble-controller.out` using UniFlash.
 
 # Example Usage
 
-## Pre-work
+## 0. Identify the Serial Port
 
-Check to see if any Bluetooth adapters are already active
-
-```bash
-> sudo hciconfig
-hci0:   Type: Primary  Bus: UART
-        BD Address: XX:XX:XX:XX:XX:XX  ACL MTU: 255:5  SCO MTU: 0:0
-        UP RUNNING
-        RX bytes:2505 acl:0 sco:0 events:77 errors:0
-        TX bytes:283 acl:0 sco:0 commands:34 errors:0
-```
-
-Disable existing adapters, since later on we wish to use the TI Device as the sole Bluetooth LE adapter.
+Plug in the LaunchPad via its XDS110 USB cable. Identify the port:
 
 ```bash
-> sudo hciconfig hci0 down
+ls /dev/ttyACM*
+# Typically /dev/ttyACM0 (application UART) and /dev/ttyACM1 (XDS110 debug)
 ```
 
-## 0. Identify relevant UART Ports
+The **application UART** (usually the lower-numbered port, e.g. `/dev/ttyACM0`)
+carries both Thread spinel and BLE HCI traffic over the Combined Serial MUX.
 
-The RCP-BLE-Controller application utilizes two UART ports on the device via the FTDI cable and XDS110. Each of these are used for a specific protocol, either for the RCP->OTBR
-connection or for theBLE HCI->Linux Host connection. See the example Sysconfig file for pin mappings
-Plug in the RCP-BLE-Controller Launchpad to the Linux Host machine using the XDS110 UART cable and FTDI cable.
-
-Identify which ports are active on the command line via:
+## 1. Build and Start the Host Daemon
 
 ```bash
-ls /dev/tty*
+cd examples/apps/dmm/rcp_ble_controller/host
+
+# Set SDK path (adjust to your installation)
+export TI_SIMPLELINK_SDK_DIR=/path/to/simplelink_lowpower_f3_sdk
+
+make
+./host_mux_ot_ble --device /dev/ttyACM0 --baud 921600
 ```
 
-Note: You should see three ports, two from the Launchpad (usually /dev/ttyACM0) and one for the FTDI cable (usually /dev/ttyUSB0).
+On startup the daemon prints the two slave PTY paths:
 
-## 1. Set Up Linux Host
+```
+OT PTY:  /dev/pts/2
+BLE PTY: /dev/pts/3
+```
 
-Note: Only complete Task 1 from the Simplelink Academy link below to set up the border router (OTBR).
+Keep this terminal open. The daemon must remain running while using Thread or BLE.
 
-[Border router set up guide](https://openthread.io/guides/border-router/build)
-When running the OTBR, make sure to use the UART port associated with the Openthread reference in your Sysconfig file.
+## 2. Set Up Linux Host (OTBR)
 
-Note: For initial setup of an RPI follow the [Matter User's Guide](https://github.com/project-chip/certification-tool/blob/main/docs/Matter_TH_User_Guide/Matter_TH_User_Guide.adoc#fresh_install)
+Follow Task 1 of the [Border router set up guide](https://openthread.io/guides/border-router/build)
+to install OTBR on your Linux machine.
 
-The following link can be used to setup [BlueZ](https://github.com/project-chip/connectedhomeip/blob/master/docs/guides/BUILDING.md) on a fresh install.
-
-## 2. Build and Flash RCP + HCI-BLE
-
-Note: The UART BAUD rate for both BLE and Thread is 921600.
-
-Navigate to the root of the ot-ti repository.
-To obtain a list of supported platforms, execute ./script/build
-
-On first time build, run bootstrap script.
+Start OTBR using the **OT PTY** path printed by `host_mux_ot_ble`:
 
 ```bash
-cd ot-ti
-./script/bootstrap
+sudo otbr-agent -I wpan0 spinel+hdlc+uart:///dev/pts/2?uart-baudrate=921600
 ```
 
-Build image for your platform.
+## 3. Start RCP (Thread Network)
 
-```bash
-cd ot-ti
-./script/build <Platform> -DOT_APP_RCP_BLE_CONTROLLER=1
-```
-
-For this document, the specific platform is CC1354P10-6 or LP_EM_CC2745R10_Q1:
-
-```bash
-./script/build LP_EM_CC1354P10_6 -DOT_APP_RCP_BLE_CONTROLLER=1
-```
-
-OR
-
-```bash
-./script/build LP_EM_CC2745R10_Q1 -DOT_APP_RCP_BLE_CONTROLLER=1
-```
-
-Once built the images will be in ot-ti/build/bin.
-
-Flash the board using UniFlash with the image generated (ot-rcp-ble-controller.out).
-
-## 3. Start RCP
-
-Connect RCP to the Linux Host running OTBR (setup from step 1), then restart OTBR to make sure all configurations have taken effect.
-
-```bash
-sudo systemctl restart otbr-agent.service
-```
-
-Open a separate terminal within the OTBR and set up Thread network information.
+Open a separate terminal and configure the Thread network:
 
 ```bash
 sudo ot-ctl dataset init new
-Done
 sudo ot-ctl dataset panid 0xface
-Done
 sudo ot-ctl dataset channel 11
-Done
 sudo ot-ctl dataset networkkey 00112233445566778899aabbccddeeff
-Done
 sudo ot-ctl dataset commit active
-Done
-```
-
-Bring up the IPv6 interface:
-
-```bash
 sudo ot-ctl ifconfig up
-Done
-```
-
-Start Thread protocol operation:
-
-```bash
 sudo ot-ctl thread start
-Done
 ```
 
-Check status of network after a few seconds
+Check status after a few seconds:
 
 ```bash
 sudo ot-ctl state
@@ -201,33 +124,17 @@ Done
 
 ## 4. Start Thread Node 1
 
-Set up the basic Thread network information for the node.
-(Note you will need to build this image similarly to step 2. Recommended to use the cli-ftd example.)
+Build a CLI FTD image for a second board and join the network:
 
 ```bash
 > networkkey 00112233445566778899aabbccddeeff
-Done
 > panid 0xface
-Done
 > channel 11
-Done
-```
-
-Bring up the IPv6 interface:
-
-```bash
 > ifconfig up
-Done
-```
-
-Start Thread protocol operation:
-
-```bash
 > thread start
-Done
 ```
 
-Wait a few seconds and verify that the device has become a Thread child:
+After a few seconds:
 
 ```bash
 > state
@@ -237,67 +144,51 @@ Done
 
 ## 5. Ping Node 1 from RCP
 
-Get IP address of Node 1
-
 ```bash
 > ipaddr rloc
 fd9e:6062:a089:68d:0:ff:fe00:4800
 Done
-```
 
-Ping Node 1 from RCP
-
-```bash
 sudo ot-ctl ping fd9e:6062:a089:68d:0:ff:fe00:4800
 18 bytes from fd9e:6062:a089:68d:0:ff:fe00:4800: icmp_seq=1 hlim=64 time=24ms
 ```
 
 ## 6. Configure BLE on the Linux Host
 
-Note: Replace the device with the corresponding XDS110 Port or FTDI port, reference the Sysconfig file for details.
+Attach BlueZ to the **BLE PTY** path printed by `host_mux_ot_ble`:
 
 ```bash
-sudo hciattach /dev/ttyACM0 any 921600
+sudo hciattach /dev/pts/3 any 921600
 ```
 
-## 7. Scan for BLE devices
-
-Find BDADDR (XX:XX:XX:XX:XX:XX) of HCI adapter.
+Verify the adapter is up:
 
 ```bash
-> sudo hciconfig
+sudo hciconfig
 hci0:   Type: Primary  Bus: UART
         BD Address: XX:XX:XX:XX:XX:XX  ACL MTU: 255:5  SCO MTU: 0:0
         UP RUNNING
-        RX bytes:2505 acl:0 sco:0 events:77 errors:0
-        TX bytes:283 acl:0 sco:0 commands:34 errors:0
 ```
 
-Select default BT adapter, where BDADDR is the Bluetooth adapter address.
+## 7. Scan for BLE Devices
 
 ```bash
 bluetoothctl
-
 > select XX:XX:XX:XX:XX:XX
-```
-
-To make sure this is setup correctly, try to scan for Bluetooth LE devices.
-
-```bash
-bluetoothctl
-
 > scan le
 ```
 
-## 8. Connect to target device
-
-Any Bluetooth LE peripheral may be connected to with RCP-BLE-Controller.
-If you want to connect to another TI Simplelink Peripheral, you can set that device up using this [Simplelink Academy](https://dev.ti.com/tirex/explore/node?node=A__AX8fD.bKB7yAgQmXFl2j4A__com.ti.SIMPLELINK_ACADEMY_CC13XX_CC26XX_SDK__AfkT0vQ__LATEST).
-
-You can perform another scan to find the address of the target peripheral to connect with.
+## 8. Connect to a BLE Device
 
 ```bash
 bluetoothctl
-
 > connect XX:XX:XX:XX:XX:XX
 ```
+
+# Notes
+
+- Both Thread and BLE use baud rate **921600**.
+- The `host_mux_ot_ble` daemon sends a keepalive every 5 seconds and exits
+  after 3 consecutive missed keepalives (15 seconds of device silence).
+- The daemon exits with code 2 on watchdog expiry and 0 on clean shutdown
+  (SIGTERM / SIGINT). A wrapper script can restart it automatically.
