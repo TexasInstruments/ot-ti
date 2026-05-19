@@ -77,18 +77,6 @@ extern const uint_least8_t                  CONFIG_ECJPAKE_0_CONST;
 /*
  *  ======== GPIO ========
  */
-extern const uint_least8_t CONFIG_GPIO_BTN1_CONST;
-#define CONFIG_GPIO_BTN1 15
-
-extern const uint_least8_t CONFIG_GPIO_BTN2_CONST;
-#define CONFIG_GPIO_BTN2 14
-
-extern const uint_least8_t CONFIG_GPIO_GLED_CONST;
-#define CONFIG_GPIO_GLED 7
-
-extern const uint_least8_t CONFIG_GPIO_RLED_CONST;
-#define CONFIG_GPIO_RLED 6
-
 extern const uint_least8_t CONFIG_SPINEL_INT_CONST;
 #define CONFIG_SPINEL_INT 16
 

@@ -44,18 +44,12 @@
 
 /* Modules */
 var AESECB    = scripting.addModule("/ti/drivers/AESECB");
-var DMA       = scripting.addModule("/ti/drivers/DMA");
 var Device    = scripting.addModule("/ti/devices/CCFG");
-var ECDH      = scripting.addModule("/ti/drivers/ECDH");
-var ECDSA     = scripting.addModule("/ti/drivers/ECDSA");
-var ECJPAKE   = scripting.addModule("/ti/drivers/ECJPAKE");
 var GPIO      = scripting.addModule("/ti/drivers/GPIO");
 var NVS       = scripting.addModule("/ti/drivers/NVS");
-var Power     = scripting.addModule("/ti/drivers/Power");
 var RF        = scripting.addModule("/ti/drivers/RF");
 var RFCustom  = scripting.addModule("/ti/devices/radioconfig/custom");
 var RFDesign  = scripting.addModule("/ti/devices/radioconfig/rfdesign");
-var SHA2      = scripting.addModule("/ti/drivers/SHA2");
 var CCFG      = scripting.addModule("/ti/devices/CCFG");
 var SPI       = scripting.addModule("/ti/drivers/SPI");
 var TRNG      = scripting.addModule("/ti/drivers/TRNG");
@@ -65,17 +59,9 @@ var Watchdog  = scripting.addModule("/ti/drivers/Watchdog");
 
 /* Instances */
 var AESECB     = AESECB.addInstance();
-var ECDH       = ECDH.addInstance();
-var ECDSA      = ECDSA.addInstance();
-var ECJPAKE    = ECJPAKE.addInstance();
-var GPIO1      = GPIO.addInstance();
-var GPIO2      = GPIO.addInstance();
-var GPIO3      = GPIO.addInstance();
-var GPIO4      = GPIO.addInstance();
 var GPIO5      = GPIO.addInstance();
 var NVS1       = NVS.addInstance();
 var NVSDGB     = NVS.addInstance();
-var SHA21      = SHA2.addInstance();
 var SPI2       = SPI.addInstance();
 var TRNG1      = TRNG.addInstance();
 var UART2      = UART2.addInstance();
@@ -115,20 +101,6 @@ RF.rfAntennaPin0Instance.initialOutputState = scripting.forceWrite("Low");
 /* UART */
 UART2.$hardware                   = system.deviceData.board.components.XDS110UART;
 UART2.$name                       = "CONFIG_UART2_0";
-
-/* GPIO */
-GPIO1.$hardware                   = system.deviceData.board.components["BTN-1"];
-GPIO1.$name                       = "CONFIG_GPIO_BTN1";
-
-GPIO2.$hardware                   = system.deviceData.board.components["BTN-2"];
-GPIO2.$name                       = "CONFIG_GPIO_BTN2";
-
-GPIO3.$hardware                   = system.deviceData.board.components.LED_GREEN;
-GPIO3.$name                       = "CONFIG_GPIO_GLED";
-
-GPIO4.$hardware                   = system.deviceData.board.components.LED_RED;
-GPIO4.$name                       = "CONFIG_GPIO_RLED";
-
 
 /* SPI for NCP */
 SPI2.$name                   = "CONFIG_SPI_1";
@@ -176,7 +148,6 @@ TRNG1.$name  = "CONFIG_TRNG_THREAD";
 AESECB.$name = "CONFIG_AESECB_MBEDTLS";
 
 /* RF */
-
 /* if an antenna component exists, assign it to the rf instance */
 if (system.deviceData.board && system.deviceData.board.components.RF) {
     RF.$hardware = system.deviceData.board.components.RF;
