@@ -29,6 +29,12 @@
 
 set -euxo pipefail
 
+# Apply patch to support Ubuntu 24.04 for pip install
+SCRIPT_PATH=$(pwd)/$(dirname $0)
+cd $SCRIPT_PATH/../openthread/script
+git apply ../../patch/0000_toolchain_ubuntu24.04_support_pip_install.patch
+cd -
+
 SYSCONFIG_VERSION=sysconfig_1.24.1
 SYSCONFIG_USER=~/ti/${SYSCONFIG_VERSION}/
 SYSCONFIG_SYSTEM=/opt/ti/${SYSCONFIG_VERSION}/
