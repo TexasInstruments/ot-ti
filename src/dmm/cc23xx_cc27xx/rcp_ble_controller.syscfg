@@ -1,59 +1,76 @@
-/*
- * Copyright (c) 2018, Texas Instruments Incorporated
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * *  Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * *  Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * *  Neither the name of Texas Instruments Incorporated nor the names of
- *    its contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
- * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+/**
+ * These arguments were used when this file was generated. They will be automatically applied on subsequent loads
+ * via the GUI or CLI. Run CLI with '--help' for additional information on how to override these arguments.
+ * @cliArgs --board "/ti/boards/LP_EM_CC2755P20" --rtos "freertos" --product "simplelink_lowpower_f3_sdk@9.20.00.81"
+ * @v2CliArgs --board "/ti/boards/LP_EM_CC2755P20" --rtos "freertos" --product "simplelink_lowpower_f3_sdk@9.20.00.81"
+ * @versions {"tool":"1.27.0+4565"}
  */
 
-/*
- *  rcp_ble_controller.syscfg
+/**
+ * Import the modules used in this configuration.
  */
+const exception     = scripting.addModule("/freertos/exception");
+const CCFG          = scripting.addModule("/ti/devices/CCFG");
+const custom        = scripting.addModule("/ti/devices/radioconfig/custom");
+const rfdesign      = scripting.addModule("/ti/devices/radioconfig/rfdesign");
+const dmm           = scripting.addModule("/ti/dmm/dmm");
+const AESCCM        = scripting.addModule("/ti/drivers/AESCCM");
+const AESCCM1       = AESCCM.addInstance();
+const AESCTRDRBG    = scripting.addModule("/ti/drivers/AESCTRDRBG");
+const AESCTRDRBG1   = AESCTRDRBG.addInstance();
+const AESECB        = scripting.addModule("/ti/drivers/AESECB");
+const AESECB1       = AESECB.addInstance();
+const AESECB2       = AESECB.addInstance();
+const DMA           = scripting.addModule("/ti/drivers/DMA");
+const ECDH          = scripting.addModule("/ti/drivers/ECDH");
+const ECDH1         = ECDH.addInstance();
+const ECDH2         = ECDH.addInstance();
+const ECDSA         = scripting.addModule("/ti/drivers/ECDSA");
+const ECDSA1        = ECDSA.addInstance();
+const GPIO          = scripting.addModule("/ti/drivers/GPIO");
+const GPIO1         = GPIO.addInstance();
+const GPIO2         = GPIO.addInstance();
+const GPIO3         = GPIO.addInstance();
+const GPIO4         = GPIO.addInstance();
+const NVS           = scripting.addModule("/ti/drivers/NVS");
+const NVS1          = NVS.addInstance();
+const Power         = scripting.addModule("/ti/drivers/Power");
+const RCL           = scripting.addModule("/ti/drivers/RCL");
+const RNG           = scripting.addModule("/ti/drivers/RNG");
+const RNG1          = RNG.addInstance();
+const RNG2          = RNG.addInstance();
+const SHA2          = scripting.addModule("/ti/drivers/SHA2");
+const SHA21         = SHA2.addInstance();
+const UART2         = scripting.addModule("/ti/drivers/UART2");
+const UART21        = UART2.addInstance();
+const UART22        = UART2.addInstance();
+const Watchdog      = scripting.addModule("/ti/drivers/Watchdog");
+const Watchdog1     = Watchdog.addInstance();
+const AESCommonXXF3 = scripting.addModule("/ti/drivers/cryptoutils/aes/AESCommonXXF3");
 
-/* Modules */
-var AESECB     = scripting.addModule("/ti/drivers/AESECB");
-var DMA        = scripting.addModule("/ti/drivers/DMA");
-var Device     = scripting.addModule("/ti/devices/CCFG");
-var ECDH       = scripting.addModule("/ti/drivers/ECDH");
-var ECDSA      = scripting.addModule("/ti/drivers/ECDSA");
-var GPIO       = scripting.addModule("/ti/drivers/GPIO");
-var NVS        = scripting.addModule("/ti/drivers/NVS");
-var Power      = scripting.addModule("/ti/drivers/Power");
-var RCL        = scripting.addModule("/ti/drivers/RCL");
-var RFCustom   = scripting.addModule("/ti/devices/radioconfig/custom");
-var RFDesign   = scripting.addModule("ti/devices/radioconfig/rfdesign");
-var SHA2       = scripting.addModule("/ti/drivers/SHA2");
-var UART2      = scripting.addModule("/ti/drivers/UART2");
-var Watchdog   = scripting.addModule("/ti/drivers/Watchdog");
-var board      = system.deviceData.board.name;
-var RNG        = scripting.addModule("/ti/drivers/RNG");
+/**
+ * Write custom configuration values to the imported modules.
+ */
+exception.nmiHandler       = "Exception_handlerMax";
+exception.hardFaultHandler = "Exception_handlerMax";
+exception.defaultHandler   = "Exception_handlerMax";
 
-var dmm          = scripting.addModule("/ti/dmm/dmm");
-dmm.stackRoles                         = ["blePeripheral","threadFTD"];
+CCFG.ccfgTemplate.$name = "ti_devices_CCFG_CCFGCC27XXTemplate0";
+
+custom.ieee                                                   = ["ieee_802_15_4"];
+custom.ble                                                    = ["adc_noise","ble"];
+custom.radioConfigieee_802_15_4.$name                         = "ti_devices_radioconfig_phy_groups_ieee_15_40";
+custom.radioConfigieee_802_15_4.codeExportConfig.$name        = "ti_devices_radioconfig_code_export_param0";
+custom.radioConfigieee_802_15_4.codeExportConfig.symGenMethod = "Automatic";
+custom.radioConfigadc_noise.$name                             = "ti_devices_radioconfig_phy_groups_ble0";
+custom.radioConfigadc_noise.codeExportConfig.$name            = "ti_devices_radioconfig_code_export_param1";
+custom.radioConfigadc_noise.codeExportConfig.symGenMethod     = "Custom";
+custom.radioConfigadc_noise.codeExportConfig.phyAbbr          = true;
+custom.radioConfigble.$name                                   = "ti_devices_radioconfig_phy_groups_ble1";
+custom.radioConfigble.paramVisibility                         = false;
+custom.radioConfigble.codeExportConfig.$name                  = "ti_devices_radioconfig_code_export_param2";
+
+dmm.stackRoles                                     = ["blePeripheral","threadFTD"];
 dmm.numApplicationStates                           = 4;
 dmm.applicationState2                              = "DMMPOLICY_THREAD_IDLE";
 dmm.applicationState1                              = "DMMPOLICY_BLE_IDLE";
@@ -78,339 +95,80 @@ dmm.policyArray[1].blePeripheral.appliedActivity   = ["DMMPOLICY_APPLIED_ACTIVIT
 dmm.policyArray[1].threadFTD.$name                 = "ti_dmm_policy_stack_dmm_stack_tiop0";
 dmm.policyArray[1].threadFTD.appliedActivity       = ["DMMPOLICY_APPLIED_ACTIVITY_ALL"];
 
-/* Instances, -- BLE Must Be index 0 -- */
-var AESECBble  = AESECB.addInstance();
-var AESECBthread     = AESECB.addInstance();
-var ECDHble       = ECDH.addInstance();
-var ECDHthread       = ECDH.addInstance();
+AESCCM1.$name = "CONFIG_AESCCM_0";
+
+AESCTRDRBG1.$name = "CONFIG_AESCTRDRBG_0";
+
+AESECB1.$name = "CONFIG_AESECB_0";
+
+AESECB2.$name = "CONFIG_AESECB_MBEDTLS";
+
+ECDH1.$name = "CONFIG_ECDH_0";
+
+ECDH2.$name = "CONFIG_ECDH_1";
+
+ECDSA1.$name = "CONFIG_ECDSA_0";
+
+GPIO1.$hardware = system.deviceData.board.components["BTN-1"];
+GPIO1.$name     = "CONFIG_GPIO_BTN1";
+
+GPIO2.$hardware = system.deviceData.board.components["BTN-2"];
+GPIO2.$name     = "CONFIG_GPIO_BTN2";
+
+GPIO3.$hardware = system.deviceData.board.components.LED_GREEN;
+GPIO3.$name     = "CONFIG_GPIO_GLED";
+
+GPIO4.$hardware = system.deviceData.board.components.LED_RED;
+GPIO4.$name     = "CONFIG_GPIO_RLED";
+
+NVS1.$name                    = "CONFIG_NVSINTERNAL";
+NVS1.internalFlash.$name      = "ti_drivers_nvs_NVSLPF30";
+NVS1.internalFlash.regionBase = 0x1E4000;
+NVS1.internalFlash.regionSize = 0x4000;
+
+RNG1.$name = "CONFIG_RNG_0";
+
+RNG2.$name = "CONFIG_RNG_THREAD";
+
+SHA21.$name = "CONFIG_SHA2_0";
+
+UART21.$hardware = system.deviceData.board.components.XDS110UART;
+UART21.$name     = "CONFIG_DISPLAY_UART";
+
+UART22.$name              = "CONFIG_UART2_0";
+UART22.uart.txPin.$assign = "boosterpack.2";
+UART22.uart.rxPin.$assign = "boosterpack.6";
+
+Watchdog1.$name = "CONFIG_WATCHDOG0";
 
 
+const LogSinkBuf           = scripting.addModule("/ti/log/LogSinkBuf", {}, false);
+const LogSinkBuf1          = LogSinkBuf.addInstance({}, false);
+LogSinkBuf1.$name          = "CONFIG_ti_log_LogSinkBuf_0";
+exception.LogModule.logger = LogSinkBuf1;
 
-var ECDSA      = ECDSA.addInstance();
-var GPIO1      = GPIO.addInstance();
-var GPIO2      = GPIO.addInstance();
-var GPIO3      = GPIO.addInstance();
-var GPIO4      = GPIO.addInstance();
-var GPIO5      = GPIO.addInstance();
-var NVS1       = NVS.addInstance();
-var SHA21      = SHA2.addInstance();
-var UART2_BLE      = UART2.addInstance();
-var UART2_THREAD = UART2.addInstance();
+/**
+ * References between modules.
+ */
+CCFG.defaultLfoscCompProfile = null;
 
-var Watchdog1  = Watchdog.addInstance();
-var RNG_BLE        = RNG.addInstance();
-var RNG_THREAD        = RNG.addInstance();
-
-const deviceId = system.deviceData.deviceId;
-
-/* BLE UART */
-UART2_BLE.$hardware                   = system.deviceData.board.components.XDS110UART;
-UART2_BLE.$name                       = "CONFIG_DISPLAY_UART";
-
-
-/* Thread UART */
-UART2_THREAD.$name              = "CONFIG_UART2_0";
-UART2_THREAD.uart.$suggestSolution                     = "UART1";
-UART2_THREAD.uart.dmaTxChannel.$suggestSolution        = "DMA_CH1";
-UART2_THREAD.uart.dmaRxChannel.$suggestSolution        = "DMA_CH0";
-UART2_THREAD.uart.txPin.$suggestSolution               = "boosterpack.2";
-UART2_THREAD.uart.rxPin.$suggestSolution               = "boosterpack.6";
-
-/* GPIO */
-GPIO1.$hardware                   = system.deviceData.board.components["BTN-1"];
-GPIO1.$name                       = "CONFIG_GPIO_BTN1";
-
-GPIO2.$hardware                   = system.deviceData.board.components["BTN-2"];
-GPIO2.$name                       = "CONFIG_GPIO_BTN2";
-
-GPIO3.$hardware                   = system.deviceData.board.components.LED_GREEN;
-GPIO3.$name                       = "CONFIG_GPIO_GLED";
-
-GPIO4.$hardware                   = system.deviceData.board.components.LED_RED;
-GPIO4.$name                       = "CONFIG_GPIO_RLED";
-
-
-/* NVS */
-NVS1.$name = "CONFIG_NVSINTERNAL";
-
-/* place at the end of Flash */
-if(deviceId.match(/CC(23.*)/))
-{
-    NVS1.internalFlash.regionBase = 0x10000;
-    NVS1.internalFlash.regionSize = 0x4000;
-}
-else if (deviceId.match(/cc2755p10/i))
-{
-    NVS1.internalFlash.regionBase = 0xE4000;
-    NVS1.internalFlash.regionSize = 0x4000;
-}
-else if (deviceId.match(/cc2755p20/i))
-{
-    NVS1.internalFlash.regionBase = 0x1E4000;
-    NVS1.internalFlash.regionSize = 0x4000;
-}
-else if (deviceId.match(/CC(27.*)/))
-{
-    NVS1.internalFlash.regionBase = 0x7C000;
-    NVS1.internalFlash.regionSize = 0x4000;
-}
-else
-{
-    throw new Error("Could not set NVS location for deviceId: " + deviceId);
-}
-
-
-/* Watchdog */
-Watchdog1.$name             = "CONFIG_WATCHDOG0";
-Watchdog1.period            = 1000;
-//Watchdog1.watchdog.$assign  = "WDT0";
-
-/* AES */
-AESECBthread.$name = "CONFIG_AESECB_MBEDTLS";
-var AESCCM = scripting.addModule("/ti/drivers/AESCCM");
-var AESCCM_BLE = AESCCM.addInstance();
-
-/* ======== AESCTRDRBG ======== */
-var AESCTRDRBG = scripting.addModule("/ti/drivers/AESCTRDRBG");
-var aesctrdrbg = AESCTRDRBG.addInstance();
-
-
-/* RF */
-RFCustom.ieee                                            = ["ieee_802_15_4"];
-RFCustom.radioConfigieee_802_15_4.$name                  = "ti_devices_radioconfig_phy_groups_ieee_15_40";
-RFCustom.radioConfigieee_802_15_4.codeExportConfig.$name = "ti_devices_radioconfig_code_export_param0";
-RFCustom.radioConfigieee_802_15_4.codeExportConfig.symGenMethod = "Automatic";
-
-
-if(deviceId.match(/CC(23.*)/))
-{
-    /* CC23xx ADC Noise configuration */
-    var RFCustom2   = scripting.addModule("/ti/devices/radioconfig/custom");
-    RFCustom2.ble                                         = ["adc_noise"];
-    RFCustom2.radioConfigadc_noise.$name                  = "ti_devices_radioconfig_phy_groups_ble0";
-    RFCustom2.radioConfigadc_noise.codeExportConfig.$name = "ti_devices_radioconfig_code_export_param1";
-    RFCustom2.radioConfigadc_noise.codeExportConfig.phyAbbr = true;
-}
-
-/* CCFG */
-const ccfgSettings = system.getScript("/ti/common/lprf_ccfg_settings.js").ccfgSettings;
-for(var setting in ccfgSettings)
-{
-    Device[setting] = ccfgSettings[setting];
-}
-
-/* ======== Device ======== */
-// Note: The lprf_ccfg_settings.js script should be called before calling
-//       scripting.addModule("/ti/devices/radioconfig/custom")
-// Temporarily disable ti_devices_config.c generation
-//var device = scripting.addModule("ti/devices/CCFG");
-//const ccfgSettings = system.getScript("/ti/common/lprf_ccfg_settings.js").ccfgSettings;
-//for(var setting in ccfgSettings)
-//{
-//    device[setting] = ccfgSettings[setting];
-//}
-const bleCcfgSettings = system.getScript("/ti/ble/ble_common.js").centralRoleCcfgSettings;
-for(var setting in bleCcfgSettings)
-{
-    Device[setting] = bleCcfgSettings[setting];
-}
-
-/* ======== RF Design ======== */
-var rfDesign = scripting.addModule("ti/devices/radioconfig/rfdesign");
-const rfDesignSettings = system.getScript("/ti/common/lprf_rf_design_settings.js").rfDesignSettings;
-for(var setting in rfDesignSettings)
-{
-    rfDesign[setting] = rfDesignSettings[setting];
-}
-
-const radioSettings = system.getScript("/ti/ble/ble_common.js").getRadioScript(rfDesign.rfDesign,system.deviceData.deviceId);
-const bleRfDesignSettings = radioSettings.rfDesignParams;
-for(var setting in bleRfDesignSettings)
-{
-    rfDesign[setting] = bleRfDesignSettings[setting];
-}
-
-/* ======== Radio ======== */
-var custom = scripting.addModule("/ti/devices/radioconfig/custom");
-var bleRadioSetModule;
-
-custom.ble = ["ble","adc_noise"];
-var bleRadioSetModule = custom.radioConfigble;
-bleRadioSetModule.paramVisibility = false;
-
-var bleAdvNoiseRadioSetModule = custom.radioConfigadc_noise;
-bleAdvNoiseRadioSetModule.codeExportConfig.symGenMethod = "Custom";
-bleAdvNoiseRadioSetModule.codeExportConfig.phyAbbr = true;
-
-
-/* Crypto */
-RNG_THREAD.$name        = "CONFIG_RNG_THREAD";
-
-
-/* Logging Configuration */
-
-/* Which Thread Stack logs to enabled */
-var enableThreadSecondaryDebugUART = false;
-
-/* Which Radio logs to enabled */
-
-/* Enables Logging for RCL module */
-var enableRclLogging = false;
-
-/* Enables Logging in Radio.c for Thread, the Application may use this log module for further logging enablement */
-var enableThreadRadioLogging = false;
-
-
-/* Which Log Sink to output to */
-
-/* Enables Memory ROV based log sink */
-var enableLogSinkBuf = false;
-
-/* Enables UART based log sink via external wireshark parser, TBD */
-var enableLogSinkUART = false;
-
-/* Unsupported trace tooling */
-var enableLogSinkTracer = false;
-
-/* The below sections should not normally be modified */
-if (enableLogSinkUART || enableLogSinkBuf || enableLogSinkTracer)
-{
-    var LogModule  = scripting.addModule("/ti/log/LogModule", {}, false);
-}
-
-if (enableThreadRadioLogging)
-{
-    const LogModule  = scripting.addModule("/ti/log/LogModule", {}, false);
-    var LogModuleThread = LogModule.addInstance();
-    LogModuleThread.$name = "LogModule_Thread";
-
-    LogModuleThread.enable_INFO      = false;
-    LogModuleThread.enable_DEBUG     = true;
-    LogModuleThread.enable_VERBOSE   = true;
-    LogModuleThread.enable_ERROR     = false;
-    LogModuleThread.enable_WARNING   = false;
-}
-
-if (enableRclLogging)
-{
-    /* Enable RCL Logmodule and adjust the log levels.
-    * The log levels "WARNING" and "ERROR" are enabled by default */
-    RCL.loggingEnabled             = true;
-    RCL.LogModule.enable_INFO      = true;
-    RCL.LogModule.enable_DEBUG     = true;
-    RCL.LogModule.enable_VERBOSE   = true;
-}
-
-if (enableLogSinkBuf)
-{
-    const LogSinkBuf  = scripting.addModule("/ti/log/LogSinkBuf", {}, false);
-    const LogSinkBuf1 = LogSinkBuf.addInstance({}, false);
-    LogSinkBuf1.$name = "CONFIG_ti_log_LogSinkBuf_0";
-
-    if(deviceId.match(/CC(23.*)/))
-    {
-        LogSinkBuf1.numEntries = 50;
-    }
-    else if(deviceId.match(/CC(274.*)/))
-    {
-        LogSinkBuf1.numEntries = 1700;
-    }
-
-    if (enableThreadRadioLogging)
-    {
-        LogModuleThread.loggerSink  = "/ti/log/LogSinkBuf";
-        LogModuleThread.logger      = LogSinkBuf1;
-    }
-
-    if (enableRclLogging)
-    {
-        RCL.LogModule.loggerSink       = "/ti/log/LogSinkBuf";
-        RCL.LogModule.logger           = LogSinkBuf1;
-    }
-}
-
-/* Thread Stack logs directly to secondary UART */
-if ((deviceId.match(/CC(274.*)/)) && (enableThreadSecondaryDebugUART))
-{
-    var UART22      = UART2.addInstance();
-
-    /* Debug UART */
-    UART22.$name              = "CONFIG_DEBUG_UART";
-    UART22.uart.$suggestSolution                     = "UART1";
-    UART22.uart.dmaTxChannel.$suggestSolution        = "DMA_CH1";
-    UART22.uart.dmaRxChannel.$suggestSolution        = "DMA_CH0";
-    UART22.uart.txPin.$suggestSolution               = "boosterpack.2";
-    UART22.uart.rxPin.$suggestSolution               = "boosterpack.6";
-}
-
-if (enableLogSinkTracer)
-{
-    /* Add RCL module and board. Board is used to differentiate between the different devices when setting the tracer pin. */
-
-    /* Import the tracer as a logsink */
-    const LogSinkTraceLPF3  = scripting.addModule("/ti/log/LogSinkTraceLPF3", {}, false);
-    const LogSinkTraceLPF31 = LogSinkTraceLPF3.addInstance();
-    LogSinkTraceLPF31.$name = "CONFIG_ti_log_LogSinkTraceLPF3_0";
-    
-
-    /* Connect the RCL LogModule to the tracer sink imported above */
-    RCL.LogModule.loggerSink       = "/ti/log/LogSinkTraceLPF3";
-    RCL.LogModule.logger           = LogSinkTraceLPF31;
-    
-    /* This variable is used to set the tracer pin. This variable will vary depending on the device that is being used */
-    var tracerPin;
-    
-    /* All these devices are pin compatible and use the same pin configuration for the tracer */
-    if (board.match(/CC2340R53/) || board.match(/CC2340R5/) || board.match(/CC2340R22/))
-    {
-        /* Assign tracer to DIO5 on  CC2340R5, CC2340R53 and CC2340R22 */
-        /* This line can be modified to change the tracer pin for CC2340R5, CC2340R53 and CC2340R22 */
-        tracerPin =  "boosterpack.27";
-    }
-    else if (board.match(/CC2340R2/))
-    {
-        /* Assign tracer to DIO6 on  CC2340R2 */
-        /* This line can be modified to change the tracer pin for CC2340R2 */
-        tracerPin = "boosterpack.9";
-    }
-    else if (board.match(/CC27/))
-    {
-        /* Assign tracer to DIO20 on all CC27 (loki-high) variations */
-        /* This line can be modified to change the tracer pin for all CC27 (loki-high) variations */
-        tracerPin = "boosterpack.2";
-    }
-    
-    /* Assign the tracer to the LRF peripheral and the chosen pin */
-    LogSinkTraceLPF31.lrfGpio.$suggestSolution = "LRF";
-    LogSinkTraceLPF31.lrfGpio.tracePin.$assign = tracerPin
-
-    if (enableThreadRadioLogging)
-    {
-        LogModuleThread.loggerSink  = "/ti/log/LogSinkTraceLPF3";
-        LogModuleThread.logger      = LogSinkTraceLPF31;
-    }
-
-}
-
-/* coex support */
-RCL.signals                    = ["COEX_GRANT","PBEGPO0","PBEGPO1"];
-RCL.lrfGpio.$assign            = "LRF";
-RCL.coexEnabled = false;
-
-if (board.match(/CC2340R53/) || board.match(/CC2340R5/) || board.match(/CC2340R22/))
-{
-    RCL.lrfGpio.pbegpo0Pin.$assign = "boosterpack.25";
-    RCL.lrfGpio.pbegpo1Pin.$assign = "boosterpack.27";
-    RCL.lrfGpio.coex_grantPin.$assign   = "boosterpack.28";
-}
-else if (board.match(/CC27/))
-{
-    RCL.lrfGpio.pbegpo0Pin.$assign = "boosterpack.10";
-    RCL.lrfGpio.pbegpo1Pin.$assign = "boosterpack.9";
-    RCL.lrfGpio.coex_grantPin.$assign   = "boosterpack.32";
-}
-
-const exception   = scripting.addModule("/freertos/exception");
-exception.nmiHandler       = "Exception_handlerMax";
-exception.hardFaultHandler = "Exception_handlerMax";
-exception.defaultHandler   = "Exception_handlerMax";
+/**
+ * Pinmux solution for unlocked pins/peripherals. This ensures that minor changes to the automatic solver in a future
+ * version of the tool will not impact the pinmux you originally saw.  These lines can be completely deleted in order to
+ * re-solve from scratch.
+ */
+GPIO1.gpioPin.$suggestSolution                       = "boosterpack.30";
+GPIO2.gpioPin.$suggestSolution                       = "boosterpack.40";
+GPIO3.gpioPin.$suggestSolution                       = "boosterpack.19";
+GPIO4.gpioPin.$suggestSolution                       = "boosterpack.36";
+UART21.uart.$suggestSolution                         = "UART0";
+UART21.uart.dmaTxChannel.$suggestSolution            = "DMA_CH2";
+UART21.uart.dmaRxChannel.$suggestSolution            = "DMA_CH3";
+UART21.uart.txPin.$suggestSolution                   = "boosterpack.4";
+UART21.uart.rxPin.$suggestSolution                   = "boosterpack.3";
+UART22.uart.$suggestSolution                         = "UART1";
+UART22.uart.dmaTxChannel.$suggestSolution            = "DMA_CH1";
+UART22.uart.dmaRxChannel.$suggestSolution            = "DMA_CH0";
+AESCommonXXF3.laes.$suggestSolution                  = "LAES";
+AESCommonXXF3.laes.dataLaesChannelA.$suggestSolution = "DMA_CH4";
+AESCommonXXF3.laes.dataLaesChannelB.$suggestSolution = "DMA_CH5";

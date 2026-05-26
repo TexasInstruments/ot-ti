@@ -51,6 +51,7 @@ set(BLE_CONTROLLER_SOURCE_FILES
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble/stack_util/health_toolkit/debugInfo.h
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble/stack_util/health_toolkit/debugInfo_errno.h
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble/stack_util/health_toolkit/src/debugInfo.c
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble/stack_util/health_toolkit/src/ble_sys_stat.c
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble/stack_util/icall/app/src/icall_POSIX.c
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble/stack_util/icall/app/icall_addrs.h
     

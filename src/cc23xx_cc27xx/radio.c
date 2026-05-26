@@ -44,7 +44,7 @@
 #include <openthread/platform/time.h>
 
 #include <ti/devices/DeviceFamily.h>
-#include <ti/drivers/rcl/RCL.h>
+#include <ti/drivers/RCL.h>
 #include <ti/drivers/rcl/RCL_Scheduler.h>
 #include <ti/drivers/rcl/commands/ieee.h>
 #include DeviceFamily_constructPath(inc/hw_types.h)

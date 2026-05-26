@@ -112,7 +112,13 @@
 
 #define OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE 1
 
+#if defined(DeviceFamily_CC27XXX10) || defined(DeviceFamily_CC27XXX20)
+#define OPENTHREAD_CONFIG_PLATFORM_INFO "CC27XX thread-v1.4-ti-1.0-ea-1.0"
+#elif defined(DeviceFamily_CC23X0R5) || defined(DeviceFamily_CC23X0R53)
+#define OPENTHREAD_CONFIG_PLATFORM_INFO "CC23XX thread-v1.4-ti-1.0-ea-1.0"
+#else
 #define OPENTHREAD_CONFIG_PLATFORM_INFO "CC13XX_CC26XX thread-v1.4-ti-1.0-ea-1.0"
+#endif
 
 #define PACKAGE_NAME "TI-OPENTHREAD"
 #define PACKAGE_VERSION "1.2.4.0"

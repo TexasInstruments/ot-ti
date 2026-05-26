@@ -51,6 +51,7 @@
 #include "app_main.h"
 #include "ti/ble/controller/hci/hci_tl.h"
 #include "ti/ble/app_util/npi/npi_task.h"
+#include "ti/ble/stack_util/icall/app/icall.h"
 #include "ti/ble/stack_util/health_toolkit/assert.h"
 #ifndef USE_DEFAULT_USER_CFG
 #include "ti/ble/app_util/config/ble_user_config.h"

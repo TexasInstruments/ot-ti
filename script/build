@@ -73,6 +73,7 @@ readonly TI_LAUNCHPAD=(
     LP_EM_CC2745R10_Q1
     LP_EM_CC2755P10
     LP_EM_CC2755P20
+    LP_EM_CC2755R10_BG
 )
 
 readonly OT_SRCDIR="$(pwd)"
@@ -198,9 +199,10 @@ main()
        LP_EM_CC2340R53)
             options+=("-DCMAKE_TOOLCHAIN_FILE=src/arm-none-eabi-m0p.cmake")
             ;;
-       LP_EM_CC2745R10_Q1 | \
-                  LP_EM_CC2755P10 | \
-                  LP_EM_CC2755P20)
+        LP_EM_CC2745R10_Q1 | \
+        LP_EM_CC2755P10    | \
+        LP_EM_CC2755P20    | \
+        LP_EM_CC2755R10_BG)
               options+=("-DCMAKE_TOOLCHAIN_FILE=src/arm-none-eabi-m33-cc27xx.cmake")
               ;;
     esac

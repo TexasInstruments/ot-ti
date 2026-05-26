@@ -49,6 +49,16 @@ target_link_libraries(ot-rcp-ble-controller PUBLIC
     ble-stack-lib
 )
 
+# ControllerLib.a (a prebuilt archive in the SDK) references BleSysStat_* symbols provided
+# by ble-stack-lib, creating a circular dependency. Use --start-group/--end-group so the
+# linker iterates until all cross-references are resolved.
+target_link_libraries(ot-rcp-ble-controller PRIVATE
+    -Wl,--start-group
+    $<TARGET_FILE:ble-stack-lib>
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble/lib/CC27XXX10/ControllerLib/lib/ticlang/m33f/ControllerLib.a
+    -Wl,--end-group
+)
+
 install(TARGETS ot-rcp-ble-controller
     DESTINATION bin
 )

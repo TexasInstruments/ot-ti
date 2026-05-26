@@ -88,7 +88,7 @@
 #define OPENTHREAD_CONFIG_MLE_IP_ADDRS_PER_CHILD 6
 #define OPENTHREAD_CONFIG_DEVICE_POWER_SUPPLY OT_POWER_SUPPLY_EXTERNAL
 #define OPENTHREAD_CONFIG_PLATFORM_LOG_CRASH_DUMP_ENABLE 0
-#define OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE 0
+#define OPENTHREAD_CONFIG_PLATFORM_RADIO_COEX_ENABLE 1
 #define OPENTHREAD_CONFIG_PLATFORM_ASSERT_MANAGEMENT 0
 
 // TCP disabled until OpenThread has a GN/Ninja build for the tcplp library
@@ -114,7 +114,13 @@
 
 #define OPENTHREAD_CONFIG_RADIO_LINK_IEEE_802_15_4_ENABLE 1
 
+#if defined(DeviceFamily_CC27XXX10) || defined(DeviceFamily_CC27XXX20)
+#define OPENTHREAD_CONFIG_PLATFORM_INFO "CC27XX thread-v1.4-ti-1.0-ea-1.0"
+#elif defined(DeviceFamily_CC23X0R5) || defined(DeviceFamily_CC23X0R53)
+#define OPENTHREAD_CONFIG_PLATFORM_INFO "CC23XX thread-v1.4-ti-1.0-ea-1.0"
+#else
 #define OPENTHREAD_CONFIG_PLATFORM_INFO "CC13XX_CC26XX thread-v1.4-ti-1.0-ea-1.0"
+#endif
 
 // Matter RTOS Kernel Configuration for Thread
 #ifndef OT_TI_KERNEL_freertos
