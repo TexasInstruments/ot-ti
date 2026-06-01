@@ -21,6 +21,7 @@ This Texas Instruments OpenThread GitHub repository contains the software develo
 | [CC2674P10][cc2674p10]   | x   | x   | x   | x   | x                  |            | X               |
 | [CC2340R5][cc2340r5]     | x   |     |     |     |                    |            | X               |
 | [CC2340R53][cc2340r53]   | x   | x   | x   | x   |                    |            | X               |
+| [CC2755P10][cc2755p10]   | x   | x   | x   | x   | x                  |            | X               |
 | [CC2755R10][cc2755r10]   | x   | x   | x   | x   | x                  |            | X               |
 | CC2755P20 (coming soon)  | x   | x   | x   | x   |                    |            | X               |
 
@@ -35,6 +36,7 @@ This Texas Instruments OpenThread GitHub repository contains the software develo
 [cc2674p10]: https://www.ti.com/product/CC2674P10
 [cc2340r5]: https://www.ti.com/product/CC2340R5
 [cc2340r53]: https://www.ti.com/product/CC2340R5
+[cc2755p10]: https://www.ti.com/product/CC2755P10
 [cc2755r10]: https://www.ti.com/product/CC2755R10
 
 Note: Previous Production Release: [TI-OpenThread v1.3-1.0 Release](https://github.com/TexasInstruments/ot-ti/releases/tag/thread-ti-v1.3-1.0)
@@ -63,9 +65,9 @@ Note: Previous Production Release: [TI-OpenThread v1.3-1.0 Release](https://gith
 
 - openthread commit: [c9c19aa9fa5877cf1532c35a584618900e5c99c7](https://github.com/openthread/openthread/commit/c9c19aa9fa5877cf1532c35a584618900e5c99c7)
 - Simplelink F2 SDK (repo_cc13xx_cc26xx): 7.40.00.77 [374a26a] (https://github.com/TexasInstruments/simplelink-lowpower-f2-sdk/commit/374a26a45a5b05cd87c62d9a5da04d9e6d0ed319)
-- Simplelink F3 SDK (repo_cc23xx_cc27xx): lpf3-9.20.00.10_ea
+- Simplelink F3 SDK (repo_cc23xx_cc27xx): lpf3-9.20.00.81
 - FreeRTOS: v11.1.0
-- SysConfig: 1.24.1
+- SysConfig: 1.27.0
 - Thread Border Router (OTBR) commit: [53125a4] (https://github.com/openthread/ot-br-posix/commit/53125a45f7f5a5b896c5bac5b85e6f9e8712bbe2)
 
 ## Technical Support and Product Updates
