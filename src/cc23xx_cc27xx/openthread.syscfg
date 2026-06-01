@@ -31,7 +31,7 @@
  */
 
 /*
- *  cli_ftd.syscfg - CC23XX and CC27XX Thread Configuration
+ *  cli_ftd.syscfg
  */
 
 /* Modules */
@@ -52,6 +52,7 @@ var Watchdog   = scripting.addModule("/ti/drivers/Watchdog");
 var board      = system.deviceData.board.name;
 var RNG        = scripting.addModule("/ti/drivers/RNG");
 
+
 /* Instances */
 var AESECB     = AESECB.addInstance();
 var ECDH       = ECDH.addInstance();
@@ -63,11 +64,12 @@ var GPIO4      = GPIO.addInstance();
 var GPIO5      = GPIO.addInstance();
 var NVS1       = NVS.addInstance();
 var SHA21      = SHA2.addInstance();
-var UART       = UART2.addInstance();
+var UART      = UART2.addInstance();
 var Watchdog1  = Watchdog.addInstance();
-var RNG1       = RNG.addInstance();
+var RNG1        = RNG.addInstance();
 
 const deviceId = system.deviceData.deviceId;
+
 
 /* CCFG */
 const ccfgSettings = system.getScript("/ti/common/lprf_ccfg_settings.js").ccfgSettings;
@@ -79,6 +81,7 @@ for(var setting in ccfgSettings)
 /* UART */
 UART.$hardware                   = system.deviceData.board.components.XDS110UART;
 UART.$name                       = "CONFIG_UART2_0";
+
 
 /* GPIO */
 GPIO1.$hardware                   = system.deviceData.board.components["BTN-1"];
@@ -93,7 +96,8 @@ GPIO3.$name                       = "CONFIG_GPIO_GLED";
 GPIO4.$hardware                   = system.deviceData.board.components.LED_RED;
 GPIO4.$name                       = "CONFIG_GPIO_RLED";
 
-/* NVS - device-specific flash regions */
+
+/* NVS */
 NVS1.$name = "CONFIG_NVSINTERNAL";
 
 /* place at the end of Flash */
@@ -112,15 +116,8 @@ else if (deviceId.match(/cc2755p20/i))
     NVS1.internalFlash.regionBase = 0x1E4000;
     NVS1.internalFlash.regionSize = 0x4000;
 }
-else if (deviceId.match(/cc2755r10/i))
+else if (deviceId.match(/CC(27.*)/))
 {
-    /* CC2755R10: 1MB flash (same as CC2755P10) */
-    NVS1.internalFlash.regionBase = 0xE4000;
-    NVS1.internalFlash.regionSize = 0x4000;
-}
-else if (deviceId.match(/CC2745/i))
-{
-    /* CC2745: 1MB flash */
     NVS1.internalFlash.regionBase = 0x7C000;
     NVS1.internalFlash.regionSize = 0x4000;
 }
@@ -128,6 +125,7 @@ else
 {
     throw new Error("Could not set NVS location for deviceId: " + deviceId);
 }
+
 
 /* Watchdog */
 Watchdog1.$name             = "CONFIG_WATCHDOG0";
@@ -143,6 +141,7 @@ RFCustom.radioConfigieee_802_15_4.$name                  = "ti_devices_radioconf
 RFCustom.radioConfigieee_802_15_4.codeExportConfig.$name = "ti_devices_radioconfig_code_export_param0";
 RFCustom.radioConfigieee_802_15_4.codeExportConfig.symGenMethod = "Automatic";
 
+
 if(deviceId.match(/CC(23.*)/))
 {
     /* CC23xx ADC Noise configuration */
@@ -152,7 +151,6 @@ if(deviceId.match(/CC(23.*)/))
     RFCustom2.radioConfigadc_noise.codeExportConfig.$name = "ti_devices_radioconfig_code_export_param1";
     RFCustom2.radioConfigadc_noise.codeExportConfig.phyAbbr = true;
 }
-
 /* Crypto */
 RNG1.$name        = "CONFIG_RNG_THREAD";
 
@@ -261,14 +259,15 @@ if (enableLogSinkTracer)
     const LogSinkTraceLPF3  = scripting.addModule("/ti/log/LogSinkTraceLPF3", {}, false);
     const LogSinkTraceLPF31 = LogSinkTraceLPF3.addInstance();
     LogSinkTraceLPF31.$name = "CONFIG_ti_log_LogSinkTraceLPF3_0";
+    
 
     /* Connect the RCL LogModule to the tracer sink imported above */
     RCL.LogModule.loggerSink       = "/ti/log/LogSinkTraceLPF3";
     RCL.LogModule.logger           = LogSinkTraceLPF31;
-
+    
     /* This variable is used to set the tracer pin. This variable will vary depending on the device that is being used */
     var tracerPin;
-
+    
     /* All these devices are pin compatible and use the same pin configuration for the tracer */
     if (board.match(/CC2340R53/) || board.match(/CC2340R5/) || board.match(/CC2340R22/))
     {
@@ -288,7 +287,7 @@ if (enableLogSinkTracer)
         /* This line can be modified to change the tracer pin for all CC27 (loki-high) variations */
         tracerPin = "boosterpack.2";
     }
-
+    
     /* Assign the tracer to the LRF peripheral and the chosen pin */
     LogSinkTraceLPF31.lrfGpio.$suggestSolution = "LRF";
     LogSinkTraceLPF31.lrfGpio.tracePin.$assign = tracerPin
@@ -298,24 +297,56 @@ if (enableLogSinkTracer)
         LogModuleThread.loggerSink  = "/ti/log/LogSinkTraceLPF3";
         LogModuleThread.logger      = LogSinkTraceLPF31;
     }
+
 }
 
-/* coex support */
-RCL.signals                    = ["COEX_GRANT","PBEGPO0","PBEGPO1"];
-RCL.lrfGpio.$assign            = "LRF";
-RCL.coexEnabled = true;
+/* CoExistence: Uncomment the below CoEx settings based on device family and edit the configs as required*/
 
 if (board.match(/CC2340R53/) || board.match(/CC2340R5/) || board.match(/CC2340R22/))
 {
+    /*
+    RCL.signals                    = ["COEX_GRANT","PBEGPO0","PBEGPO1"];
+    RCL.lrfGpio.$assign            = "LRF";
+    RCL.coexEnabled = true;
     RCL.lrfGpio.pbegpo0Pin.$assign     = "boosterpack.25"; // COEX_REQUEST
     RCL.lrfGpio.pbegpo1Pin.$assign     = "boosterpack.27"; // COEX_PRIORITY
     RCL.lrfGpio.coex_grantPin.$assign  = "boosterpack.28"; // COEX_GRANT
     RCL.coex_grantPinInstance.pull     = "Pull Down";
+    */
 }
+
 else if (board.match(/CC27/))
 {
-    RCL.lrfGpio.pbegpo0Pin.$assign     = "boosterpack.2";  // COEX_REQUEST
-    RCL.lrfGpio.pbegpo1Pin.$assign     = "boosterpack.6";  // COEX_PRIORITY
-    RCL.lrfGpio.coex_grantPin.$assign  = "boosterpack.32"; // COEX_GRANT
-    RCL.coex_grantPinInstance.pull     = "Pull Down";
+    /*
+    // General CoEx settings
+    RCL.signals = ["COEX_GRANT","PBEGPO0","PBEGPO1"];
+    RCL.coexEnabled = true;
+    RCL.lrfGpio.$assign = "LRF";
+
+    //  REQUEST Pin Config
+    RCL.coexPinRequestIdleLevel = 0; // Level of REQUEST line when idle
+    RCL.lrfGpio.pbegpo0Pin.$assign = "DIO21_A4"; // Replace with the GPIO of choice (Not all are valid, build gives syscfg error with list of available pins if wrongly configured. Choose from available)
+    RCL.pbegpo0PinInstance.$hardware = null;  // do not change
+    RCL.pbegpo0PinInstance.pull = scripting.forceWrite("None"); // do not change
+    RCL.pbegpo0PinInstance.doNotConfig = scripting.forceWrite(false); // do not change
+    RCL.pbegpo0PinInstance.initialOutputState = "Low"; // Initial state of pin. Set 'High' for HIGH and 'Low' for LOW.
+
+    // GRANT Pin Config
+    RCL.lrfGpio.coex_grantPin.$assign = "DIO17_A8"; // Replace with the GPIO of choice (Not all are valid, build gives syscfg error with list of available pins if wrongly configured. Choose from available)
+    RCL.coexPinGrantIdleLevel = 1; // GRANT line level when idle
+    RCL.coex_grantPinInstance.$hardware = null; // do not change
+    RCL.coex_grantPinInstance.mode = scripting.forceWrite("Input"); // GRANT pin is configured as input
+    RCL.coex_grantPinInstance.doNotConfig = scripting.forceWrite(false); // do not change
+    RCL.coex_grantPinInstance.pull = "Pull Down"; // Set this to active level on GRANT Line. If GRANT line is LOW refers to access is available, then set it to "Pull Down", else change to "Pull Up"
+
+    // PRIORITY Pin Config
+    RCL.coexPinPriorityIdleLevel = 0; // Level of PRIORITY line when idle
+    RCL.coexPinPriorityIndicationLowLevel = 0; // Level of PRIORITY line when Low Priority is signaled
+    RCL.coexPinPriorityIndicationEnabled = true; // Set to true to enable priority indication, else set to false
+    RCL.lrfGpio.pbegpo1Pin.$assign = "DIO22_A3"; // Replace with the GPIO of choice (Not all are valid, build gives syscfg error with list of available pins if wrongly configured. Choose from available)
+    RCL.pbegpo1PinInstance.$hardware = null; // do not change
+    RCL.pbegpo1PinInstance.pull = scripting.forceWrite("None");  // do not change
+    RCL.pbegpo1PinInstance.doNotConfig = scripting.forceWrite(false); // do not change
+    RCL.pbegpo1PinInstance.initialOutputState = "Low"; // Initial state of pin. Set 'High' for HIGH and 'Low' for LOW
+*/
 }
