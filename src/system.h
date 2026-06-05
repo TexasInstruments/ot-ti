@@ -113,6 +113,18 @@ void platformUartSignal(uintptr_t arg);
  */
 void platformUartProcess(uintptr_t arg);
 
+#ifdef USE_COMBINED_SERIAL
+/**
+ * Deliver bytes from the MUX NLI_OT receive path into the OpenThread
+ * processing loop.  Called from thread_mux.c (MUX task context).
+ *
+ * Copies @p len bytes from @p buf into the UART POSIX mqueue and signals
+ * the OT event loop, exactly as the UART2 ISR callback does in the
+ * non-MUX path.
+ */
+void platformUartMuxDeliver(const uint8_t *buf, uint16_t len);
+#endif /* USE_COMBINED_SERIAL */
+
 /**
  * Signal the processing loop to process the spi module.
  *

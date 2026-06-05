@@ -32,6 +32,7 @@ set(BLE_CONTROLLER_SOURCE_FILES
     app_main.c
     Queue_freertos.c
     freertos_main.c
+    thread_mux.c
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble/app_util/config/src/ble_user_config.c
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble/app_util/config/ble_user_config.h
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble/app_util/config/src/hci_supported_cmd.c
@@ -51,15 +52,31 @@ set(BLE_CONTROLLER_SOURCE_FILES
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble/stack_util/health_toolkit/debugInfo.h
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble/stack_util/health_toolkit/debugInfo_errno.h
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble/stack_util/health_toolkit/src/debugInfo.c
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble/stack_util/health_toolkit/src/ble_sys_stat.c
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble/stack_util/icall/app/src/icall_POSIX.c
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble/stack_util/icall/app/icall_addrs.h
-    
+    # Combined Serial MUX sources
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/combined_serial/embedded/mux_task_app.c
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/combined_serial/embedded/mux_uart.c
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/combined_serial/embedded/mux_virt_uart.c
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/combined_serial/hdlc_spinel.c
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/combined_serial/mux_buffer.c
+
 )
 add_library(ble-stack-lib
     ${BLE_CONTROLLER_SOURCE_FILES}
 )
 
-set(GENERIC_BLE_INCLUDES 
+# Force-include the NPI UART shim ONLY for npi_tl_uart.c.
+# This redirects UART2_open/read/write/close to the MUX virtual UART port
+# (mux_virt_uart.c) at the preprocessor level, with no source changes to NPI.
+set_source_files_properties(
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble/app_util/npi/src/npi_tl_uart.c
+    PROPERTIES COMPILE_OPTIONS
+    "-include${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/combined_serial/embedded/mux_npi_uart_shim.h"
+)
+
+set(GENERIC_BLE_INCLUDES
 PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}
@@ -67,6 +84,8 @@ PUBLIC
     ${TI_SIMPLELINK_SDK_DIR}/source
     ${TI_SIMPLELINK_SDK_DIR}/source/ti
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/combined_serial
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm/combined_serial/embedded
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/common/cc26xx
     ${TI_SIMPLELINK_SDK_DIR}/source/ti/drivers/rcl
@@ -76,7 +95,7 @@ PUBLIC
     ${TI_SIMPLELINK_SDK_DIR}/kernel/freertos
 )
 
-set(GENERIC_BLE_DEFINES 
+set(GENERIC_BLE_DEFINES
 PUBLIC
     CC23X0
     USE_HSM
@@ -88,6 +107,13 @@ PUBLIC
     USE_DMM
     USE_DMM_DYNAMIC_PRIORITY
     USE_DMM_OVRDE
+
+    # Combined Serial MUX: single UART for Thread spinel + BLE HCI.
+    # CONFIG_DISPLAY_UART is made equal to CONFIG_UART2_0 (both = 0) so that
+    # NPI's UART2_open(CONFIG_DISPLAY_UART) is intercepted by the virtual UART
+    # shim (mux_npi_uart_shim.h) and routed through the MUX task.
+    USE_COMBINED_SERIAL
+    CONFIG_DISPLAY_UART=CONFIG_UART2_0
 
 )
 target_compile_definitions(ble-stack-lib

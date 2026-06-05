@@ -54,3 +54,10 @@ set_target_properties(ot-cli-ftd
     PROPERTIES
         SUFFIX .out
 )
+
+add_custom_command(TARGET ot-cli-ftd POST_BUILD
+    COMMAND arm-none-eabi-objcopy -O binary
+        $<TARGET_FILE:ot-cli-ftd>
+        $<TARGET_FILE_DIR:ot-cli-ftd>/$<TARGET_FILE_BASE_NAME:ot-cli-ftd>.bin
+    COMMENT "Generating ot-cli-ftd.bin"
+)

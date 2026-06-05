@@ -42,6 +42,11 @@
 #include "system.h"
 #include <string.h>
 #include <mqueue.h>
+
+#ifdef USE_COMBINED_SERIAL
+#include "ti/dmm/combined_serial/embedded/mux_task_app.h"
+#include "ti/dmm/combined_serial/mux_common.h"
+#endif
 #if (OPENTHREAD_CONFIG_LOG_OUTPUT == OPENTHREAD_CONFIG_LOG_OUTPUT_DEBUG_UART)
 #include <openthread/platform/debug_uart.h>
 #include <stdio.h>
@@ -120,8 +125,21 @@ static void uartWriteCallback(UART2_Handle aHandle, void *aBuf, size_t aLen, voi
 
 otError otPlatUartEnable(void)
 {
-    UART2_Params params;
     struct mq_attr attr;
+
+    attr.mq_curmsgs = 0;
+    attr.mq_flags   = 0;
+    attr.mq_maxmsg  = PLATFORM_UART_RECV_MQUEUE_LEN;
+    attr.mq_msgsize = sizeof(struct UART_procQueueMsg);
+
+    UART_procQueueDesc = mq_open(UART_procQueueName, (O_RDWR | O_NONBLOCK | O_CREAT), 0, &attr);
+
+#ifdef USE_COMBINED_SERIAL
+    /* MUX task owns the physical UART; skip UART2 hardware init.
+     * The POSIX mqueue above is still needed for otSysProcessDrivers. */
+    return OT_ERROR_NONE;
+#else
+    UART2_Params params;
 
 #if !TI_PLAT_UART_BLOCKING
     PlatformUart_writeSemHandle = SemaphoreP_constructBinary(&PlatformUart_writeSem, 1U);
@@ -161,29 +179,37 @@ otError otPlatUartEnable(void)
     PlatformDebugUart_uartHandle = UART2_open(CONFIG_DEBUG_UART, &debugParams);
 #endif
 
-    attr.mq_curmsgs = 0;
-    attr.mq_flags   = 0;
-    attr.mq_maxmsg  = PLATFORM_UART_RECV_MQUEUE_LEN;
-    attr.mq_msgsize = sizeof(struct UART_procQueueMsg);
-
-    UART_procQueueDesc = mq_open(UART_procQueueName, (O_RDWR | O_NONBLOCK | O_CREAT), 0, &attr);
-
     PlatformUart_uartHandle = UART2_open(CONFIG_UART2_0, &params);
 
     UART2_read(PlatformUart_uartHandle, PlatformUart_receiveBuffer, sizeof(PlatformUart_receiveBuffer), NULL);
 
     return OT_ERROR_NONE;
+#endif /* USE_COMBINED_SERIAL */
 }
 
 otError otPlatUartDisable(void)
 {
+#ifdef USE_COMBINED_SERIAL
+    /* MUX task owns the UART; nothing to close here. */
+    return OT_ERROR_NONE;
+#else
     UART2_close(PlatformUart_uartHandle);
 
     return OT_ERROR_NONE;
+#endif
 }
 
 otError otPlatUartSend(const uint8_t *aBuf, uint16_t aBufLength)
 {
+#ifdef USE_COMBINED_SERIAL
+    /* Forward the spinel frame to the MUX task TX queue.
+     * MuxTask_sendPacket copies the payload, so the caller's buffer is safe
+     * to reuse immediately.  Signal TX_DONE so the NCP layer can queue the
+     * next frame. */
+    MuxTask_sendPacket(MUX_NLI_OT, aBuf, aBufLength);
+    platformUartSignal(PLATFORM_UART_EVENT_TX_DONE);
+    return OT_ERROR_NONE;
+#else
     int_fast16_t ret;
 
     /* Block any incoming Tx requests if one is already in progress */
@@ -197,6 +223,7 @@ otError otPlatUartSend(const uint8_t *aBuf, uint16_t aBufLength)
 #endif
 
     return OT_ERROR_NONE;
+#endif /* USE_COMBINED_SERIAL */
 }
 
 void platformUartProcess(uintptr_t arg)
@@ -230,6 +257,34 @@ void platformUartProcess(uintptr_t arg)
         otPlatUartReceived(rxMsg.rxBuffer, rxMsg.readLen);
     }
 }
+
+#ifdef USE_COMBINED_SERIAL
+/*!
+ * @brief Deliver bytes received from the MUX NLI_OT channel into the
+ *        OpenThread processing loop.
+ *
+ * Called from thread_mux.c (MUX task context) when a decoded NLI_OT frame
+ * arrives.  Copies the payload into the UART POSIX mqueue and signals the
+ * OT event loop via platformUartSignal(RX_DONE), mirroring what the UART2
+ * ISR callback does in the non-MUX path.
+ *
+ * @param buf  Decoded spinel payload bytes.
+ * @param len  Number of valid bytes in @p buf.
+ */
+void platformUartMuxDeliver(const uint8_t *buf, uint16_t len)
+{
+    struct UART_procQueueMsg rxMsg;
+    uint16_t copyLen = (len > PLATFORM_UART_RECV_BUF_LEN)
+                           ? (uint16_t)PLATFORM_UART_RECV_BUF_LEN
+                           : len;
+
+    memcpy(rxMsg.rxBuffer, buf, copyLen);
+    rxMsg.readLen = copyLen;
+
+    mq_send(UART_procQueueDesc, (char *)&rxMsg, sizeof(rxMsg), 0);
+    platformUartSignal(PLATFORM_UART_EVENT_RX_DONE);
+}
+#endif /* USE_COMBINED_SERIAL */
 
 otError otPlatUartFlush(void)
 {

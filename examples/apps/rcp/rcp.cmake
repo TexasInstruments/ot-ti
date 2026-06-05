@@ -53,3 +53,10 @@ set_target_properties(ot-rcp
     PROPERTIES
         SUFFIX .out
 )
+
+add_custom_command(TARGET ot-rcp POST_BUILD
+    COMMAND arm-none-eabi-objcopy -O binary
+        $<TARGET_FILE:ot-rcp>
+        $<TARGET_FILE_DIR:ot-rcp>/$<TARGET_FILE_BASE_NAME:ot-rcp>.bin
+    COMMENT "Generating ot-rcp.bin"
+)

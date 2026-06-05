@@ -17,4 +17,4 @@
 [submodule "third_party/ti_simplelink_sdk/repo_cc23xx_cc27xx"]
 	path = third_party/ti_simplelink_sdk/repo_cc23xx_cc27xx
 	url = https://github.com/TexasInstruments/simplelink-lowpower-f3-sdk.git
-	ignore = all
+	ignore = dirty

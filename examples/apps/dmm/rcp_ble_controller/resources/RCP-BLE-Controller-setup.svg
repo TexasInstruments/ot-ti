@@ -1,0 +1,144 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="670" height="355"
+     viewBox="0 0 670 355"
+     font-family="Arial, Helvetica, sans-serif">
+
+  <defs>
+    <!-- Red arrowhead (orient=auto rotates with line direction) -->
+    <marker id="arrR" markerWidth="8" markerHeight="6"
+            refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#C41230"/>
+    </marker>
+    <!-- Dark grey arrowhead for wireless links -->
+    <marker id="arrD" markerWidth="8" markerHeight="6"
+            refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#555555"/>
+    </marker>
+    <!-- Clip path to round the bottom band corners of the cc27xx box -->
+    <clipPath id="ccClip">
+      <rect x="155" y="243" width="160" height="87" rx="6"/>
+    </clipPath>
+  </defs>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       LINUX HOST OUTER BOX
+  ════════════════════════════════════════════════════════════════ -->
+  <rect x="5" y="5" width="475" height="190" rx="6"
+        fill="#F0F4F8" stroke="#4A6FA5" stroke-width="2"/>
+  <text x="20" y="23" font-size="13" font-weight="bold" fill="#4A6FA5">Linux Host</text>
+
+  <!-- Application strip -->
+  <rect x="15" y="28" width="455" height="22" rx="3"
+        fill="#D6E4F0" stroke="#4A6FA5" stroke-width="1"/>
+  <text x="242" y="43" font-size="11" fill="#333333"
+        text-anchor="middle">Application (e.g. Matter)</text>
+
+  <!-- ── OTBR box ── -->
+  <rect x="22" y="62" width="95" height="48" rx="4"
+        fill="white" stroke="#C41230" stroke-width="1.5"/>
+  <text x="69" y="91" font-size="14" font-weight="bold"
+        fill="#C41230" text-anchor="middle">OTBR</text>
+
+  <!-- ── BlueZ box ── -->
+  <rect x="358" y="62" width="95" height="48" rx="4"
+        fill="white" stroke="#C41230" stroke-width="1.5"/>
+  <text x="405" y="91" font-size="14" font-weight="bold"
+        fill="#C41230" text-anchor="middle">BlueZ</text>
+
+  <!-- ── spinel_bridge.py box ── -->
+  <rect x="155" y="57" width="160" height="72" rx="4"
+        fill="#E8F5E9" stroke="#388E3C" stroke-width="1.5"/>
+  <text x="235" y="77" font-size="11" font-weight="bold"
+        fill="#2E7D32" text-anchor="middle">spinel_bridge.py</text>
+  <text x="235" y="93" font-size="9.5" fill="#555555"
+        text-anchor="middle">Combined Serial MUX</text>
+  <text x="235" y="108" font-size="9.5" fill="#555555"
+        text-anchor="middle">bridge daemon</text>
+
+  <!-- ── Thread PTY label (above OTBR ↔ spinel_bridge arrows) ── -->
+  <text x="136" y="72" font-size="8" fill="#C41230"
+        text-anchor="middle">Thread PTY</text>
+  <text x="136" y="98" font-size="8" fill="#888888"
+        text-anchor="middle">(NLI=0)</text>
+
+  <!-- Arrow OTBR → spinel_bridge (upper line) -->
+  <line x1="117" y1="79" x2="153" y2="79"
+        stroke="#C41230" stroke-width="1.5" marker-end="url(#arrR)"/>
+  <!-- Arrow spinel_bridge → OTBR (lower line) -->
+  <line x1="155" y1="86" x2="119" y2="86"
+        stroke="#C41230" stroke-width="1.5" marker-end="url(#arrR)"/>
+
+  <!-- ── BLE PTY label (above spinel_bridge ↔ BlueZ arrows) ── -->
+  <text x="336" y="72" font-size="8" fill="#C41230"
+        text-anchor="middle">BLE PTY</text>
+  <text x="336" y="98" font-size="8" fill="#888888"
+        text-anchor="middle">(NLI=1)</text>
+
+  <!-- Arrow spinel_bridge → BlueZ (upper line) -->
+  <line x1="315" y1="79" x2="356" y2="79"
+        stroke="#C41230" stroke-width="1.5" marker-end="url(#arrR)"/>
+  <!-- Arrow BlueZ → spinel_bridge (lower line) -->
+  <line x1="358" y1="86" x2="317" y2="86"
+        stroke="#C41230" stroke-width="1.5" marker-end="url(#arrR)"/>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SINGLE UART — bidirectional vertical connection
+  ════════════════════════════════════════════════════════════════ -->
+  <!-- Downward arrow -->
+  <line x1="232" y1="130" x2="232" y2="241"
+        stroke="#C41230" stroke-width="1.5"
+        stroke-dasharray="5,3" marker-end="url(#arrR)"/>
+  <!-- Upward arrow -->
+  <line x1="238" y1="241" x2="238" y2="130"
+        stroke="#C41230" stroke-width="1.5"
+        stroke-dasharray="5,3" marker-end="url(#arrR)"/>
+  <!-- UART label (between Linux Host bottom and cc27xx top) -->
+  <text x="250" y="193" font-size="9" fill="#555555">Single UART</text>
+  <text x="250" y="205" font-size="9" fill="#555555">(921600 baud)</text>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       cc27xx DEVICE BOX
+  ════════════════════════════════════════════════════════════════ -->
+  <rect x="155" y="243" width="160" height="87" rx="6"
+        fill="#FFFBE6" stroke="#E65100" stroke-width="2"/>
+  <text x="235" y="265" font-size="10" font-weight="bold"
+        fill="#E65100" text-anchor="middle">LP_EM_CC2755P20</text>
+  <text x="235" y="281" font-size="10" fill="#555555"
+        text-anchor="middle">DMM Firmware</text>
+  <text x="235" y="297" font-size="10" fill="#555555"
+        text-anchor="middle">RCP + BLE-Controller</text>
+  <!-- Teal bottom band (clipped to box rounded corners) -->
+  <rect x="155" y="314" width="160" height="16" rx="3"
+        fill="#00778B" clip-path="url(#ccClip)"/>
+  <text x="235" y="326" font-size="9" font-weight="bold"
+        fill="white" text-anchor="middle">DMM / CC27xx</text>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       WIRELESS DEVICE BOXES (right side)
+  ════════════════════════════════════════════════════════════════ -->
+  <!-- BLE Device box -->
+  <rect x="490" y="234" width="155" height="38" rx="4"
+        fill="white" stroke="#666666" stroke-width="1.5"/>
+  <text x="567" y="257" font-size="12" fill="#333333"
+        text-anchor="middle">BLE Device</text>
+
+  <!-- Thread Device box -->
+  <rect x="490" y="300" width="155" height="38" rx="4"
+        fill="white" stroke="#666666" stroke-width="1.5"/>
+  <text x="567" y="323" font-size="12" fill="#333333"
+        text-anchor="middle">Thread Device</text>
+
+  <!-- ── BLE wireless arrow ── -->
+  <line x1="315" y1="268" x2="488" y2="253"
+        stroke="#555555" stroke-width="1.5"
+        stroke-dasharray="5,3" marker-end="url(#arrD)"/>
+  <text x="400" y="251" font-size="10" fill="#555555"
+        text-anchor="middle">BLE</text>
+
+  <!-- ── Thread wireless arrow ── -->
+  <line x1="315" y1="297" x2="488" y2="319"
+        stroke="#555555" stroke-width="1.5" marker-end="url(#arrD)"/>
+  <text x="400" y="320" font-size="10" fill="#555555"
+        font-style="italic" text-anchor="middle">Thread</text>
+
+</svg>

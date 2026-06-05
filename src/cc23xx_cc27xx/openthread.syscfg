@@ -300,20 +300,53 @@ if (enableLogSinkTracer)
 
 }
 
-/* coex support */
-RCL.signals                    = ["COEX_GRANT","PBEGPO0","PBEGPO1"];
-RCL.lrfGpio.$assign            = "LRF";
-RCL.coexEnabled = false;
+/* CoExistence: Uncomment the below CoEx settings based on device family and edit the configs as required*/
 
 if (board.match(/CC2340R53/) || board.match(/CC2340R5/) || board.match(/CC2340R22/))
 {
-    RCL.lrfGpio.pbegpo0Pin.$assign = "boosterpack.25"; // COEX_REQUEST
-    RCL.lrfGpio.pbegpo1Pin.$assign = "boosterpack.27"; // COEX_PRIORITY
-    RCL.lrfGpio.coex_grantPin.$assign   = "boosterpack.28"; // COEX_GRANT
+    /*
+    RCL.signals                    = ["COEX_GRANT","PBEGPO0","PBEGPO1"];
+    RCL.lrfGpio.$assign            = "LRF";
+    RCL.coexEnabled = true;
+    RCL.lrfGpio.pbegpo0Pin.$assign     = "boosterpack.25"; // COEX_REQUEST
+    RCL.lrfGpio.pbegpo1Pin.$assign     = "boosterpack.27"; // COEX_PRIORITY
+    RCL.lrfGpio.coex_grantPin.$assign  = "boosterpack.28"; // COEX_GRANT
+    RCL.coex_grantPinInstance.pull     = "Pull Down";
+    */
 }
+
 else if (board.match(/CC27/))
 {
-    RCL.lrfGpio.pbegpo0Pin.$assign = "boosterpack.2";; // COEX_REQUEST
-    RCL.lrfGpio.pbegpo1Pin.$assign = "boosterpack.6"; // COEX_PRIORITY
-    RCL.lrfGpio.coex_grantPin.$assign   = "boosterpack.9"; // COEX_GRANT
+    /*
+    // General CoEx settings
+    RCL.signals = ["COEX_GRANT","PBEGPO0","PBEGPO1"];
+    RCL.coexEnabled = true;
+    RCL.lrfGpio.$assign = "LRF";
+
+    //  REQUEST Pin Config
+    RCL.coexPinRequestIdleLevel = 0; // Level of REQUEST line when idle
+    RCL.lrfGpio.pbegpo0Pin.$assign = "DIO21_A4"; // Replace with the GPIO of choice (Not all are valid, build gives syscfg error with list of available pins if wrongly configured. Choose from available)
+    RCL.pbegpo0PinInstance.$hardware = null;  // do not change
+    RCL.pbegpo0PinInstance.pull = scripting.forceWrite("None"); // do not change
+    RCL.pbegpo0PinInstance.doNotConfig = scripting.forceWrite(false); // do not change
+    RCL.pbegpo0PinInstance.initialOutputState = "Low"; // Initial state of pin. Set 'High' for HIGH and 'Low' for LOW.
+
+    // GRANT Pin Config
+    RCL.lrfGpio.coex_grantPin.$assign = "DIO17_A8"; // Replace with the GPIO of choice (Not all are valid, build gives syscfg error with list of available pins if wrongly configured. Choose from available)
+    RCL.coexPinGrantIdleLevel = 1; // GRANT line level when idle
+    RCL.coex_grantPinInstance.$hardware = null; // do not change
+    RCL.coex_grantPinInstance.mode = scripting.forceWrite("Input"); // GRANT pin is configured as input
+    RCL.coex_grantPinInstance.doNotConfig = scripting.forceWrite(false); // do not change
+    RCL.coex_grantPinInstance.pull = "Pull Down"; // Set this to active level on GRANT Line. If GRANT line is LOW refers to access is available, then set it to "Pull Down", else change to "Pull Up"
+
+    // PRIORITY Pin Config
+    RCL.coexPinPriorityIdleLevel = 0; // Level of PRIORITY line when idle
+    RCL.coexPinPriorityIndicationLowLevel = 0; // Level of PRIORITY line when Low Priority is signaled
+    RCL.coexPinPriorityIndicationEnabled = true; // Set to true to enable priority indication, else set to false
+    RCL.lrfGpio.pbegpo1Pin.$assign = "DIO22_A3"; // Replace with the GPIO of choice (Not all are valid, build gives syscfg error with list of available pins if wrongly configured. Choose from available)
+    RCL.pbegpo1PinInstance.$hardware = null; // do not change
+    RCL.pbegpo1PinInstance.pull = scripting.forceWrite("None");  // do not change
+    RCL.pbegpo1PinInstance.doNotConfig = scripting.forceWrite(false); // do not change
+    RCL.pbegpo1PinInstance.initialOutputState = "Low"; // Initial state of pin. Set 'High' for HIGH and 'Low' for LOW
+*/
 }
