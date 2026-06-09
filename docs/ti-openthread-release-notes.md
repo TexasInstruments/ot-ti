@@ -23,7 +23,7 @@ This Texas Instruments OpenThread GitHub repository contains the software develo
 | [CC2340R53][cc2340r53]   | x   | x   | x   | x   |                    |            | X               |
 | [CC2755P10][cc2755p10]   | x   | x   | x   | x   | x                  |            | X               |
 | [CC2755R10][cc2755r10]   | x   | x   | x   | x   | x                  |            | X               |
-| CC2755P20 (coming soon)  | x   | x   | x   | x   |                    |            | X               |
+| CC2755P20 (coming soon)  | x   | x   | x   | x   | x                  |            | X               |
 
 [cc2652r]: https://www.ti.com/product/CC2652R
 [cc2652rb]: https://www.ti.com/product/CC2652RB
@@ -50,13 +50,13 @@ Note: Previous Production Release: [TI-OpenThread v1.3-1.0 Release](https://gith
 
 ## Fixed Issues
 
-<!-- fixed issues labelled with fi_thread-v1.4-ti-1.0-ea-1.2) -->
+<!-- fixed issues labelled with fi_thread-v1.4-ti-2.1) -->
 
-- N/A
+- Syscfg download link in bootstrap was of older version and build gives syscfg version error for cc27xxPxx family. Changed the link to download syscfg ver 1.27.0.
 
 ## Known Issues
 
-<!-- known issues labelled with ki_thread-v1.4-ti-1.0-ea-1.2) -->
+<!-- known issues labelled with ki_thread-v1.4-ti-2.1) -->
 
 - TIOP-1452: SSED device is not supported on the CC23xx/CC27xx platform
 - TIOP-1438: SSED may not function properly in high baudrate scenarios (921600) for CC1354/CC2674 platforms.
