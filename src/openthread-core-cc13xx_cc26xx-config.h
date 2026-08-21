@@ -115,6 +115,10 @@
 #define OPENTHREAD_ENABLE_NCP_SPINEL_ENCRYPTER 0
 #define OPENTHREAD_ENABLE_NCP_VENDOR_HOOK 0
 #define OPENTHREAD_CONFIG_NCP_HDLC_ENABLE 1
+/* Cap the HDLC TX chunk size to MUX_MSG_BUF_LEN (512). The default (2048)
+ * exceeds what MuxTask_sendPacket accepts in one call. EncodeAndSend's state
+ * machine handles partial flushes correctly, so this is safe. */
+#define OPENTHREAD_CONFIG_NCP_HDLC_TX_CHUNK_SIZE 512
 // #define OPENTHREAD_CONFIG_NCP_INFRA_IF_ENABLE 1
 // #define OPENTHREAD_CONFIG_NCP_DNSSD_ENABLE 1
 // #define OPENTHREAD_CONFIG_NCP_CLI_STREAM_ENABLE 1

@@ -79,13 +79,17 @@ readonly TI_LAUNCHPAD=(
 readonly OT_SRCDIR="$(pwd)"
 readonly OT_OPTIONS=(
     "-DOT_PLATFORM=external"
-    #8/18/25 -NOTE: There are defines for this in the config file but the current OT commit does not use them.
-    #uncomment the following lines to enable NCP build
-    # "-DNCP_BUILD_ENABLED=ON"
-    # "-DOT_NCP_DNSSD=ON"
-    # "-DOT_NCP_CLI_STREAM=ON"
-    # "-DOT_NCP_INFRA_IF=ON"
-    # "-DOT_BORDER_ROUTING=ON"
+    "-DNCP_BUILD_ENABLED=ON"
+    "-DOT_NCP_DNSSD=ON"
+    "-DOT_NCP_CLI_STREAM=ON"
+    "-DOT_NCP_INFRA_IF=ON"
+    "-DOT_BORDER_ROUTING=ON"
+    "-DOT_BORDER_ROUTER=ON"
+    "-DOT_PING_SENDER=ON"
+    "-DOT_THREAD_VERSION=1.4"
+    "-DOT_EXTERNAL_MBEDTLS=ti-mbedtls"
+    "-DOT_BUILTIN_MBEDTLS_MANAGEMENT=ON"
+    "-DOT_COMPILE_WARNING_AS_ERROR=OFF"
 )
 
 build()

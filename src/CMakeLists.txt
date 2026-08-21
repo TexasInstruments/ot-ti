@@ -74,8 +74,29 @@ else()
     message(FATAL_ERROR "Unsuported TI_SIMPLELINK_KERNEL: ${TI_SIMPLELINK_KERNEL}")
 endif()
 
-if (OT_APP_RCP_BLE_CONTROLLER)
+if (OT_APP_NCP_BLE_CONTROLLER)
     list(APPEND SYSCONFIG_OUTPUT_C ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_dmm_application_policy.c)
+
+    set(DMM_SRC
+        dmm/dmm_thread_activity.c
+    )
+
+    if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC27(55|45)*")
+        set(BLE_LIBS
+            ble-stack-lib
+            ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble/lib/CC27XXX10/ControllerLib/lib/ticlang/m33f/ControllerLib.a
+            ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_utils_build_linker.cmd.genlibs
+        )
+
+        set(DMM_INCLUDES
+            ${CMAKE_CURRENT_SOURCE_DIR}/dmm/cc23xx_cc27xx
+            ${CMAKE_CURRENT_SOURCE_DIR}/dmm
+            ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm
+            ${TI_SIMPLELINK_SDK_DIR}/source/ti
+        )
+
+        list(APPEND OT_PLATFORM_DEFINES USE_DMM USE_DMM_OVRDE USE_COMBINED_SERIAL)
+    endif()
 endif()
 
 #if statement used for 2674 migration
@@ -89,8 +110,7 @@ if(${TI_SIMPLELINK_BOARD} MATCHES "CC2674*")
 
     set(sysconfig_file CC2674.syscfg)
 
-
-elseif ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC27(55|45)*")
+elseif(${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC27(55|45)*")
     set(syscfg_cmd ${TI_SYSCONFIG_CMD}
                     -s ${TI_SIMPLELINK_SDK_DIR}/.metadata/product.json
                     -o ${CMAKE_CURRENT_BINARY_DIR}/syscfg
@@ -100,17 +120,15 @@ elseif ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR ${TI_SIMPLELINK_BOA
                     ${CMAKE_CURRENT_SOURCE_DIR}/cc23xx_cc27xx/openthread.syscfg)
 
     set(sysconfig_file openthread.syscfg)
-    if(OT_APP_RCP_BLE_CONTROLLER)
-        if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR  ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC27(55|45)*")
-            set(syscfg_cmd ${TI_SYSCONFIG_CMD}
-                            -s ${TI_SIMPLELINK_SDK_DIR}/.metadata/product.json
-                            -o ${CMAKE_CURRENT_BINARY_DIR}/syscfg
-                            --board /ti/boards/${TI_SIMPLELINK_BOARD}
-                            --compiler gcc
-                            --rtos ${TI_SIMPLELINK_KERNEL}
-                            ${CMAKE_CURRENT_SOURCE_DIR}/dmm/cc23xx_cc27xx/rcp_ble_controller.syscfg)
-            set(sysconfig_file dmm/cc23xx_cc27xx/rcp_ble_controller.syscfg)
-        endif()
+    if(OT_APP_NCP_BLE_CONTROLLER)
+        set(syscfg_cmd ${TI_SYSCONFIG_CMD}
+                        -s ${TI_SIMPLELINK_SDK_DIR}/.metadata/product.json
+                        -o ${CMAKE_CURRENT_BINARY_DIR}/syscfg
+                        --board /ti/boards/${TI_SIMPLELINK_BOARD}
+                        --compiler gcc
+                        --rtos ${TI_SIMPLELINK_KERNEL}
+                        ${CMAKE_CURRENT_SOURCE_DIR}/dmm/cc23xx_cc27xx/ncp_ble_controller.syscfg)
+        set(sysconfig_file dmm/cc23xx_cc27xx/ncp_ble_controller.syscfg)
     endif()
 
 else()
@@ -123,18 +141,6 @@ else()
                     ${CMAKE_CURRENT_SOURCE_DIR}/openthread.syscfg)
 
     set(sysconfig_file openthread.syscfg)
-    if(OT_APP_RCP_BLE_CONTROLLER)
-        if(${TI_SIMPLELINK_BOARD} MATCHES ".*(2674|1354).*")
-            set(syscfg_cmd ${TI_SYSCONFIG_CMD}
-            -s ${TI_SIMPLELINK_SDK_DIR}/.metadata/product.json
-            -o ${CMAKE_CURRENT_BINARY_DIR}/syscfg
-            --board /ti/boards/${TI_SIMPLELINK_BOARD}
-            --compiler gcc
-            --rtos ${TI_SIMPLELINK_KERNEL}
-            ${CMAKE_CURRENT_SOURCE_DIR}/dmm/cc13xx_cc26xx/rcp_ble_controller.syscfg)
-            set(sysconfig_file dmm/cc13xx_cc26xx/rcp_ble_controller.syscfg)
-        endif()
-    endif()
 
 endif()
 
@@ -171,49 +177,9 @@ set(PLATFORM_SRCS
     infra_if.c
 )
 
-if (OT_APP_RCP_BLE_CONTROLLER)
-    set(DMM_SRC
-        dmm/dmm_thread_activity.c
-    )
-
-if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*" OR ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC27(55|45)*")
-
-    set(BLE_LIBS
-        ble-stack-lib
-        ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble/lib/CC27XXX10/ControllerLib/lib/ticlang/m33f/ControllerLib.a
-        ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_utils_build_linker.cmd.genlibs
-    )
-
-    set(DMM_INCLUDES
-        ${CMAKE_CURRENT_SOURCE_DIR}/dmm/cc23xx_cc27xx
-        ${CMAKE_CURRENT_SOURCE_DIR}/dmm
-        ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm
-        ${TI_SIMPLELINK_SDK_DIR}/source/ti
-    )
-
-    list(APPEND OT_PLATFORM_DEFINES USE_DMM USE_DMM_OVRDE USE_COMBINED_SERIAL)
-else()
-    set(BLE_LIBS
-        ble-stack-lib
-        ${CMAKE_CURRENT_SOURCE_DIR}/dmm/cc13xx_cc26xx/ble/lib/OneLib.a
-        ${CMAKE_CURRENT_SOURCE_DIR}/dmm/cc13xx_cc26xx/ble/lib/libdmmlib_freertos.a
-        ${CMAKE_CURRENT_BINARY_DIR}/syscfg/ti_utils_build_linker.cmd.genlibs
-    )
-    list(APPEND TI_PLATFORM_INCLUDES  ${CMAKE_CURRENT_SOURCE_DIR}/cc13xx_cc26xx  ${CMAKE_CURRENT_SOURCE_DIR})
-    set(DMM_INCLUDES
-        ${CMAKE_CURRENT_SOURCE_DIR}/dmm/cc13xx_cc26xx
-        ${CMAKE_CURRENT_SOURCE_DIR}/dmm
-        ${TI_SIMPLELINK_SDK_DIR}/source/ti/dmm
-        ${TI_SIMPLELINK_SDK_DIR}/source/ti
-        
-        ${GENERIC_BLE_INCLUDES}
-    )
-    list(APPEND OT_PLATFORM_DEFINES USE_DMM)
-
-endif()
+if (OT_APP_NCP_BLE_CONTROLLER)
     list(APPEND PLATFORM_SRCS ${DMM_SRC})
     list(APPEND THREAD_LIBS ${BLE_LIBS})
-
 endif()
 
 if ( ${TI_SIMPLELINK_BOARD} MATCHES "LP_EM_CC2340R5*")
@@ -282,11 +248,6 @@ set(THREAD_LIBS
     cc13xx-cc26xx-sdk
 )
 
-if (OT_APP_RCP_BLE_CONTROLLER)
-    list(APPEND OT_PLATFORM_DEFINES USE_DMM)
-    list(APPEND THREAD_PLATFORM_SRC ${DMM_SRC})
-    list(APPEND THREAD_LIBS ${BLE_LIBS})
-endif()
 
 
 add_custom_target(build_syscfg DEPENDS ${SYSCONFIG_OUTPUT_C})

@@ -25,22 +25,7 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #  POSSIBILITY OF SUCH DAMAGE.
 #
-if (OT_APP_NCP_BLE_CONTROLLER)
 
-add_subdirectory(dmm/ncp_ble_controller)
-
-else()
-
-if(OT_APP_CLI)
-   add_subdirectory(cli)
-endif()
-
-if(NOT TI_SIMPLELINK_BOARD STREQUAL "LP_EM_CC2340R5")
-if(NCP_BUILD_ENABLED)
-  add_subdirectory(ncp)
-endif() #NCP_BUILD_ENABLED
-endif() #TI_SIMPLELINK_BOARD
-
-add_subdirectory(rcp)
-
+if (${TI_SIMPLELINK_BOARD} MATCHES ".*(2745|2755).*")
+  add_subdirectory(cc23xx_cc27xx)
 endif()

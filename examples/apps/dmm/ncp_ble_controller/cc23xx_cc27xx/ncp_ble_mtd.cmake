@@ -1,5 +1,5 @@
 #
-#  Copyright (c) 2019, The OpenThread Authors.
+#  Copyright (c) 2025, Texas Instruments Incorporated
 #  All rights reserved.
 #
 #  Redistribution and use in source and binary forms, with or without
@@ -25,22 +25,44 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #  POSSIBILITY OF SUCH DAMAGE.
 #
-if (OT_APP_NCP_BLE_CONTROLLER)
 
-add_subdirectory(dmm/ncp_ble_controller)
+add_executable(ot-ncp-ble-controller-mtd
+    ${COMMON_SOURCES}
+)
 
-else()
+target_include_directories(ot-ncp-ble-controller-mtd PUBLIC ${COMMON_INCLUDES})
 
-if(OT_APP_CLI)
-   add_subdirectory(cli)
+if(NOT DEFINED OT_PLATFORM_LIB_MTD)
+    set(OT_PLATFORM_LIB_MTD ${OT_PLATFORM_LIB})
 endif()
 
-if(NOT TI_SIMPLELINK_BOARD STREQUAL "LP_EM_CC2340R5")
-if(NCP_BUILD_ENABLED)
-  add_subdirectory(ncp)
-endif() #NCP_BUILD_ENABLED
-endif() #TI_SIMPLELINK_BOARD
+target_link_libraries(ot-ncp-ble-controller-mtd PUBLIC
+    openthread-ncp-mtd
+    ${OT_PLATFORM_LIB_MTD}
+    openthread-mtd
+    ${OT_PLATFORM_LIB_MTD}
+    openthread-ncp-mtd
+    ${OT_MBEDTLS}
+    ot-config-mtd
+    ot-config
+    ble-stack-lib
+)
 
-add_subdirectory(rcp)
+# ControllerLib.a (a prebuilt archive in the SDK) references BleSysStat_* symbols provided
+# by ble-stack-lib, creating a circular dependency. Use --start-group/--end-group so the
+# linker iterates until all cross-references are resolved.
+target_link_libraries(ot-ncp-ble-controller-mtd PRIVATE
+    -Wl,--start-group
+    $<TARGET_FILE:ble-stack-lib>
+    ${TI_SIMPLELINK_SDK_DIR}/source/ti/ble/lib/CC27XXX10/ControllerLib/lib/ticlang/m33f/ControllerLib.a
+    -Wl,--end-group
+)
 
-endif()
+install(TARGETS ot-ncp-ble-controller-mtd
+    DESTINATION bin
+)
+set_target_properties(ot-ncp-ble-controller-mtd
+    PROPERTIES
+        SUFFIX .out
+)
+add_dependencies(ot-ncp-ble-controller-mtd ble-stack-lib)

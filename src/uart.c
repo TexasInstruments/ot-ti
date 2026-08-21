@@ -205,8 +205,13 @@ otError otPlatUartSend(const uint8_t *aBuf, uint16_t aBufLength)
     /* Forward the spinel frame to the MUX task TX queue.
      * MuxTask_sendPacket copies the payload, so the caller's buffer is safe
      * to reuse immediately.  Signal TX_DONE so the NCP layer can queue the
-     * next frame. */
-    MuxTask_sendPacket(MUX_NLI_OT, aBuf, aBufLength);
+     * next frame.  OPENTHREAD_CONFIG_NCP_HDLC_TX_CHUNK_SIZE is capped to
+     * MUX_MSG_BUF_LEN (512) in the project config, so aBufLength is always
+     * within bounds. */
+    if (aBufLength > 0)
+    {
+        MuxTask_sendPacket(MUX_NLI_OT, aBuf, aBufLength);
+    }
     platformUartSignal(PLATFORM_UART_EVENT_TX_DONE);
     return OT_ERROR_NONE;
 #else

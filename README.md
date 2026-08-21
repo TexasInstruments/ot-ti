@@ -55,10 +55,16 @@ reference development kit available on ti.com.
 
 ```bash
 $ cd <path-to-ot-ti>
+# Build CLI, RCP, and NCP examples (default)
 $ ./script/build <simplelink_board>
-OR to build the RCP+Controller application for supported platforms:
-$ ./script/build <simplelink_board> -DOT_APP_RCP_BLE_CONTROLLER=1
+
+# Build NCP+BLE Controller (DMM) for supported cc27xx platforms
+$ ./script/build <simplelink_board> -DOT_APP_NCP_BLE_CONTROLLER=1
 ```
+
+**Build outputs:**
+- Default build: `ot-cli-ftd.out`, `ot-cli-mtd.out`, `ot-rcp.out`, `ot-ncp-ftd.out`, `ot-ncp-mtd.out`
+- With `-DOT_APP_NCP_BLE_CONTROLLER=1`: builds `ot-ncp-ble-controller-ftd.out`, `ot-ncp-ble-controller-mtd.out`
 
 \***\*Attention:\*\*** The above statement is only true when you have already run the bootstrap script.
 
